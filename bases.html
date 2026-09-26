@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>بیس‌ها — پنل Airsheet</title>
+<link rel="stylesheet" href="shell.css">
+</head>
+<body>
+<script src="assets/data.js"></script>
+<script src="assets/charts.js"></script>
+<script src="assets/ui.js"></script>
+<script>
+(function () {
+const { accounts, CONFIG: C } = DB;
+
+// A base cannot have been last active before it existed.
+const lastAct = b => Math.min(b.lastActive, b.created);
+const recLimit = a => C.plans[a.plan].limits.records;
+const acctRecordRatio = a => recLimit(a) ? a.records / recLimit(a) : 0;
+// base share of its account's records (bases split the account's records between them)
+const shareOf = (b, a) => { const t = a.bases.reduce((s, x) => s + x.records, 0); return t ? b.records / t : 1 / a.bases.length; };
+// On capped plans the account holds at most a.records; scale its bases down so they add up to that.
+const recsOf = (b, a) => { const t = a.bases.reduce((s, x) => s + x.records, 0); return t > a.records ? Math.round(b.records * a.records / t) : b.records; };
+
+UI.page({
+  id: 'bases', title: 'بیس‌ها', sources: ['main'],
+  sub: 'همهٔ بیس‌های ساخته‌شده روی Airsheet — روی هر ردیف بزنید تا جزئیات بیس باز شود',
+  render(ctx) {
+    const B = ctx.body;
+    const rows = DB.bases().map(b => { const a = DB.byId.get(b.accountId); return Object.assign({}, b, { a, records: recsOf(b, a), la: lastAct(b), est30: Math.round(a.records30 * shareOf(b, a)) }); });
+    const total = rows.length;
+    const active7 = rows.filter(r => r.la <= 6);
+    const new30 = rows.filter(r => r.created < 30).length, new30prev = rows.filter(r => r.created >= 30 && r.created < 60).length;
+    const avgRec = active7.length ? active7.reduce((t, r) => t + r.records, 0) / active7.length : 0;
+    const sortedRec = active7.map(r => r.records).sort((p, q) => p - q);
+    const medRec = sortedRec.length ? sortedRec[Math.floor(sortedRec.length / 2)] : 0;
+    const nearAcc = accounts.filter(a => a.bases.length && acctRecordRatio(a) >= 0.9);
+    const nearBases = rows.filter(r => acctRecordRatio(r.a) >= 0.9).length;
+    const withBases = accounts.filter(a => a.bases.length).length;
+
+    let h = '<div class="kpis">' +
+      UI.kpi({ label: 'کل بیس‌ها', value: UI.n(total), cmp: 'در ' + UI.n(withBases) + ' حساب · میانگین ' + UI.n(total / withBases, 1) + ' بیس' }) +
+      UI.kpi({ label: 'فعال در ۷ روز', value: UI.n(active7.length), info: 'بیسی که در ۷ روز اخیر دست‌کم یک ویرایش داشته', href: 'bases.html?view=active',
+        cmp: UI.pct(active7.length / total) + ' از کل بیس‌ها' }) +
+      UI.kpi({ label: 'بیس تازه در ۳۰ روز', value: UI.n(new30), delta: UI.delta(new30, new30prev), cmp: '۳۰ روز قبل: ' + UI.n(new30prev) }) +
+      UI.kpi({ label: 'میانگین رکورد هر بیس فعال', value: UI.n(avgRec), unit: 'رکورد', info: 'فقط بیس‌های فعال در ۷ روز اخیر',
+        cmp: 'میانه: ' + UI.n(medRec) + ' — چند بیس بزرگ میانگین را بالا برده‌اند' }) +
+      UI.kpi({ label: 'بیس روی پلنِ نزدیک سقف', value: UI.n(nearBases), href: 'quota.html?view=records', info: 'بیس‌هایی که حسابشان ۹۰٪ یا بیشتر از سقف رکورد پلن را پر کرده',
+        cmp: UI.n(nearAcc.length) + ' حساب به ۹۰٪ سقف رکورد رسیده‌اند — فرصت ارتقا' }) +
+      '</div>';
+
+    // --- most active + distribution
+    const top = rows.slice().sort((p, q) => q.est30 - p.est30).slice(0, 10);
+    const edges = [0, 1, 10, 100, 1000, 10000, 100000];
+    const bLabels = ['۰', '۱–۹', '۱۰–۹۹', '۱۰۰–۹۹۹', '۱–۹ هزار', '۱۰–۹۹ هزار', '۱۰۰ هزار+'];
+    const bTips = ['بدون رکورد', '۱ تا ۹ رکورد', '۱۰ تا ۹۹ رکورد', '۱۰۰ تا ۹۹۹ رکورد', '۱٬۰۰۰ تا ۹٬۹۹۹ رکورد', '۱۰٬۰۰۰ تا ۹۹٬۹۹۹ رکورد', '۱۰۰٬۰۰۰ رکورد و بیشتر'];
+    const counts = edges.map(() => 0);
+    rows.forEach(r => { let k = 0; while (k + 1 < edges.length && r.records >= edges[k + 1]) k++; counts[k]++; });
+    let last = counts.length - 1; while (last > 0 && !counts[last]) last--;
+    const small = rows.filter(r => r.records < 100).length, big = rows.filter(r => r.records >= 10000).length;
+
+    h += '<div class="grid g2">' +
+      UI.card({ title: 'پرکارترین بیس‌ها', hint: 'رکورد تازه در ۳۰ روز اخیر · تخمینی',
+        body: '<div id="c-top"></div>',
+        foot: '<span>تخمین = رکوردهای ۳۰ روز حساب × سهم این بیس از رکوردهای حساب</span><a href="bases.html?view=active">بیس‌های فعال</a>' }) +
+      UI.card({ title: 'توزیع رکورد در هر بیس', hint: 'تعداد بیس در هر بازه',
+        body: '<div id="c-hist"></div>' +
+          '<div class="section-title" style="margin:18px 0 8px">بیس‌ها بر اساس پلن حساب</div><div id="c-plan"></div>' +
+          '<div class="section-title" style="margin:18px 0 8px">بیس‌ها بر اساس آخرین فعالیت</div><div id="c-state"></div>',
+        foot: '<span>' + UI.pct(small / total) + ' بیس‌ها زیر ۱۰۰ رکوردند (بیشتر آزمایشی) · ' + UI.n(big) + ' بیس بالای ۱۰ هزار</span><a href="bases.html?sort=records">بزرگ‌ترین‌ها</a>' }) +
+      '</div>';
+
+    h += '<div class="card" id="tb"></div>';
+    B.innerHTML = h;
+
+    Charts.hbars(B.querySelector('#c-top'), {
+      labelWidth: 150,
+      items: top.map(r => ({ label: r.name, sub: r.a.name + ' · ' + UI.compact(r.records) + ' رکورد', value: r.est30, href: 'base.html?id=' + r.id })),
+      format: v => UI.n(v),
+    });
+    Charts.columns(B.querySelector('#c-hist'), {
+      labels: bLabels.slice(0, last + 1), tipLabels: bTips.slice(0, last + 1), xEvery: 1, valueLabels: 'all',
+      series: [{ name: 'تعداد بیس', values: counts.slice(0, last + 1) }], height: 236,
+    });
+    Charts.stack100(B.querySelector('#c-plan'), {
+      parts: C.planOrder.map(k => ({ label: C.plans[k].name, value: rows.filter(r => r.a.plan === k).length, color: 'var(--plan-' + k + ')' })),
+      format: v => UI.n(v),
+    });
+    Charts.stack100(B.querySelector('#c-state'), {
+      parts: [
+        { label: 'فعال در ۷ روز', value: active7.length, color: 'var(--series-1)' },
+        { label: '۸ تا ۳۰ روز پیش', value: rows.filter(r => r.la > 6 && r.la <= 30).length, color: 'var(--seq-250)' },
+        { label: 'بیش از ۳۰ روز', value: rows.filter(r => r.la > 30).length, color: 'var(--deemph)' },
+      ],
+      format: v => UI.n(v),
+    });
+
+    UI.table(B.querySelector('#tb'), {
+      rows, url: true, exportName: 'bases', unit: 'بیس',
+      views: [
+        { key: 'all', label: 'همه', test: null },
+        { key: 'active', label: 'فعال ۷ روز', test: r => r.la <= 6 },
+        { key: 'idle', label: 'بدون فعالیت ۳۰ روز', test: r => r.la > 30 },
+        { key: 'auto', label: 'با اتوماسیون', test: r => r.automations > 0 },
+      ],
+      sort: { key: 'records', dir: 'desc' },
+      search: { placeholder: 'نام بیس، نشانی یا نام حساب…', text: r => r.name + ' ' + r.slug + ' ' + r.a.name },
+      filters: [
+        { key: 'plan', label: 'پلن', options: C.planOrder.map(k => ({ v: k, l: C.plans[k].name })), test: (r, v) => r.a.plan === v },
+      ],
+      onRow: r => { location.href = 'base.html?id=' + r.id; },
+      columns: [
+        { key: 'name', label: 'بیس', render: r => '<a class="nm" href="base.html?id=' + r.id + '">' + UI.esc(r.name) + '</a><span class="s"><span class="mono">/' + UI.esc(r.slug) + '</span></span>', csv: r => r.name + ' /' + r.slug },
+        { key: 'acc', label: 'حساب', sort: r => r.a.name, render: r => '<a href="' + UI.custLink(r.a) + '" data-acc="' + r.a.id + '" style="font-weight:600">' + UI.esc(r.a.name) + '</a>', csv: r => r.a.name },
+        { key: 'plan', label: 'پلن', sort: r => C.planOrder.indexOf(r.a.plan), desc: true, render: r => UI.planBadge(r.a.plan), csv: r => C.plans[r.a.plan].name },
+        { key: 'tables', label: 'جدول', num: true, render: r => UI.n(r.tables) },
+        { key: 'records', label: 'رکورد', num: true, render: r => '<b>' + UI.n(r.records) + '</b>' },
+        { key: 'automations', label: 'اتوماسیون', num: true, render: r => r.automations ? UI.n(r.automations) : '<span class="faint">—</span>' },
+        { key: 'collaborators', label: 'همکار', num: true, render: r => UI.n(r.collaborators) },
+        { key: 'created', label: 'ساخته‌شده', sort: r => -r.created, desc: true, render: r => '<span class="nowrap">' + UI.date(r.created) + '</span><span class="s">' + UI.esc(UI.agoDays(r.created)) + '</span>', csv: r => r.created },
+        { key: 'la', label: 'آخرین فعالیت', sort: r => -r.la, desc: true, render: r => '<span class="nowrap' + (r.la > 30 ? ' faint' : '') + '">' + UI.esc(UI.agoDays(r.la)) + '</span>', csv: r => r.la },
+      ],
+    });
+  },
+});
+})();
+</script>
+</body>
+</html>

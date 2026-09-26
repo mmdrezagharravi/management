@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>سلامت داده — پنل Airsheet</title>
+<link rel="stylesheet" href="shell.css">
+</head>
+<body>
+<script src="assets/data.js"></script>
+<script src="assets/charts.js"></script>
+<script src="assets/ui.js"></script>
+<script>
+(function () {
+const { ops, CONFIG: C } = DB;
+
+// Freshness policy (minutes of lag): the same thresholds colour the top-bar pill.
+const FRESH = { good: 60, warn: 1440 };
+const RANK = { good: 0, warn: 1, crit: 2 };
+const byLag = m => m < FRESH.good ? 'good' : m < FRESH.warn ? 'warn' : 'crit';
+const statusOf = s => { const p = byLag(s.lagMin); return RANK[s.status] > RANK[p] ? s.status : p; };
+const ST_LABEL = { good: 'سالم', warn: 'با تأخیر', crit: 'بحرانی' };
+const ISSUE = { open: { key: 'crit', label: 'باز' }, in_progress: { key: 'warn', label: 'در حال رفع' }, done: { key: 'good', label: 'رفع شد' } };
+const src = k => ops.ingestion.find(s => s.key === k);
+// wall-clock time of the newest record that has arrived
+function lastData(lagMin) {
+  let t = C.nowMinutes - lagMin, d = 0;
+  while (t < 0) { t += 1440; d++; }
+  return UI.esc(UI.agoDays(d)) + ' ' + UI.clock(t);
+}
+
+const AFFECTED = [
+  { href: 'customers.html', label: 'همهٔ مشتریان', src: 'behavior', what: 'ستون‌های «آخرین فعالیت» و «روند ۳۰ روز»' },
+  { href: 'health.html', label: 'سلامت و ریسک', src: 'behavior', what: 'مؤلفهٔ «فعالیت» امتیاز سلامت؛ کار این چند ساعت هنوز حساب نشده' },
+  { href: 'features.html', label: 'استفاده از قابلیت‌ها', src: 'behavior', what: 'استفادهٔ قابلیت‌ها در بازهٔ تأخیر ناقص است' },
+  { href: 'journey.html', label: 'نقشهٔ مسیر مشتری', src: 'behavior', what: 'پذیرش دعوت و دیدن صفحهٔ قیمت' },
+  { href: 'funnel.html', label: 'قیف تبدیل', src: 'clarity', what: 'پلهٔ «بازدید سایت» — بازدیدهای امروز هنوز نرسیده' },
+  { href: 'acquisition.html', label: 'منابع جذب', src: 'clarity', what: 'بازدید هر منبع و نرخ ثبت‌نام امروز' },
+];
+
+UI.page({
+  id: 'data', title: 'سلامت داده',
+  sub: 'هر منبع داده چقدر تازه و کامل است و کدام صفحه‌ها از تأخیرش اثر می‌گیرند',
+  render(ctx) {
+    const B = ctx.body;
+    const S = ops.ingestion.map(s => Object.assign({}, s, { st: statusOf(s) }));
+    const good = S.filter(s => s.st === 'good');
+    const worst = S.slice().sort((p, q) => q.lagMin - p.lagMin)[0];
+    const dropped = S.reduce((t, s) => t + s.dropped24, 0);
+    const dropSrc = S.filter(s => s.dropped24 > 0);
+    const openN = ops.knownIssues.filter(i => i.status === 'open').length, progN = ops.knownIssues.filter(i => i.status === 'in_progress').length;
+
+    let h = '<div class="kpis">' +
+      UI.kpi({ label: 'منابع سالم', value: UI.n(good.length), unit: 'از ' + UI.n(S.length), cmp: S.filter(s => s.st !== 'good').map(s => UI.esc(s.desc) + ' ' + ST_LABEL[s.st]).join(' · ') || 'همه به‌روزند' }) +
+      UI.kpi({ label: 'بیشترین تأخیر', value: UI.lagText(worst.lagMin), cmp: UI.esc(worst.desc) + ' · <span class="mono">' + UI.esc(worst.name) + '</span>' }) +
+      UI.kpi({ label: 'رویداد گم‌شده در ۲۴ ساعت', value: UI.n(dropped), cmp: dropSrc.length ? 'همه از ' + dropSrc.map(s => UI.esc(s.desc)).join('، ') : 'چیزی گم نشده' }) +
+      UI.kpi({ label: 'مشکل شناخته‌شدهٔ باز', value: UI.n(openN + progN), cmp: UI.n(openN) + ' باز · ' + UI.n(progN) + ' در حال رفع', href: '#issues' }) +
+      '</div>';
+
+    // --- sources
+    h += UI.card({ title: 'منبع‌های داده', hint: 'تأخیر = فاصلهٔ تازه‌ترین رکورد رسیده تا الان', flush: true,
+      body: '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>منبع</th><th>وضعیت</th><th class="num">تأخیر</th><th class="num">گم‌شده در ۲۴ ساعت</th><th>تازه‌ترین داده</th><th class="num">نرخ دریافت</th></tr></thead><tbody>' +
+        S.map(s => '<tr><td><b class="mono">' + UI.esc(s.name) + '</b><span class="s">' + UI.esc(s.desc) + '</span></td>' +
+          '<td>' + UI.statusBadge(s.st, ST_LABEL[s.st]) + '</td>' +
+          '<td class="num"><b>' + UI.lagText(s.lagMin) + '</b></td>' +
+          '<td class="num">' + (s.dropped24 ? '<b style="color:var(--crit-ink)">' + UI.n(s.dropped24) + '</b>' : '<span class="faint">۰</span>') + '</td>' +
+          '<td class="nowrap">' + lastData(s.lagMin) + '</td>' +
+          '<td class="num">' + (s.rate == null ? '<span class="muted">یک‌بار در روز</span>' : UI.n(s.rate, 1) + ' <span class="muted">در ثانیه</span>') + '</td></tr>').join('') +
+        '</tbody></table></div>' });
+
+    // --- expected vs received
+    const E = ops.eventsHourly;                               // oldest → newest, h = hours ago
+    const nowHr = Math.floor(C.nowMinutes / 60);
+    const hrOf = x => ((nowHr - x.h) % 24 + 24) % 24;
+    const dayOf = x => x.h <= nowHr ? 'امروز' : x.h <= nowHr + 24 ? 'دیروز' : 'پریروز';
+    const brk = E.filter(x => x.received < x.expected * 0.9);
+    const breakH = brk.length ? Math.max(...brk.map(x => x.h)) : null;
+    const cap = brk.length ? Math.max(...brk.map(x => x.received)) : null;
+    const miss24 = E.filter(x => x.h < 24).reduce((t, x) => t + x.expected - x.received, 0);
+    const beh = src('behavior');
+    const queuedGap = Math.max(0, miss24 - beh.dropped24);
+
+    const pill = s => '<span class="fresh' + (statusOf(s) === 'crit' ? ' bad' : '') + '">' + UI.statusDot(statusOf(s)) + (statusOf(s) === 'crit' ? 'داده با ' + UI.lagText(s.lagMin) + ' تأخیر' : 'به‌روز · ' + UI.lagText(s.lagMin) + ' پیش') + '</span>';
+    const exampleOf = k => S.find(s => s.st === k);
+    const policyRow = (k, rule, effect) => { const ex = exampleOf(k);
+      return '<div class="li" style="align-items:flex-start">' + UI.statusBadge(k, ST_LABEL[k]) + '<span class="main"><span class="t">' + rule + '</span><span class="d" style="white-space:normal">' + effect + '</span></span>' +
+        (ex ? '<span class="end">' + pill(ex) + '</span>' : '') + '</div>'; };
+
+    h += '<div class="grid g-main">' +
+      UI.card({ title: 'رویدادهای رفتاری: مورد انتظار و دریافتی', hint: 'ساعتی · ۴۸ ساعت',
+        body: '<div id="c-ev"></div><div class="legend" style="margin-top:8px"><span class="k"><i class="ln" style="background:var(--deemph)"></i>مورد انتظار</span><span class="k"><i class="ln" style="background:var(--series-1)"></i>دریافتی</span></div>',
+        foot: breakH != null ? '<span>از ' + UI.fa(breakH) + ' ساعت پیش دریافت روی ' + UI.n(cap) + ' رویداد در ساعت (' + UI.n(cap / 3600, 1) + ' در ثانیه) سقف خورده · کسری ۲۴ ساعت: ' + UI.n(miss24) + ' — ' + UI.n(beh.dropped24) + ' گم‌شده، ' + UI.n(queuedGap) + ' هنوز در صف</span><a href="#issues" class="nowrap">علت‌ها</a>' : '<span>دریافت با انتظار هم‌خوان است</span>' }) +
+      UI.card({ title: 'سیاست تازگی داده', hint: 'برچسب بالای هر صفحه', flush: true,
+        body: '<div class="note" style="padding:0 16px 4px">برچسب تازگی در نوار بالا، بدترین تأخیرِ منبع‌هایی را نشان می‌دهد که همان صفحه از آن‌ها عدد می‌گیرد. روی آن بزنید تا به همین صفحه برسید.</div>' +
+          '<div class="list" style="padding:0 16px">' +
+            policyRow('good', 'کمتر از ' + UI.lagText(FRESH.good), 'عددها قابل اتکا هستند.') +
+            policyRow('warn', 'کمتر از ' + UI.fa(FRESH.warn / 60) + ' ساعت', 'روندها درست است ولی عدد امروز هنوز کامل نیست.') +
+            policyRow('crit', UI.fa(FRESH.warn / 60) + ' ساعت یا بیشتر', 'برچسب قرمز می‌شود و روی صفحه نوار هشدار می‌آید؛ برای تصمیم امروز به این عددها تکیه نکنید.') +
+          '</div>' }) +
+      '</div>';
+
+    // --- issues + affected pages
+    const owners = {}; ops.knownIssues.forEach(i => { owners[i.owner] = (owners[i.owner] || 0) + 1; });
+    h += '<div class="grid g2">' +
+      UI.card({ id: 'issues', title: 'مشکل‌های شناخته‌شده', hint: UI.n(ops.knownIssues.length) + ' مورد', flush: true,
+        body: '<div class="list" style="padding:0 16px">' + ops.knownIssues.map(i => { const st = ISSUE[i.status] || { key: 'info', label: i.status };
+          return '<div class="li" style="align-items:flex-start"><span class="tag mono">' + UI.esc(i.id) + '</span><span class="main"><span class="t" style="white-space:normal">' + UI.esc(i.title) + '</span><span class="d" style="white-space:normal">' + UI.esc(i.impact) + '</span><span class="d">مسئول: ' + UI.esc(i.owner) + '</span></span><span class="end">' + UI.statusBadge(st.key, st.label) + '</span></div>'; }).join('') + '</div>',
+        foot: '<span>' + Object.entries(owners).map(([k, v]) => UI.esc(k) + ' ' + UI.n(v)).join(' · ') + '</span>' }) +
+      UI.card({ title: 'کدام صفحه‌ها تحت تأثیرند', hint: 'تا رفع تأخیر با احتیاط بخوانید', flush: true,
+        body: '<div class="list" style="padding:0 16px">' + AFFECTED.map(p => { const s = S.find(x => x.key === p.src);
+          return '<a class="li" href="' + p.href + '" style="align-items:flex-start"><span class="main"><span class="t">' + UI.esc(p.label) + '</span><span class="d" style="white-space:normal">' + UI.esc(p.what) + '</span><span class="d">' + UI.esc(s.desc) + ' · ' + UI.lagText(s.lagMin) + ' عقب</span></span><span class="end">' + UI.statusBadge(s.st, ST_LABEL[s.st]) + '</span>' + UI.icon('chevronL', 'faint') + '</a>'; }).join('') + '</div>',
+        foot: '<span>عددهای درآمد و پرداخت از ' + UI.esc(src('wallet').desc) + ' و ' + UI.esc(src('main').desc) + ' می‌آیند و تحت تأثیر نیستند</span>' }) +
+      '</div>';
+
+    B.innerHTML = h;
+
+    Charts.line(B.querySelector('#c-ev'), {
+      labels: E.map(x => UI.clock(hrOf(x) * 60)), tipLabels: E.map(x => dayOf(x) + ' ' + UI.clock(hrOf(x) * 60)), xTicks: 5, height: 230,
+      series: [
+        { name: 'مورد انتظار', values: E.map(x => x.expected), muted: true },
+        { name: 'دریافتی', values: E.map(x => x.received), color: 'var(--series-1)' },
+      ],
+      yFormat: v => UI.compact(v),
+    });
+  },
+});
+})();
+</script>
+</body>
+</html>

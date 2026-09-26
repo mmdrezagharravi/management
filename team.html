@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>عملکرد تیم فروش — پنل Airsheet</title>
+<link rel="stylesheet" href="shell.css">
+</head>
+<body>
+<script src="assets/data.js"></script>
+<script src="assets/charts.js"></script>
+<script src="assets/ui.js"></script>
+<script>
+(function () {
+const { accounts, CONFIG: C } = DB;
+const CUR = C.currency;
+const HISTORY = Math.max(...DB.activities.map(x => x.t)) + 1;     // days of activity history kept
+
+/* ---- helpers (page-local) */
+const sum = (list, f) => list.reduce((t, x) => t + f(x), 0);
+const mrrOn = (a, t) => { let v = 0; for (const pe of a.planEvents) { if (pe.t >= t) v = pe.mrr; else break; } return v; };
+const WON = ['won_new', 'won_expansion', 'renewed'];
+const isCall = x => x.type === 'call' || x.type === 'meeting';
+const connected = x => x.outcome === 'reached' || x.outcome === 'demo';
+// MRR a deal is worth: first purchase = its MRR, expansion = the increase, renewal = the MRR kept
+function dealMrr(x) {
+  const a = DB.byId.get(x.accountId);
+  if (x.outcome === 'won_new') return x.mrr || 0;
+  if (x.outcome === 'renewed') return mrrOn(a, x.t + 1);
+  const i = a.planEvents.findIndex(pe => pe.t === x.t && pe.kind === 'expansion');
+  return i > 0 ? a.planEvents[i].mrr - a.planEvents[i - 1].mrr : 0;
+}
+const isWorkday = d => DB.dayDate(d).getUTCDay() !== 5;          // Friday is off
+const repColor = i => 'var(--series-' + (i + 1) + ')';
+const OUT = [                                                        // ordered by how far the conversation got
+  { key: 'demo', label: DB.OUTCOME_LABEL.demo, color: 'var(--seq-600)' },
+  { key: 'reached', label: DB.OUTCOME_LABEL.reached, color: 'var(--seq-400)' },
+  { key: 'callback', label: DB.OUTCOME_LABEL.callback, color: 'var(--seq-250)' },
+  { key: 'email', label: DB.OUTCOME_LABEL.email, color: 'var(--seq-150)' },
+  { key: 'noanswer', label: DB.OUTCOME_LABEL.noanswer, color: 'var(--deemph)' },
+];
+const HOURS = [[9, 11], [11, 13], [13, 15], [15, 17]];
+const hourLabel = h => 'ساعت ' + UI.fa(h[0]) + ' تا ' + UI.fa(h[1]);
+
+UI.page({
+  id: 'team', title: 'عملکرد تیم فروش', range: true, sources: ['main', 'wallet'],
+  sub: 'تماس، ارتباط، قرارداد و دفتر مشتریان هر کارشناس — روی هر ردیف بزنید تا مشتریانش را ببینید',
+  render(ctx) {
+    const R = ctx.range, B = ctx.body;
+    const since = Math.min(R, HISTORY), capped = R > HISTORY;
+    let wd = 0; for (let d = 0; d < since; d++) if (isWorkday(d)) wd++;
+    const acts = DB.activities.filter(x => x.t < since);
+
+    const rows = C.reps.map((r, i) => {
+      const mine = acts.filter(x => x.rep === r.id);
+      const calls = mine.filter(isCall);
+      const conn = calls.filter(connected).length;
+      const won = mine.filter(x => WON.includes(x.outcome));
+      const lostL = mine.filter(x => x.outcome === 'lost');
+      const book = accounts.filter(a => a.paying && UI.ownerOf(a) === r.id);
+      const owned = accounts.filter(a => UI.ownerOf(a) === r.id);
+      const due = DB.tasksFor(r.id).filter(t => t.due <= 0);
+      const open = due.filter(t => { const s = UI.taskState(t.id); return !s || !s.status; }).length;
+      const outc = {}; OUT.forEach(o => { outc[o.key] = mine.filter(x => x.outcome === o.key).length; });
+      const byHour = HOURS.map(h => { const c = calls.filter(x => x.min >= h[0] * 60 && x.min < h[1] * 60 + (h[1] === 17 ? 1 : 0)); return { h, n: c.length, rate: c.length ? c.filter(connected).length / c.length : 0 }; });
+      return {
+        id: r.id, r, i, calls: calls.length, perDay: wd ? calls.length / wd : 0, conn, connRate: calls.length ? conn / calls.length : 0,
+        won: won.length, wonMrr: sum(won, dealMrr), lost: lostL.length, lostReasons: lostL.map(x => x.reason),
+        book, bookMrr: sum(book, a => a.mrr), avgHealth: book.length ? sum(book, a => a.health) / book.length : 0,
+        risk: book.filter(a => a.health < 50), renewRisk: book.filter(a => a.health < 50 && a.renewIn <= 30),
+        owned, leads: owned.filter(a => !a.paying).length, due: due.length, open, outc, byHour,
+      };
+    });
+    const T = {
+      connRate: sum(rows, x => x.conn) / Math.max(1, sum(rows, x => x.calls)),
+      riskShare: sum(rows, x => x.risk.length) / Math.max(1, sum(rows, x => x.book.length)),
+      mrr: sum(rows, x => x.bookMrr),
+    };
+    const unassigned = accounts.filter(a => (a.paying || a.segments.includes('upsell')) && !UI.ownerOf(a));
+
+    // ---- coaching: the two most useful observations per rep, each with a next step
+    function coach(s) {
+      const out = [];
+      if (s.perDay < s.r.callTarget * 0.85) out.push({ w: 3, t: 'روزی ' + UI.n(s.perDay, 1) + ' تماس و جلسه — ' + UI.pct(s.perDay / s.r.callTarget) + ' هدف ' + UI.fa(s.r.callTarget) + ' تماس. صبح‌ها یک بلوک ثابت تماس بگذارید.', href: 'today.html' });
+      if (s.connRate < T.connRate - 0.03) {
+        const best = s.byHour.filter(b => b.n >= 8).sort((p, q) => q.rate - p.rate)[0];
+        out.push({ w: 4, t: 'نرخ ارتباط ' + UI.pct(s.connRate) + ' (میانگین تیم ' + UI.pct(T.connRate) + ').' + (best && best.rate > s.connRate + 0.04 ? ' بیشترین پاسخ را ' + hourLabel(best.h) + ' گرفته (' + UI.pct(best.rate) + ') — تماس‌ها را به آن ساعت ببرید.' : ' ساعت تماس را عوض کنید و پیش از تماس پیامک بفرستید.') });
+      }
+      if (s.renewRisk.length) out.push({ w: 5 + s.renewRisk.length, t: UI.fa(s.renewRisk.length) + ' مشتری در خطر تا ۳۰ روز دیگر تمدید می‌کنند (' + UI.money(sum(s.renewRisk, a => a.mrr)) + ') — این هفته با آن‌ها تماس بگیرد.', href: 'sales.html' });
+      else if (s.risk.length >= 3 && s.risk.length / Math.max(1, s.book.length) > T.riskShare) out.push({ w: 3, t: UI.fa(s.risk.length) + ' مشتری در خطر در دفترش (' + UI.pct(s.risk.length / s.book.length) + '، تیم ' + UI.pct(T.riskShare) + ') — تمدیدها را اولویت دهد.', href: 'customers.html?view=risk&owner=' + s.id });
+      if (s.open > s.r.callTarget) out.push({ w: 2, t: UI.fa(s.open) + ' کار امروز هنوز باز است؛ بیش از ظرفیت روزانه — چند سرنخ ارتقا را به همکار بدهید.', href: 'customers.html?view=upsell&owner=' + s.id });
+      if (s.lost >= 2) {
+        const cnt = {}; s.lostReasons.forEach(x => { cnt[x] = (cnt[x] || 0) + 1; });
+        const top = Object.entries(cnt).sort((p, q) => q[1] - p[1])[0];
+        out.push({ w: 2 + s.lost, t: UI.fa(s.lost) + ' مشتری از دست رفت؛ دلیل غالب «' + UI.esc(top[0]) + '». در جلسهٔ هفتگی مرور کنید.', href: 'sales.html?tab=winback' });
+      }
+      if (!out.length) out.push({ w: 0, t: 'بالای میانگین تیم در تماس و ارتباط — روش کارش را در جلسهٔ هفتگی با بقیه به اشتراک بگذارد.' });
+      return out.sort((p, q) => q.w - p.w).slice(0, 2);
+    }
+
+    let h = '';
+    if (capped) h += '<div class="banner info">' + UI.icon('info') + '<div>بازهٔ ' + UI.fa(R) + ' روز انتخاب شده، ولی تاریخچهٔ تماس‌ها فقط ' + UI.fa(HISTORY) + ' روز نگه داشته می‌شود؛ عددهای فعالیت و قرارداد، ' + UI.fa(since) + ' روز اخیر را نشان می‌دهند.</div></div>';
+
+    h += UI.card({ title: 'جدول تیم', hint: UI.fa(since) + ' روز اخیر · ' + UI.fa(wd) + ' روز کاری', flush: true, body: '<div id="t-lb"></div>',
+      foot: '<span>قرارداد موفق = خرید اول + ارتقا + تمدید · دفتر و کارهای امروز همین حالا</span><a class="nowrap" href="customers.html?view=unassigned">سرنخ‌های بدون مسئول</a>' });
+
+    // ---- activity + workload
+    const days = []; for (let d = 29; d >= 0; d--) if (isWorkday(d)) days.push(d);
+    const maxRep = rows.slice().sort((p, q) => q.bookMrr - p.bookMrr)[0], minRep = rows.slice().sort((p, q) => p.bookMrr - q.bookMrr)[0];
+    const ratio = minRep.bookMrr ? maxRep.bookMrr / minRep.bookMrr : 0;
+    h += '<div class="grid g-main">' +
+      UI.card({ title: 'فعالیت در هر روز کاری', hint: '۳۰ روز اخیر · تماس، جلسه و ایمیل',
+        body: '<div id="c-act"></div><div class="legend" style="margin-top:8px">' + rows.map(s => '<span class="k"><i class="sw" style="background:' + repColor(s.i) + '"></i>' + UI.esc(s.r.name) + '</span>').join('') + '</div>',
+        foot: '<span>جمعه‌ها تعطیل؛ پنجشنبه‌ها نیمه‌وقت</span><a class="nowrap" href="today.html">کارهای امروز</a>' }) +
+      UI.card({ title: 'توازن بار کاری', hint: 'حساب‌ها و درآمد ماهانهٔ هر نفر',
+        body: '<div class="muted" style="font-size:11.5px;font-weight:700;margin-bottom:2px">حساب‌های تحت مسئولیت</div><div id="c-wl-n"></div>' +
+          '<div class="muted" style="font-size:11.5px;font-weight:700;margin:12px 0 2px">درآمد ماهانهٔ دفتر</div><div id="c-wl-m"></div>' +
+          '<div class="note" style="margin-top:6px">سرنخ = حساب رایگانِ آمادهٔ ارتقا یا مشتری لغوشده در ۱۲۰ روز اخیر.</div>' +
+          '<div class="banner' + (unassigned.length ? '' : ' info') + '" style="margin-top:12px;align-items:center">' + UI.icon(unassigned.length ? 'alert' : 'check') + '<div style="flex:1">' + (unassigned.length ? '<b>' + UI.fa(unassigned.length) + ' سرنخ بدون مسئول</b> — ' + (ratio > 1.4 ? 'به ' + UI.esc(minRep.r.short) + ' بدهید که دفتر سبک‌تری دارد.' : 'بین تیم پخش کنید.') : 'همهٔ سرنخ‌ها مسئول دارند.') + '</div>' +
+          (unassigned.length ? '<a class="btn sm" style="text-decoration:none" href="customers.html?view=unassigned">تعیین مسئول</a>' : '') + '</div>',
+        foot: ratio > 1.4 ? '<span>دفتر ' + UI.esc(maxRep.r.short) + ' ' + UI.n(ratio, 1) + ' برابر ' + UI.esc(minRep.r.short) + ' است</span>' : '<span>بار کاری متوازن است</span>' }) +
+      '</div>';
+
+    // ---- outcome mix + coaching
+    h += '<div class="grid g2">' +
+      UI.card({ title: 'نتیجهٔ تماس‌ها', hint: UI.fa(since) + ' روز اخیر · از دمو تا بی‌پاسخ',
+        body: rows.map(s => '<div style="padding:8px 0;border-bottom:1px solid var(--grid)"><div class="row between" style="margin-bottom:6px"><span class="row"><i class="dot" style="background:' + repColor(s.i) + ';border-radius:3px"></i><b>' + UI.esc(s.r.name) + '</b></span><span class="muted" style="font-size:11.5px">' + UI.n(sum(OUT, o => s.outc[o.key])) + ' تماس و پیام · ارتباط ' + UI.pct(s.connRate) + '</span></div><div id="c-out-' + s.id + '"></div></div>').join(''),
+        foot: '<span>میانگین تیم: ارتباط در ' + UI.pct(T.connRate) + ' تماس‌ها</span>' }) +
+      UI.card({ title: 'نکتهٔ مربیگری', hint: 'از روی عددهای همین صفحه', flush: true,
+        body: '<div class="list" style="padding:0 16px">' + rows.map(s => '<div class="li" style="align-items:flex-start"><span class="avatar" style="margin-top:2px;background:color-mix(in srgb,' + repColor(s.i) + ' 18%,transparent)">' + UI.esc(UI.initials(s.r.name)) + '</span><span class="main"><span class="t">' + UI.esc(s.r.name) + '</span>' +
+          coach(s).map(c => '<div style="font-size:12px;color:var(--ink-2);line-height:1.8;margin-top:2px">' + c.t + (c.href ? ' <a href="' + c.href + '" style="color:var(--accent-ink);font-weight:600;white-space:nowrap">باز کردن</a>' : '') + '</div>').join('') + '</span></div>').join('') + '</div>' }) +
+      '</div>';
+
+    B.innerHTML = h;
+
+    // ---- leaderboard
+    UI.table(B.querySelector('#t-lb'), {
+      rows, exportName: 'team', unit: 'کارشناس', pageSizes: false, sort: { key: 'wonMrr', dir: 'desc' },
+      onRow: s => { location.href = 'customers.html?owner=' + s.id; },
+      columns: [
+        { key: 'name', label: 'کارشناس', sort: s => s.r.name, render: s => '<span class="row" style="min-width:150px"><span class="avatar" style="background:color-mix(in srgb,' + repColor(s.i) + ' 18%,transparent)">' + UI.esc(UI.initials(s.r.name)) + '</span><span><b class="nm">' + UI.esc(s.r.name) + '</b><span class="s">هدف روزانه ' + UI.fa(s.r.callTarget) + ' تماس</span></span></span>', csv: s => s.r.name },
+        { key: 'calls', label: 'تماس و جلسه', num: true, render: s => '<b>' + UI.n(s.calls) + '</b><span class="s">' + UI.n(s.perDay, 1) + ' در روز</span>', csv: s => s.calls },
+        { key: 'connRate', label: 'نرخ ارتباط', num: true, title: 'صحبت شد یا دمو ÷ تماس و جلسه', render: s => '<b>' + UI.pct(s.connRate) + '</b><span class="s">' + UI.n(s.conn) + ' ارتباط</span>', csv: s => Math.round(s.connRate * 100) + '%' },
+        { key: 'wonMrr', label: 'قرارداد موفق', num: true, title: 'خرید اول: MRR کامل · ارتقا: افزایش MRR · تمدید: MRR تمدیدشده', render: s => '<b>' + UI.compact(s.wonMrr) + '</b><span class="s">' + UI.n(s.won) + ' قرارداد</span>', csv: s => s.won + ' / ' + s.wonMrr },
+        { key: 'lost', label: 'ازدست‌رفته', num: true, render: s => s.lost ? UI.n(s.lost) : '<span class="faint">—</span>', csv: s => s.lost },
+        { key: 'bookMrr', label: 'دفتر مشتریان', num: true, render: s => '<b>' + UI.compact(s.bookMrr) + '</b><span class="s">' + UI.n(s.book.length) + ' پرداخت‌کننده</span>', csv: s => s.book.length + ' / ' + s.bookMrr },
+        { key: 'avgHealth', label: 'میانگین سلامت', num: true, render: s => UI.healthScore(Math.round(s.avgHealth)), csv: s => Math.round(s.avgHealth) },
+        { key: 'risk', label: 'در خطر', num: true, sort: s => s.risk.length, render: s => s.risk.length ? '<a class="sig due" href="customers.html?view=risk&owner=' + s.id + '">' + UI.fa(s.risk.length) + ' مشتری</a>' : '<span class="faint">—</span>', csv: s => s.risk.length },
+        { key: 'open', label: 'کارهای امروز', num: true, title: 'کارهای سررسید امروز که هنوز انجام یا تعویق نشده‌اند', render: s => '<b>' + UI.n(s.open) + '</b> <span class="muted">باز از ' + UI.n(s.due) + '</span>', csv: s => s.open + '/' + s.due },
+      ],
+    });
+
+    // ---- charts
+    Charts.columns(B.querySelector('#c-act'), {
+      labels: days.map(d => UI.date(d)), tipLabels: days.map(d => UI.WEEKDAYS[DB.dayDate(d).getUTCDay()] + ' ' + UI.date(d)), height: 330, total: 'جمع',
+      series: rows.map(s => ({ name: s.r.name, color: repColor(s.i), values: days.map(d => DB.activities.filter(x => x.t === d && x.rep === s.id && x.type !== 'deal').length) })),
+    });
+    Charts.hbars(B.querySelector('#c-wl-n'), { labelWidth: 110, format: v => UI.n(v),
+      items: rows.map(s => ({ label: s.r.name, sub: UI.n(s.book.length) + ' مشتری · ' + UI.n(s.leads) + ' سرنخ', value: s.owned.length, color: repColor(s.i), href: 'customers.html?view=all&owner=' + s.id })) });
+    Charts.hbars(B.querySelector('#c-wl-m'), { labelWidth: 110, format: v => UI.compact(v),
+      items: rows.map(s => ({ label: s.r.name, value: s.bookMrr, color: repColor(s.i), note: UI.pct(T.mrr ? s.bookMrr / T.mrr : 0), href: 'customers.html?owner=' + s.id })) });
+    rows.forEach(s => Charts.stack100(B.querySelector('#c-out-' + s.id), { height: 12, format: v => UI.n(v), parts: OUT.map(o => ({ label: o.label, value: s.outc[o.key], color: o.color })) }));
+  },
+});
+})();
+</script>
+</body>
+</html>

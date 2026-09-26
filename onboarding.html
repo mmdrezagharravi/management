@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ثبت‌نام‌های تازه — پنل Airsheet</title>
+<link rel="stylesheet" href="shell.css">
+<style>
+.ck { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.ck i { width: 11px; height: 11px; border-radius: 50%; flex: none; box-sizing: border-box; border: 1.5px solid var(--axis); }
+.ck i.done { background: var(--series-1); border-color: var(--series-1); }
+.ck i.wait { border-style: dashed; border-color: var(--faint); }
+.ck b { font-size: 11.3px; color: var(--muted); font-weight: 600; margin-right: 4px; font-variant-numeric: tabular-nums; }
+#tb td.nmcol { min-width: 170px; }
+#tb tr.onb-done td:not(:last-child) { opacity: .5; }
+#list { scroll-margin-top: 70px; }
+</style>
+</head>
+<body>
+<script src="assets/data.js"></script>
+<script src="assets/charts.js"></script>
+<script src="assets/ui.js"></script>
+<script>
+(function () {
+const { accounts, CONFIG: C } = DB;
+const ACT = C.activation;
+
+/* ------------------------------------------------------------ definitions */
+// industries with the most paying customers — a signup from these is worth a call
+const payByInd = {};
+accounts.forEach(a => { if (a.paying) payByInd[a.industry] = (payByInd[a.industry] || 0) + 1; });
+const topInd = Object.entries(payByInd).sort((p, q) => q[1] - p[1]).slice(0, 2).map(x => x[0]);
+const indName = k => accounts.find(a => a.industry === k).industryName;
+const topIndNames = topInd.map(indName);
+
+const activated = a => a.milestones.activated !== undefined;
+const hasBase = a => a.milestones.firstBase !== undefined;
+const invited = a => a.invitesSent > 0 || a.milestones.team !== undefined;
+const automated = a => !!a.feat.automation || a.automations > 0;
+const week2 = a => a.wk.length > 1 && a.wk[1] === 1;
+const highPot = a => invited(a) || a.source === 'invite' || topInd.includes(a.industry);
+const stuck = a => a.age >= 3 && !activated(a);
+const lost = a => a.lastSeenDays >= 7;
+const status = a => lost(a) ? 'lost' : activated(a) ? 'act' : a.age >= 3 ? 'stuck' : 'path';
+const ST = {
+  path:  { label: 'در مسیر',     cls: 'info', o: 1 },
+  stuck: { label: 'گیر کرده',    cls: 'warn', o: 0 },
+  act:   { label: 'فعال شده',    cls: 'good', o: 2 },
+  lost:  { label: 'ازدست‌رفته', cls: 'crit', o: 3 },
+};
+const HP_DEF = 'همکار دعوت کرده، از لینک دعوت آمده، یا در صنعت ' + topIndNames.join(' / ') + ' است (بیشترین مشتری پرداخت‌کننده)';
+
+function checklist(a) {
+  const m = a.milestones;
+  return [
+    { l: 'بیس', s: hasBase(a) ? 'done' : 'open', d: hasBase(a) ? (m.firstBase ? 'روز ' + UI.fa(m.firstBase) : 'همان روز') : 'هنوز نساخته' },
+    { l: UI.fa(ACT.records) + ' رکورد', s: activated(a) ? 'done' : a.age < ACT.days ? 'wait' : 'open', d: activated(a) ? 'روز ' + UI.fa(m.activated) : a.age < ACT.days ? 'تا روز ' + UI.fa(ACT.days) + ' فرصت دارد' : 'نرسید' },
+    { l: 'دعوت همکار', s: invited(a) ? 'done' : 'open', d: invited(a) ? UI.fa(Math.max(1, a.invitesSent)) + ' دعوت' : 'هنوز نه' },
+    { l: 'اتوماسیون', s: automated(a) ? 'done' : 'open', d: automated(a) ? 'ساخته' : 'هنوز نه' },
+    { l: 'بازگشت در هفتهٔ ۲', s: week2(a) ? 'done' : a.age < 14 ? 'wait' : 'open', d: week2(a) ? 'برگشت' : a.age < 7 ? 'هنوز زود است' : a.age < 14 ? 'هفتهٔ ۲ در جریان است' : 'برنگشت' },
+  ];
+}
+function checkHtml(a) {
+  const c = checklist(a);
+  const done = c.filter(x => x.s === 'done').length;
+  const tip = c.map(x => (x.s === 'done' ? '✓ ' : x.s === 'wait' ? '… ' : '○ ') + x.l + ' — ' + x.d).join('\n');
+  return '<span class="ck" title="' + UI.esc(tip) + '">' + c.map(x => '<i class="' + x.s + '" title="' + UI.esc(x.l + ' — ' + x.d) + '"></i>').join('') + '<b>' + UI.fa(done) + '/۵</b><span class="sr">' + UI.esc(tip) + '</span></span>';
+}
+// suggested next step; `key` groups the steps so the list can be filtered by them
+const STEPS = {
+  call:   'تماس خوشامد',
+  tpl:    'ایمیل تمپلیت‌های صنعت',
+  excel:  'راهنمای ورود داده از Excel',
+  back:   'پیام بازگشت',
+  invite: 'پیشنهاد دعوت همکار',
+  auto:   'معرفی اتوماسیون',
+  plan:   'پیشنهاد پلن پایه',
+  paid:   'تماس خوشامد مشتری پرداخت‌کننده',
+  wait:   'فعلاً صبر',
+};
+function nextStep(a) {
+  const s = (key, text) => ({ key, text: text || STEPS[key] });
+  if (!activated(a) && highPot(a) && a.age >= 1) return s('call');
+  if (!hasBase(a)) return a.age >= 2 ? s('tpl', STEPS.tpl + ' ' + a.industryName) : s('wait', 'فعلاً صبر — روز ۲ بررسی شود');
+  if (!activated(a)) return s('excel');
+  if (lost(a)) return s('back', 'پیام بازگشت با نمونهٔ ' + a.industryName);
+  if (!invited(a)) return s('invite');
+  if (!automated(a)) return s('auto', 'معرفی اتوماسیون با یک نمونهٔ آماده');
+  return a.paying ? s('paid') : s('plan');
+}
+const isDone = a => (UI.taskState('onb:' + a.id) || {}).status === 'done';
+const median = arr => { const v = arr.slice().sort((p, q) => p - q); return v.length ? v[Math.floor(v.length / 2)] : null; };
+
+UI.page({
+  id: 'onboarding', title: 'ثبت‌نام‌های تازه', range: true, sources: ['main', 'behavior'],
+  sub: 'هر حساب تازه، قدم‌هایی که برداشته و قدم بعدی پیشنهادی — روی هر ردیف بزنید تا نمای سریع باز شود',
+  render(ctx) {
+    const R = ctx.range, B = ctx.body;
+    const cohort = accounts.filter(a => a.age < R).sort((p, q) => p.age - q.age || p.lastSeenMin - q.lastSeenMin);
+    const prev = accounts.filter(a => a.age >= R && a.age < 2 * R);
+    const rate = (list, f) => list.length ? list.filter(f).length / list.length : null;
+
+    const fbN = cohort.filter(hasBase).length;
+    const mature = cohort.filter(a => a.age >= ACT.days), prevMature = prev.filter(a => a.age >= ACT.days);
+    const actRate = rate(mature, activated), actPrev = rate(prevMature, activated);
+    const fbDays = cohort.filter(hasBase).map(a => a.milestones.firstBase);
+    const med = median(fbDays);
+    const sameDay = fbDays.length ? fbDays.filter(d => d === 0).length / fbDays.length : 0;
+    const stuckL = cohort.filter(stuck);
+    const stuckLost = stuckL.filter(lost).length;
+    const hp = cohort.filter(highPot);
+    const hpStuck = hp.filter(stuck);
+    const daily = []; for (let d = R - 1; d >= 0; d--) daily.push(cohort.filter(a => a.age === d).length);
+
+    const viewHref = v => 'onboarding.html?r=' + R + '&view=' + v + '#list';
+    let h = '<div class="kpis">' +
+      UI.kpi({ label: 'ثبت‌نام در ' + UI.fa(R) + ' روز', value: UI.n(cohort.length), delta: UI.delta(cohort.length, prev.length), cmp: 'قبل: ' + UI.n(prev.length), spark: Charts.spark(daily, { bars: true, w: 76 }) }) +
+      UI.kpi({ label: 'ساختن اولین بیس', value: UI.pct(cohort.length ? fbN / cohort.length : 0), info: 'سهم ثبت‌نام‌های این بازه که دست‌کم یک بیس ساخته‌اند',
+        delta: UI.delta(cohort.length ? fbN / cohort.length : 0, rate(prev, hasBase), { points: true }), cmp: UI.fa(fbN) + ' حساب' }) +
+      UI.kpi({ label: 'فعال‌سازی', value: actRate == null ? '—' : UI.pct(actRate),
+        info: 'رسیدن به ' + UI.fa(ACT.records) + ' رکورد در ' + UI.fa(ACT.days) + ' روز اول. فقط حساب‌هایی در مخرج‌اند که دست‌کم ' + UI.fa(ACT.days) + ' روز از ثبت‌نامشان گذشته',
+        delta: actRate == null ? '' : UI.delta(actRate, actPrev, { points: true }),
+        cmp: actRate == null ? 'هنوز هیچ ثبت‌نامی ' + UI.fa(ACT.days) + ' روزه نشده' : 'فقط ' + UI.fa(mature.length) + ' حساب ' + UI.fa(ACT.days) + ' روزه به بالا' }) +
+      UI.kpi({ label: 'میانهٔ زمان تا اولین بیس', value: med == null ? '—' : med === 0 ? 'همان روز' : UI.n(med), unit: med ? 'روز' : '',
+        info: 'روزهای بین ثبت‌نام و ساختن اولین بیس، برای حساب‌هایی که بیس ساخته‌اند', cmp: UI.pct(sameDay) + ' همان روز ثبت‌نام' }) +
+      UI.kpi({ label: 'گیر کرده', value: UI.n(stuckL.length), href: viewHref('stuck'), info: 'دست‌کم ۳ روز از ثبت‌نام گذشته و هنوز فعال نشده (بیس ندارد یا به ' + UI.fa(ACT.records) + ' رکورد نرسیده)',
+        cmp: UI.fa(stuckL.length - stuckLost) + ' هنوز سر می‌زنند · ' + UI.fa(stuckLost) + ' ازدست‌رفته' }) +
+      UI.kpi({ label: 'پرپتانسیل ولی گیر کرده', value: UI.n(hpStuck.length), href: viewHref('hp'), info: 'پرپتانسیل: ' + HP_DEF,
+        cmp: 'از ' + UI.fa(hp.length) + ' حساب پرپتانسیل · تماس خوشامد' }) +
+      '</div>';
+
+    // where they stop
+    const noBase = cohort.filter(a => !hasBase(a));
+    const under = cohort.filter(a => hasBase(a) && !activated(a));
+    const noW2 = cohort.filter(a => activated(a) && a.age >= 14 && !week2(a));
+    const onTrack = cohort.length - noBase.length - under.length - noW2.length;
+    const buckets = [
+      { label: 'بیس نساخته', value: noBase.length },
+      { label: 'بیس دارد، زیر ' + UI.fa(ACT.records) + ' رکورد', value: under.length },
+      { label: 'فعال شد، هفتهٔ ۲ برنگشت', value: noW2.length },
+      { label: 'در مسیر درست', value: onTrack },
+    ];
+    // open work by suggested step (done and "wait" rows excluded) — redrawn after every «انجام شد»
+    const stepsHtml = () => {
+      const cnt = {};
+      cohort.forEach(a => { const k = nextStep(a).key; if (k !== 'wait' && !isDone(a)) cnt[k] = (cnt[k] || 0) + 1; });
+      const list = Object.entries(cnt).sort((p, q) => q[1] - p[1]).slice(0, 4);
+      return list.length ? '<div class="muted" style="font-size:11.5px;font-weight:700;margin:14px 0 2px">کارهای باز، به ترتیب تعداد</div><div class="list">' +
+        list.map(([k, n]) => '<a class="li" href="onboarding.html?r=' + R + '&nx=' + k + '#list" data-nx="' + k + '"><span class="main"><span class="t">' + UI.esc(STEPS[k]) + '</span></span><span class="end"><b>' + UI.fa(n) + '</b> حساب</span>' + UI.icon('chevronL', 'faint') + '</a>').join('') + '</div>'
+        : '<div class="note" style="margin-top:12px">کار بازی برای این بازه نمانده.</div>';
+    };
+
+    h += '<div class="grid g-main">' +
+      UI.card({ title: 'ثبت‌نام روزانه', hint: 'فعال‌سازی تا ' + UI.fa(ACT.days) + ' روز طول می‌کشد؛ ستون‌های هفتهٔ اخیر هنوز کامل نیستند',
+        body: '<div id="c-su"></div><div class="legend" style="margin-top:8px"><span class="k"><i class="sw" style="background:var(--series-1)"></i>فعال شد</span><span class="k"><i class="sw" style="background:var(--deemph)"></i>هنوز فعال نشده</span></div>' }) +
+      UI.card({ title: 'کجا می‌ایستند', hint: UI.fa(cohort.length) + ' ثبت‌نام این بازه', body: '<div id="c-stop"></div><div id="steps">' + stepsHtml() + '</div>' }) +
+      '</div>';
+
+    h += '<section class="card" id="list"><div id="tb"></div></section>' +
+      '<div class="note">«پرپتانسیل» یعنی ' + UI.esc(HP_DEF) + '. نقطه‌ها به ترتیب: بیس، ' + UI.fa(ACT.records) + ' رکورد، دعوت همکار، اتوماسیون، بازگشت در هفتهٔ ۲ — نقطهٔ خط‌چین یعنی هنوز وقتش نرسیده. «انجام شد» فقط در همین مرورگر ذخیره می‌شود.</div>';
+    B.innerHTML = h;
+
+    /* ---------------------------------------------------------- charts */
+    const labels = [], tips = [], act = [], nact = [];
+    for (let d = R - 1; d >= 0; d--) {
+      const c = cohort.filter(a => a.age === d);
+      const x = c.filter(activated).length;
+      labels.push(UI.date(d)); tips.push(UI.WEEKDAYS[DB.dayDate(d).getUTCDay()] + ' ' + UI.date(d));
+      act.push(x); nact.push(c.length - x);
+    }
+    Charts.columns(B.querySelector('#c-su'), {
+      labels, tipLabels: tips, total: 'ثبت‌نام', height: 210,
+      series: [{ name: 'فعال شد', values: act, color: 'var(--series-1)' }, { name: 'هنوز فعال نشده', values: nact, color: 'var(--deemph)' }],
+    });
+    Charts.hbars(B.querySelector('#c-stop'), { labelWidth: 150, format: v => UI.n(v),
+      items: buckets.map(b => ({ label: b.label, value: b.value, note: UI.pct(cohort.length ? b.value / cohort.length : 0) })) });
+
+    /* ---------------------------------------------------------- table */
+    const tbEl = B.querySelector('#tb');
+    const t = UI.table(tbEl, {
+      rows: cohort, url: true, select: true, exportName: 'onboarding-' + R + 'd', unit: 'ثبت‌نام',
+      views: [
+        { key: 'all', label: 'همه', test: null },
+        { key: 'stuck', label: 'گیر کرده', test: stuck },
+        { key: 'hp', label: 'پرپتانسیل', test: highPot },
+        { key: 'act', label: 'فعال شده', test: activated },
+      ],
+      defaultView: 'all',
+      sort: { key: 'signup', dir: 'asc' },
+      search: { placeholder: 'نام، شخص، شماره یا شهر…', text: a => a.name + ' ' + a.contact.first + ' ' + a.contact.last + ' ' + a.contact.mobile + ' ' + a.city + ' ' + a.industryName },
+      filters: [
+        { key: 'st', label: 'وضعیت', options: Object.keys(ST).map(k => ({ v: k, l: ST[k].label })), test: (a, v) => status(a) === v },
+        { key: 'src', label: 'منبع', options: C.sources.map(s => ({ v: s.key, l: s.name })), test: (a, v) => a.source === v },
+        { key: 'nx', label: 'قدم بعدی', options: Object.keys(STEPS).map(k => ({ v: k, l: STEPS[k] })), test: (a, v) => nextStep(a).key === v },
+      ],
+      rowClass: a => isDone(a) ? 'onb-done' : '',
+      onRow: a => UI.openAccount(a.id),
+      columns: [
+        { key: 'name', label: 'حساب', cls: 'nmcol', render: a => UI.acctCell(a, { sub: UI.esc(DB.source(a.source).name) + ' · ' + UI.esc(a.city) }), csv: a => a.name },
+        { key: 'signup', label: 'ثبت‌نام', sort: a => a.age, render: a => '<span class="nowrap">' + UI.date(a.age) + '</span><span class="s">' + UI.agoDays(a.age) + '</span>', csv: a => UI.date(a.age) },
+        { key: 'check', label: 'قدم‌ها', sort: a => checklist(a).filter(x => x.s === 'done').length, desc: true, render: checkHtml,
+          csv: a => checklist(a).filter(x => x.s === 'done').map(x => x.l).join(' / ') },
+        { key: 'status', label: 'وضعیت', sort: a => ST[status(a)].o, render: a => UI.statusBadge(ST[status(a)].cls, ST[status(a)].label), csv: a => ST[status(a)].label },
+        { key: 'lastSeen', label: 'آخرین فعالیت', sort: a => -a.lastSeenMin, desc: true, render: a => UI.lastSeen(a), csv: a => a.lastSeenDays },
+        { key: 'next', label: 'قدم بعدی پیشنهادی', sort: a => nextStep(a).key, render: a => { const s = nextStep(a); return '<span style="font-weight:' + (s.key === 'wait' ? '400;color:var(--muted)' : '600') + (isDone(a) ? ';text-decoration:line-through' : '') + '">' + UI.esc(s.text) + '</span>' + (highPot(a) ? '<span class="s">پرپتانسیل</span>' : ''); }, csv: a => nextStep(a).text },
+        { key: 'owner', label: 'مسئول', sort: a => UI.ownerOf(a) || 'zz', render: a => UI.repName(UI.ownerOf(a), true), csv: a => { const o = UI.ownerOf(a); return o ? DB.rep(o).name : ''; } },
+        { key: 'done', label: '', sort: false, csv: false, render: a => isDone(a)
+          ? '<button class="btn sm ghost good" data-undo="' + a.id + '" title="برگرداندن به کارهای باز">' + UI.icon('check') + 'انجام شد</button>'
+          : nextStep(a).key === 'wait' ? '' : '<button class="btn sm" data-done="' + a.id + '">' + UI.icon('check') + 'انجام شد</button>' },
+      ],
+      bulk: [],
+      bulkWire(el, sel, done) {
+        const bar = el.querySelector('.bulkbar'); if (!bar) return;
+        const s = document.createElement('span'); s.className = 'row'; s.style.gap = '6px';
+        s.innerHTML = '<select class="select" style="height:27px;font-size:12px"><option value="">تعیین مسئول…</option>' + C.reps.map(r => '<option value="' + r.id + '">' + UI.esc(r.name) + '</option>').join('') + '<option value="__none">بدون مسئول</option></select>';
+        bar.insertBefore(s, bar.querySelector('[data-unsel]'));
+        s.querySelector('select').onchange = ev => {
+          const v = ev.target.value; if (!v) return;
+          const rows = sel();
+          UI.setOwner(rows.map(a => a.id), v === '__none' ? null : v);
+          UI.toast(UI.fa(rows.length) + ' حساب به ' + (v === '__none' ? 'بدون مسئول' : DB.rep(v).name) + ' داده شد');
+          done();
+        };
+      },
+    });
+    UI.setListNav({ move: d => t.moveFocus(d), open: () => t.openFocus() });
+
+    const setDone = (id, on) => {
+      const a = DB.byId.get(+id), s = nextStep(a);
+      UI.setTask('onb:' + a.id, { status: on ? 'done' : null, step: s.key });
+      t.redraw();
+      B.querySelector('#steps').innerHTML = stepsHtml();
+      if (on) UI.toast('«' + s.text + '» برای ' + a.name + ' انجام شد', () => { UI.setTask('onb:' + a.id, { status: null }); t.redraw(); B.querySelector('#steps').innerHTML = stepsHtml(); });
+      else UI.toast('دوباره در کارهای باز: ' + a.name);
+    };
+    tbEl.addEventListener('click', ev => {
+      const d = ev.target.closest('[data-done]'); if (d) { setDone(d.dataset.done, true); return; }
+      const u = ev.target.closest('[data-undo]'); if (u) setDone(u.dataset.undo, false);
+    });
+    // KPI tiles and the step list filter the table in place instead of reloading
+    B.addEventListener('click', ev => {
+      const l = ev.target.closest('a.kpi, a[data-nx]');
+      if (!l || ev.ctrlKey || ev.metaKey) return;
+      const sp = new URL(l.href, location.href).searchParams;
+      const v = sp.get('view'), nx = sp.get('nx');
+      if (!v && !nx) return;
+      ev.preventDefault();
+      const st = t.state;
+      st.view = v || 'all'; st.f.nx = nx || ''; st.page = 0; st.focus = -1;
+      UI.setParam('view', st.view === 'all' ? null : st.view); UI.setParam('nx', st.f.nx || null);
+      t.redraw();
+      B.querySelector('#list').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  },
+});
+})();
+</script>
+</body>
+</html>

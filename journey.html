@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>نقشهٔ مسیر مشتری — پنل Airsheet</title>
+<link rel="stylesheet" href="shell.css">
+<style>
+  .jm { table-layout: fixed; min-width: 1120px; }
+  .jm th.rh, .jm td.rh { width: 118px; position: sticky; right: 0; background: var(--surface); z-index: 2; box-shadow: -1px 0 0 var(--grid); }
+  .jm thead th { white-space: normal; color: var(--ink); font-size: 12.5px; }
+  .jm thead th .n { display: block; font-size: 10.5px; color: var(--faint); font-weight: 600; }
+  .jm tbody td { vertical-align: top; font-size: 12px; line-height: 1.75; color: var(--ink-2); }
+  .jm td.rh b { display: block; color: var(--ink); font-size: 12.3px; }
+  .jm td.rh .tag { margin-top: 4px; height: auto; padding: 2px 6px; font-size: 10.5px; white-space: normal; line-height: 1.45; }
+  .jm .tag.lv { background: var(--accent-wash); color: var(--accent-ink); }
+  .jm tr.lvrow td:not(.rh) { background: var(--surface-2); }
+  .jm .big { display: block; font-size: 17px; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; line-height: 1.35; }
+  .jm .cap { display: block; font-size: 11px; color: var(--muted); }
+</style>
+</head>
+<body>
+<script src="assets/data.js"></script>
+<script src="assets/charts.js"></script>
+<script src="assets/ui.js"></script>
+<script>
+(function () {
+const { agg, accounts, CONFIG: C } = DB;
+const MATURE = 30;                        // same cohort rule as the funnel page
+
+// eight stages; the manual rows are reviewed every quarter by the owners listed
+const STAGES = [
+  { key: 'visit', label: 'آگاهی', owner: 'بازاریابی', src: 'Clarity · بازدید سایت',
+    job: 'دنبال راهی است که اکسل‌ها و پیام‌های پراکندهٔ کارش را یک‌جا جمع کند', touch: 'گوگل، اینستاگرام، تلگرام، تبلیغات کلیکی، صفحهٔ قالب‌ها',
+    pain: 'فرق «بیس» با یک فایل اکسل روشن نیست؛ مثال صنف خودش را نمی‌بیند', fix: 'صفحهٔ فرود جدا برای هر صنف با قالب آماده و ویدئوی ۶۰ ثانیه‌ای' },
+  { key: 'signup', label: 'ثبت‌نام', owner: 'محصول', src: 'حساب‌ها (main)',
+    job: 'با موبایل حساب می‌سازد و کد تأیید را وارد می‌کند', touch: 'فرم ثبت‌نام، پیامک تأیید',
+    pain: 'پیامک تأیید گاهی دیر می‌رسد و کاربر صفحه را می‌بندد', fix: 'ورود با گوگل و ارسال دوبارهٔ خودکار کد بعد از ۳۰ ثانیه' },
+  { key: 'firstBase', label: 'اولین بیس', owner: 'محصول', src: 'بیس‌ها (main)',
+    job: 'قالب انتخاب می‌کند یا فایل Excel خودش را وارد می‌کند', touch: 'گالری قالب، ورود از Excel، ویدئوی شروع',
+    pain: 'صفحهٔ خالی؛ قالب‌ها با کار واقعی‌اش جور نیستند', fix: 'پرسیدن صنف در ثبت‌نام و باز کردن قالب همان صنف به‌عنوان اولین بیس' },
+  { key: 'activated', label: 'فعال‌سازی', owner: 'موفقیت مشتری', src: 'رکوردها (main)',
+    job: 'دادهٔ واقعی وارد می‌کند، فیلد و نما می‌سازد', touch: 'راهنمای درون‌برنامه، ایمیل روز دوم، چت پشتیبانی',
+    pain: 'ورود Excel با تاریخ شمسی و سلول‌های ادغام‌شده خطا می‌دهد', fix: 'جادوگر ورود با تشخیص تاریخ شمسی؛ تماس کارشناس در روز سوم' },
+  { key: 'habit', label: 'عادت', owner: 'محصول', src: 'رفتار کاربر (behavior)',
+    job: 'هر هفته برمی‌گردد، همکار دعوت می‌کند، فرم یا اتوماسیون می‌سازد', touch: 'اعلان‌ها، ایمیل خلاصهٔ هفتگی، دعوت همکار',
+    pain: 'بدون اتوماسیون و یادآور، دلیلی برای برگشتن ندارد', fix: 'ساخت اولین اتوماسیون در آنبوردینگ و ایمیل «هفتهٔ شما در Airsheet»' },
+  { key: 'paid', label: 'پرداخت', owner: 'فروش', src: 'پرداخت‌ها (WALLET)',
+    job: 'به سقف رکورد یا صندلی می‌خورد، پلن‌ها را مقایسه می‌کند و پرداخت می‌کند', touch: 'پیام سقف پلن، صفحهٔ قیمت، درگاه پرداخت، تماس فروش',
+    pain: 'سقف ۱۰۰۰ رکورد ناگهان کار را قفل می‌کند؛ قیمت صندلی‌محور گیج‌کننده است', fix: 'هشدار در ۸۰٪ سقف با پیشنهاد پلن و تخفیف ماه اول' },
+  { key: 'renew', label: 'تمدید و گسترش', owner: 'فروش', src: 'فاکتورها و تغییر پلن (WALLET)',
+    job: 'تمدید می‌کند، صندلی اضافه می‌کند و تیم‌های دیگر را می‌آورد', touch: 'یادآور تمدید، فاکتور، کارشناس فروش',
+    pain: 'پرداخت ناموفق چند روز دیده نمی‌شود؛ ارزش پلن بالاتر روشن نیست', fix: 'یادآور ۷ روز پیش از تمدید و تماس کارشناس با حساب‌های کم‌سلامت' },
+  { key: 'refer', label: 'معرفی', owner: 'بازاریابی', src: 'منبع ثبت‌نام (main)',
+    job: 'لینک دعوت یا فرم اشتراکی را برای همکار و مشتری خودش می‌فرستد', touch: 'لینک دعوت، نمای اشتراکی، فرم عمومی',
+    pain: 'دعوت‌کننده سودی نمی‌برد؛ فرم عمومی نشانی از Airsheet ندارد', fix: 'یک ماه رایگان برای دعوت‌کننده وقتی دعوت‌شده پرداخت کند' },
+];
+
+UI.page({
+  id: 'journey', title: 'نقشهٔ مسیر مشتری', range: true, sources: ['clarity', 'main', 'behavior', 'wallet'],
+  get sub() {
+    const R = UI.range();
+    return 'از آگاهی تا معرفی — عددها زنده‌اند و با «قیف تبدیل» یکی‌اند (ثبت‌نام‌های ' + UI.fa(MATURE) + ' تا ' + UI.fa(MATURE + R) + ' روز پیش)؛ متن‌ها هر فصل بازبینی می‌شوند';
+  },
+  render(ctx) {
+    const R = ctx.range, B = ctx.body;
+    const f = agg.funnel(MATURE, R); const K = {}; f.forEach(s => { K[s.key] = s; });
+
+    // post-purchase: renewals that fell due in the last 90 days (paid, failed, or churned instead)
+    let due = 0, renewed = 0;
+    for (const a of accounts) {
+      a.invoices.forEach((inv, i) => { if (i > 0 && inv.t < 90) { due++; if (inv.status === 'paid') renewed++; } });
+      a.planEvents.forEach(pe => { if (pe.kind === 'churn' && pe.t < 90) due++; });
+    }
+    const paying = accounts.filter(a => a.paying);
+    const expanded = paying.filter(a => a.planEvents.some(pe => pe.kind === 'expansion' && pe.t < 90)).length;
+    const su = agg.signups(0, R);
+    const invited = accounts.filter(a => a.source === 'invite' && a.age < R).length;
+
+    const md = d => d == null ? '—' : UI.fa(d) + ' روز';
+    const num = (v, cap) => '<span class="big">' + v + '</span><span class="cap">' + cap + '</span>';
+    const live = {
+      visit:     { n: num(UI.n(K.visit.n), 'بازدید در بازهٔ کوهورت'), rate: '—', med: '—' },
+      signup:    { n: num(UI.n(K.signup.n), 'ثبت‌نام'), rate: UI.pct(K.signup.fromPrev, 1) + ' <span class="faint">از بازدید</span>', med: 'همان روز' },
+      firstBase: { n: num(UI.n(K.firstBase.n), 'بیس ساخته‌اند'), rate: UI.pct(K.firstBase.fromPrev), med: md(K.firstBase.medianDays) },
+      activated: { n: num(UI.n(K.activated.n), 'فعال شده‌اند'), rate: UI.pct(K.activated.fromPrev), med: md(K.activated.medianDays) },
+      habit:     { n: num(UI.n(K.habit.n), 'به عادت رسیده‌اند'), rate: UI.pct(K.habit.fromPrev), med: md(K.habit.medianDays) },
+      paid:      { n: num(UI.n(K.paid.n), 'پرداخت کرده‌اند'), rate: UI.pct(K.paid.fromPrev), med: md(K.paid.medianDays) },
+      renew:     { n: num(UI.pct(due ? renewed / due : 0), 'تمدید موفق · ' + UI.n(renewed) + ' از ' + UI.n(due)) + '<span class="cap" style="margin-top:4px"><b style="color:var(--ink)">' + UI.n(expanded) + '</b> حساب ارتقا گرفته (۹۰ روز)</span>',
+                   rate: UI.pct(due ? renewed / due : 0) + ' <span class="faint">تمدید</span>', med: '—' },
+      refer:     { n: num(UI.n(invited), 'ثبت‌نام با دعوت · ' + UI.fa(R) + ' روز'), rate: UI.pct(su ? invited / su : 0) + ' <span class="faint">از ثبت‌نام‌ها</span>', med: '—' },
+    };
+    // weakest transition inside the account funnel
+    const tr = ['firstBase', 'activated', 'habit', 'paid'];
+    const weakest = tr.slice().sort((p, q) => K[p].fromPrev - K[q].fromPrev)[0];
+
+    const MAN = '<span class="tag">دستی · بازبینی فصلی</span>', LIVE = '<span class="tag lv">زنده</span>';
+    const row = (label, tag, cell, cls) => '<tr class="' + (cls || '') + '"><td class="rh"><b>' + label + '</b>' + tag + '</td>' + STAGES.map(s => '<td>' + cell(s) + '</td>').join('') + '</tr>';
+    const map = '<div class="tbl-wrap"><table class="tbl jm"><thead><tr><th class="rh">مرحله</th>' + STAGES.map((s, i) => '<th><span class="n">' + UI.fa(i + 1) + '</span>' + s.label + '</th>').join('') + '</tr></thead><tbody>' +
+      row('کار مشتری', MAN, s => UI.esc(s.job)) +
+      row('نقاط تماس', MAN, s => UI.esc(s.touch)) +
+      row('عدد واقعی', LIVE, s => live[s.key].n, 'lvrow') +
+      row('نرخ عبور', LIVE, s => '<b style="color:var(--ink)">' + live[s.key].rate + '</b>' + (s.key === weakest ? '<br><span class="badge st-crit" style="height:19px;margin-top:3px"><i class="dot"></i>ضعیف‌ترین پله</span>' : ''), 'lvrow') +
+      row('زمان میانه', LIVE, s => live[s.key].med + (['firstBase', 'activated', 'habit', 'paid'].includes(s.key) ? ' <span class="faint">پس از ثبت‌نام</span>' : ''), 'lvrow') +
+      row('نقطهٔ درد', MAN, s => UI.esc(s.pain)) +
+      row('فرصت بهبود', MAN, s => UI.esc(s.fix)) +
+      row('مسئول', MAN, s => '<b style="color:var(--ink)">' + UI.esc(s.owner) + '</b>') +
+      row('منبع داده', '', s => '<span class="faint">' + UI.esc(s.src) + '</span>') +
+      '</tbody></table></div>';
+
+    // ------------------------------------------------ friction ranking
+    const steps = f.slice(1);
+    const drops = steps.slice(1).map((s, i) => ({ from: steps[i], to: s, lost: steps[i].n - s.n, rate: 1 - s.fromPrev, st: STAGES.find(x => x.key === s.key) }))
+      .sort((p, q) => q.lost - p.lost).slice(0, 3);
+    const friction = UI.card({ title: 'سه اصطکاک بزرگ', hint: 'به ترتیب حساب‌های ازدست‌رفته در همین کوهورت', flush: true,
+      body: '<div class="list" style="padding:0 16px">' + drops.map((d, i) =>
+        '<div class="li" style="align-items:flex-start"><span class="hero" style="font-size:22px;min-width:26px;color:var(--faint)">' + UI.fa(i + 1) + '</span><span class="main" style="white-space:normal">' +
+        '<span class="t">«' + UI.esc(d.from.label) + '» ← «' + UI.esc(d.to.label) + '»</span>' +
+        '<span class="d" style="white-space:normal">' + UI.esc(d.st.pain) + '</span>' +
+        '<span class="d" style="white-space:normal;color:var(--ink-2)"><b>اقدام:</b> ' + UI.esc(d.st.fix) + ' · <span class="muted">' + UI.esc(d.st.owner) + '</span></span></span>' +
+        '<span class="end"><b style="font-size:15px">' + UI.n(d.lost) + '</b><div class="muted" style="font-size:11.5px">حساب · ' + UI.pct(d.rate) + ' ریزش</div></span></div>').join('') + '</div>',
+      foot: '<span>از ' + UI.n(K.signup.n) + ' ثبت‌نام کوهورت</span><a href="funnel.html">قیف کامل</a>' });
+
+    // ------------------------------------------- assisted onboarding (proposed)
+    const cand = accounts.filter(a => a.age >= 1 && a.age <= 14 && a.milestones.firstBase === undefined).sort((p, q) => p.age - q.age);
+    const b2a = K.activated.fromPrev;
+    const gain = Math.round(cand.length / 2 * b2a);
+    const assisted = UI.card({ title: 'مرحلهٔ پیشنهادی: راه‌اندازی همراه', acts: '<span class="badge st-info"><i class="dot"></i>پیشنهاد</span>',
+      body: '<div class="prose">بین «ثبت‌نام» و «اولین بیس»: کارشناس توسعهٔ کسب‌وکار در یک تماس ۳۰ دقیقه‌ای، اولین بیس را با دادهٔ خود مشتری می‌سازد. ' +
+        'الان <b>' + UI.n(cand.length) + ' حساب</b> در دو هفتهٔ اخیر ثبت‌نام کرده‌اند و هنوز بیسی ندارند. با نرخ فعلی «بیس ← فعال‌سازی» (' + UI.pct(b2a) + ')، اگر برای نیمی از آن‌ها بیس ساخته شود، حدود <b>' + UI.n(gain) + ' حساب فعال</b> اضافه می‌شود.</div>' +
+        '<div class="section-title" style="margin:12px 0 2px">تازه‌ترین نامزدها</div><div class="list">' + cand.slice(0, 3).map(a =>
+          '<div class="li"><span class="main"><a class="t" href="' + UI.custLink(a) + '" data-acc="' + a.id + '">' + UI.esc(a.name) + '</a><span class="d">' + UI.esc(a.industryName) + ' · ' + UI.esc(DB.source(a.source).name) + '</span></span><span class="end muted">' + UI.agoDays(a.age) + '</span></div>').join('') + '</div>' +
+        '<div class="note" style="margin-top:8px">برای اینکه این مرحله ستون خودش را در نقشه بگیرد، بیسی که کارشناس می‌سازد باید برچسب «ساخت همراه» بخورد تا نرخ فعال‌سازی این مسیر با مسیر معمولی مقایسه شود.</div>',
+      foot: '<span>مسئول پیشنهادی: موفقیت مشتری</span><a href="onboarding.html">فهرست کامل در «ثبت‌نام‌های تازه»</a>' });
+
+    B.innerHTML = UI.card({ title: 'نقشهٔ مسیر', hint: 'ردیف‌های «زنده» از داده پر می‌شوند · روی موبایل افقی بکشید', flush: true, body: map,
+        foot: '<span>تمدید: فاکتورهای سررسیدشده در ۹۰ روز اخیر · ارتقا: ' + UI.n(expanded) + ' از ' + UI.n(paying.length) + ' مشتری پرداخت‌کننده</span><a href="funnel.html">قیف تبدیل</a>' }) +
+      '<div class="grid g2">' + friction + assisted + '</div>';
+  },
+});
+})();
+</script>
+</body>
+</html>

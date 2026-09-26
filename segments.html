@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>دسته‌بندی‌ها — پنل Airsheet</title>
+<link rel="stylesheet" href="shell.css">
+<style>#mt td.nmcol { min-width: 170px; } @media (max-width: 860px) { .seg-rule { display: none !important; } }</style>
+</head>
+<body>
+<script src="assets/data.js"></script>
+<script src="assets/charts.js"></script>
+<script src="assets/ui.js"></script>
+<script>
+(function () {
+const { accounts, agg, CONFIG: C } = DB;
+const BAND_COLOR = { good: 'var(--good)', warn: 'var(--warning)', ser: 'var(--serious)', crit: 'var(--critical)' };
+// the default sort of the member list follows what a rep does with that group
+const SEG_SORT = { upsell: { key: 'signal', dir: 'desc' }, new: { key: 'lastSeen', dir: 'desc' }, stuck: { key: 'lastSeen', dir: 'desc' } };
+const OWNED = ['upsell', 'risk', 'champions'];            // groups where an owner is expected
+
+UI.page({
+  id: 'segments', title: 'دسته‌بندی‌ها', sources: ['main', 'behavior'],
+  sub: (() => {
+    const inAny = accounts.filter(a => a.segments.length).length;
+    return UI.n(C.segments.length) + ' دستهٔ رفتاری · ' + UI.n(inAny) + ' حساب در دست‌کم یک دسته — دسته‌ها هم‌پوشانی دارند؛ روی هر دسته بزنید تا اعضایش را ببینید';
+  })(),
+  actions: () => '<a class="btn sm" href="settings.html">' + UI.icon('gear') + 'قواعد و آستانه‌ها</a>',
+  render(ctx) {
+    const B = ctx.body;
+    const segs = agg.segmentCounts();
+    const valid = k => segs.some(s => s.key === k);
+    let cur = valid(UI.param('seg')) ? UI.param('seg') : 'upsell';
+
+    const members = {};                                         // key -> accounts
+    segs.forEach(s => { members[s.key] = accounts.filter(a => a.segments.includes(s.key)); });
+    const idSets = {}; segs.forEach(s => { idSets[s.key] = new Set(members[s.key].map(a => a.id)); });
+    const isActive = a => DB.countRange(a.ev, 0, C.activeWindow) > 0;
+    const activeN = accounts.filter(isActive).length;
+    const totalMrr = accounts.reduce((t, a) => t + a.mrr, 0);
+
+    /* ---------------------------------------------------------- segment cards */
+    const healthMini = list => {
+      const dist = agg.healthDist(list);
+      const tot = list.length || 1;
+      const bar = '<div style="display:flex;gap:2px;height:8px;border-radius:4px;overflow:hidden;background:var(--grid)">' +
+        dist.filter(d => d.n).map(d => '<i title="' + UI.esc(d.label) + ': ' + UI.fa(d.n) + ' حساب" style="flex:' + d.n + ' 1 0;background:' + BAND_COLOR[d.key] + ';min-width:2px"></i>').join('') + '</div>';
+      const leg = '<div class="legend" style="margin-top:6px;gap:3px 10px;font-size:11px">' + dist.map(d => '<span class="k"><i class="sw" style="width:8px;height:8px;background:' + BAND_COLOR[d.key] + '"></i>' + UI.esc(d.label) + ' <b style="color:var(--ink)">' + UI.pct(d.n / tot) + '</b></span>').join('') + '</div>';
+      return bar + leg;
+    };
+    const cardHtml = s => {
+      const list = members[s.key];
+      const act = list.filter(isActive).length;
+      const p = x => UI.pct(x, x < 0.1 ? 1 : 0);
+      const shareTxt = s.key === 'dormant'
+        ? p(s.n / accounts.length) + ' از کل حساب‌ها'
+        : p(activeN ? act / activeN : 0) + ' از حساب‌های فعال';
+      const shareTip = s.key === 'dormant'
+        ? 'این دسته طبق تعریف فعالیتی ندارد؛ سهم از کل ' + UI.fa(accounts.length) + ' حساب'
+        : UI.fa(act) + ' عضو فعال در ' + UI.fa(C.activeWindow) + ' روز اخیر، از ' + UI.fa(activeN) + ' حساب فعال';
+      const mp = UI.compactParts(s.mrr);
+      const unassigned = OWNED.includes(s.key) ? list.filter(a => !UI.ownerOf(a)).length : 0;
+      return '<section class="card' + (s.key === cur ? ' tint-accent' : '') + '" data-card="' + s.key + '">' +
+        '<div class="card-h"><h2>' + UI.esc(s.label) + '</h2>' + (s.key === cur ? '<span class="badge st-info" data-selbadge>در فهرست پایین</span>' : '') + '</div>' +
+        '<div class="card-b stack" style="gap:9px">' +
+          '<div class="row between" style="align-items:flex-end;gap:12px">' +
+            '<div><span style="font-size:26px;font-weight:800;letter-spacing:-.6px;line-height:1.1">' + UI.n(s.n) + '</span> <span class="muted" style="font-size:12px">حساب</span></div>' +
+            '<div style="text-align:left;line-height:1.5"><div>' + (s.mrr ? '<b>' + mp.num + '</b> <span class="muted" style="font-size:11.5px">' + mp.unit + ' تومان در ماه</span>' : '<span class="faint" style="font-size:11.5px">بدون درآمد ماهانه</span>') + '</div>' +
+            '<div class="muted" style="font-size:11.5px" title="' + UI.esc(shareTip) + '">' + shareTxt + '</div></div>' +
+          '</div>' +
+          '<div style="font-size:12.3px;color:var(--ink-2)">' + UI.esc(s.desc) + '</div>' +
+          '<div class="mono faint seg-rule" style="font-size:10.8px;line-height:1.6;text-align:left">' + UI.esc(s.rule) + '</div>' +
+          '<div><div class="muted" style="font-size:11px;font-weight:700;margin-bottom:4px">سلامت اعضا</div>' + healthMini(list) + '</div>' +
+        '</div>' +
+        '<div class="card-f"><span>' + (unassigned ? '<span class="sig due">' + UI.fa(unassigned) + ' بدون مسئول</span>' : UI.fa(act) + ' عضو فعال در ۷ روز') + '</span>' +
+          '<button class="btn sm' + (s.key === cur ? ' primary' : '') + '" data-pick="' + s.key + '">' + UI.icon('users') + 'فهرست اعضا</button></div>' +
+      '</section>';
+    };
+
+    /* ---------------------------------------------------------- overlap */
+    const cells = segs.map(r => segs.map(c => {
+      if (!r.n) return null;
+      if (r.key === c.key) return 1;
+      let k = 0; for (const id of idSets[r.key]) if (idSets[c.key].has(id)) k++;
+      return k / r.n;
+    }));
+    let top = null;
+    segs.forEach((r, i) => segs.forEach((c, j) => {
+      if (i === j || r.n < 20 || cells[i][j] == null) return;
+      if (!top || cells[i][j] > top.v) top = { r, c, v: cells[i][j] };
+    }));
+
+    /* ---------------------------------------------------------- page */
+    let h = '<div class="grid g3" id="cards">' + segs.map(cardHtml).join('') + '</div>';
+    h += UI.card({ id: 'members', cls: '', title: '<span data-mtitle></span>', hint: '<span data-mhint></span>',
+      acts: '<label class="row" style="gap:6px;font-size:12px;color:var(--muted)">دسته<select class="select" data-segsel style="height:28px;font-size:12px">' + segs.map(s => '<option value="' + s.key + '">' + UI.esc(s.label) + ' (' + UI.fa(s.n) + ')</option>').join('') + '</select></label>',
+      flush: true, body: '<div id="mt"></div>' });
+    h += UI.card({ title: 'هم‌پوشانی دسته‌ها', hint: 'هر خانه: چند درصد از اعضای ردیف، عضو دستهٔ ستون هم هستند',
+      body: '<div class="tbl-wrap"><div id="c-ov" style="min-width:760px"></div></div>' +
+        '<div class="note" style="margin-top:10px">دسته‌ها انحصاری نیستند؛ یک حساب می‌تواند هم‌زمان «تیمی»، «خودکارساز» و «در خطر ریزش» باشد.' +
+        (top ? ' بیشترین هم‌پوشانی: <b>' + UI.pct(top.v) + '</b> از اعضای «' + UI.esc(top.r.label) + '» در «' + UI.esc(top.c.label) + '» هم هستند — <a href="?seg=' + top.r.key + '" data-seg="' + top.r.key + '" style="color:var(--accent-ink);font-weight:600">اعضای «' + UI.esc(top.r.label) + '»</a>' : '') + '</div>' });
+    h += '<div class="grid g2">' +
+      UI.card({ title: 'میانگین سلامت هر دسته', hint: 'از ۱۰۰ · روی هر ردیف بزنید', body: '<div id="c-hl"></div>' }) +
+      UI.card({ title: 'درآمد ماهانه در هر دسته', hint: 'تومان · سهم از کل درآمد ماهانه', body: '<div id="c-mr"></div>' }) +
+      '</div>';
+    h += '<div class="note">قواعد و آستانه‌های هر دسته در <a href="settings.html" style="color:var(--accent-ink);font-weight:600">تعریف‌ها و دسترسی</a> تنظیم می‌شوند و همهٔ صفحه‌ها همان تعریف را می‌خوانند.</div>';
+    B.innerHTML = h;
+    B.querySelector('#members').style.scrollMarginTop = '70px';
+
+    /* ---------------------------------------------------------- members table */
+    const sortFor = k => SEG_SORT[k] || { key: 'mrr', dir: 'desc' };
+    const opts = {
+      rows: members[cur], url: true, select: true, exportName: 'segment-' + cur, unit: 'حساب',
+      sort: sortFor(cur),
+      search: { placeholder: 'نام، شخص یا شماره…', text: a => a.name + ' ' + a.contact.first + ' ' + a.contact.last + ' ' + a.contact.mobile + ' ' + a.slug },
+      filters: [
+        { key: 'plan', label: 'پلن', options: C.planOrder.map(k => ({ v: k, l: C.plans[k].name })), test: (a, v) => a.plan === v },
+        { key: 'owner', label: 'مسئول', options: [{ v: 'none', l: 'بدون مسئول' }].concat(C.reps.map(r => ({ v: r.id, l: r.name }))), test: (a, v) => v === 'none' ? !UI.ownerOf(a) : UI.ownerOf(a) === v },
+      ],
+      onRow: a => UI.openAccount(a.id),
+      columns: [
+        { key: 'name', label: 'حساب', cls: 'nmcol', render: a => UI.acctCell(a), csv: a => a.name },
+        { key: 'plan', label: 'پلن', sort: a => C.planOrder.indexOf(a.plan) * 1e9 + a.mrr, desc: true, render: a => UI.planBadge(a.plan), csv: a => C.plans[a.plan].name },
+        { key: 'mrr', label: 'درآمد ماهانه', num: true, render: a => a.mrr ? UI.compact(a.mrr) : '<span class="faint">—</span>', csv: a => a.mrr },
+        { key: 'health', label: 'سلامت', num: true, render: a => UI.healthScore(a.health), csv: a => a.health },
+        { key: 'lastSeen', label: 'آخرین فعالیت', sort: a => -a.lastSeenMin, desc: true, render: a => UI.lastSeen(a), csv: a => a.lastSeenDays },
+        { key: 'signal', label: 'سیگنال', sort: a => (a.pastDue ? 100 : 0) + a.limitHits30 + a.pricingVisits30 * 2, desc: true, render: a => UI.signals(a), csv: a => (a.pastDue ? 'پرداخت ناموفق ' : '') + a.limitHits30 + ' سقف / ' + a.pricingVisits30 + ' قیمت' },
+        { key: 'owner', label: 'مسئول', sort: a => UI.ownerOf(a) || 'zz', render: a => UI.repName(UI.ownerOf(a), true), csv: a => { const o = UI.ownerOf(a); return o ? DB.rep(o).name : ''; } },
+      ],
+      bulk: [],
+      bulkWire(el, sel, done) {
+        const bar = el.querySelector('.bulkbar'); if (!bar) return;
+        const s = document.createElement('span'); s.className = 'row'; s.style.gap = '6px';
+        s.innerHTML = '<select class="select" style="height:27px;font-size:12px"><option value="">تعیین مسئول…</option>' + C.reps.map(r => '<option value="' + r.id + '">' + UI.esc(r.name) + '</option>').join('') + '<option value="__none">بدون مسئول</option></select>';
+        bar.insertBefore(s, bar.querySelector('[data-unsel]'));
+        s.querySelector('select').onchange = ev => {
+          const v = ev.target.value; if (!v) return;
+          const rows = sel();
+          UI.setOwner(rows.map(a => a.id), v === '__none' ? null : v);
+          UI.toast(UI.fa(rows.length) + ' حساب به ' + (v === '__none' ? 'بدون مسئول' : DB.rep(v).name) + ' داده شد');
+          done();
+          B.querySelectorAll('[data-card]').forEach(c => { const k = c.dataset.card; c.outerHTML = cardHtml(segs.find(s2 => s2.key === k)); });
+        };
+      },
+    };
+    const t = UI.table(B.querySelector('#mt'), opts);
+    UI.setListNav({ move: d => t.moveFocus(d), open: () => t.openFocus() });
+
+    const headFor = k => {
+      const s = segs.find(x => x.key === k);
+      B.querySelector('[data-mtitle]').textContent = 'اعضای «' + s.label + '»';
+      B.querySelector('[data-mhint]').textContent = UI.fa(s.n) + ' حساب · ' + (s.mrr ? UI.money(s.mrr) + ' در ماه' : 'بدون درآمد ماهانه');
+      B.querySelector('[data-segsel]').value = k;
+    };
+    headFor(cur);
+
+    function pick(k, scroll) {
+      if (!valid(k)) return;
+      cur = k;
+      UI.setParam('seg', k === 'upsell' ? null : k);
+      const st = t.state, so = sortFor(k);
+      st.sort = so.key; st.dir = so.dir; st.page = 0; st.focus = -1; st.sel.clear();
+      UI.setParam('sort', null); UI.setParam('dir', null);
+      opts.exportName = 'segment-' + k;                          // the CSV is named after the chosen group
+      t.setRows(members[k]);
+      headFor(k);
+      B.querySelectorAll('[data-card]').forEach(c => { c.outerHTML = cardHtml(segs.find(s => s.key === c.dataset.card)); });
+      if (scroll) B.querySelector('#members').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    B.querySelector('[data-segsel]').onchange = ev => pick(ev.target.value, false);
+    B.addEventListener('click', ev => {
+      const b = ev.target.closest('[data-pick]');
+      if (b) { pick(b.dataset.pick, true); return; }
+      const l = ev.target.closest('a[data-seg], a.hbrow');
+      if (l && !ev.ctrlKey && !ev.metaKey) {
+        const k = l.dataset.seg || new URL(l.href, location.href).searchParams.get('seg');
+        if (valid(k)) { ev.preventDefault(); pick(k, true); }
+      }
+    });
+
+    /* ---------------------------------------------------------- charts */
+    Charts.heat(B.querySelector('#c-ov'), {
+      rowHead: 'عضو این دسته…', cols: segs.map(s => s.label), tipLabel: 'هم‌پوشانی',
+      rows: segs.map((r, i) => ({ label: r.label, sub: UI.fa(r.n), cells: cells[i],
+        tips: segs.map((c, j) => cells[i][j] == null ? '' : UI.fa(Math.round(cells[i][j] * r.n)) + ' از ' + UI.fa(r.n) + ' عضو «' + r.label + '» در «' + c.label + '» هم هستند') })),
+      format: v => UI.pct(v), domain: [0, 1],
+    });
+    Charts.hbars(B.querySelector('#c-hl'), {
+      labelWidth: 96, max: 100, format: v => UI.n(v),
+      items: segs.map(s => {
+        const l = members[s.key];
+        const avg = l.length ? Math.round(l.reduce((x, a) => x + a.health, 0) / l.length) : 0;
+        return { label: s.label, value: avg, note: UI.band(avg).label, href: '?seg=' + s.key };
+      }),
+    });
+    Charts.hbars(B.querySelector('#c-mr'), {
+      labelWidth: 96, format: v => v ? UI.compact(v) : '—',
+      items: segs.map(s => ({ label: s.label, value: s.mrr, note: UI.pct(totalMrr ? s.mrr / totalMrr : 0), href: '?seg=' + s.key })),
+    });
+  },
+});
+})();
+</script>
+</body>
+</html>

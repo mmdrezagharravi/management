@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>صف‌ها و زمان‌بندی — پنل Airsheet</title>
+<link rel="stylesheet" href="shell.css">
+</head>
+<body>
+<script src="assets/data.js"></script>
+<script src="assets/charts.js"></script>
+<script src="assets/ui.js"></script>
+<script>
+(function () {
+const { accounts, ops, CONFIG: C } = DB;
+
+// How long a job may wait in each queue before we call it late (seconds).
+const SLA = { automation: 60, notify: 30, rag: 300, backup: 900, export: 120 };
+const T = { critWaiting: 1000, critFailed: 50, warnWaiting: 300, warnFailed: 10 };
+function qStatus(q) {
+  if (q.waiting >= T.critWaiting || q.failed24 >= T.critFailed) return { key: 'crit', label: 'بحرانی' };
+  if (q.waiting >= T.warnWaiting || q.failed24 >= T.warnFailed || q.delay > (SLA[q.key] || 60)) return { key: 'warn', label: 'هشدار' };
+  return { key: 'good', label: 'سالم' };
+}
+const secs = s => s >= 120 ? UI.n(s / 60, 1) + ' دقیقه' : UI.n(s) + ' ثانیه';
+const latin = s => String(s).replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d));
+function nextRun(c) {
+  const now = C.nowMinutes;
+  if (/هر ساعت/.test(c.schedule)) { const m = (Math.floor(now / 60) + 1) * 60; return { day: m >= 1440 ? 1 : 0, min: m % 1440, wait: m - now }; }
+  const mt = latin(c.schedule).match(/(\d{1,2}):(\d{2})/);
+  if (!/روزانه/.test(c.schedule) || !mt) return null;
+  const m = +mt[1] * 60 + +mt[2];
+  return m > now ? { day: 0, min: m, wait: m - now } : { day: 1, min: m, wait: 1440 - now + m };
+}
+const waitText = w => w < 60 ? UI.fa(w) + ' دقیقه دیگر' : UI.fa(Math.round(w / 60)) + ' ساعت دیگر';
+const queued = () => UI.store.get('cronRuns', {});
+
+UI.page({
+  id: 'jobs', title: 'صف‌ها و زمان‌بندی',
+  sub: 'کارهای پس‌زمینه سالم‌اند یا عقب افتاده‌اند — صف‌های Bull و کران‌های سرور',
+  render(ctx) {
+    const B = ctx.body;
+    const Q = ops.queues;
+    const sum = k => Q.reduce((t, q) => t + q[k], 0);
+    const waiting = sum('waiting'), waitingThen = Q.reduce((t, q) => t + q.trend[0], 0);
+    const trendSum = Q[0].trend.map((_, i) => Q.reduce((t, q) => t + q.trend[i], 0));
+    const worstFail = Q.slice().sort((p, q) => q.failed24 - p.failed24)[0];
+    const failedCrons = ops.crons.filter(c => c.status === 'fail');
+    const maxDelay = Q.slice().sort((p, q) => q.delay - p.delay)[0];
+    const late = Q.filter(q => q.delay > (SLA[q.key] || 60));
+
+    let h = '<div class="kpis">' +
+      UI.kpi({ label: 'در انتظار', value: UI.n(waiting), unit: 'کار', info: 'مجموع کارهای منتظر در همهٔ صف‌ها',
+        delta: UI.delta(waiting, waitingThen, { goodUp: false }), cmp: '۶ روز پیش: ' + UI.n(waitingThen), spark: Charts.spark(trendSum, { color: 'var(--ink-2)' }) }) +
+      UI.kpi({ label: 'در حال اجرا', value: UI.n(sum('active')), unit: 'کار', cmp: 'در ' + UI.n(Q.length) + ' صف' }) +
+      UI.kpi({ label: 'ناموفق در ۲۴ ساعت', value: UI.n(sum('failed24')), unit: 'کار', cmp: 'بیشترین: ' + UI.esc(worstFail.name) + ' (' + UI.n(worstFail.failed24) + ')' }) +
+      UI.kpi({ label: 'کران ناموفق', value: UI.n(failedCrons.length), unit: 'از ' + UI.n(ops.crons.length), href: '#crons',
+        cmp: failedCrons.length ? failedCrons.map(c => '«' + UI.esc(c.name) + '»').join('، ') : 'همه موفق' }) +
+      UI.kpi({ label: 'بیشترین تأخیر', value: UI.n(maxDelay.delay), unit: 'ثانیه', info: 'زمان انتظار قدیمی‌ترین کار در صف',
+        cmp: UI.esc(maxDelay.name) + ' · ' + (maxDelay.delay > (SLA[maxDelay.key] || 60) ? 'بیش از حد مجاز' : 'در حد مجاز این صف (' + secs(SLA[maxDelay.key]) + ')') }) +
+      '</div>';
+
+    // --- failed cron banner
+    const exp = failedCrons.find(c => c.key === 'expire');
+    if (exp) {
+      const pd = accounts.filter(a => a.pastDue), pdMrr = pd.reduce((t, a) => t + a.mrr, 0);
+      const nx = nextRun(exp);
+      h += '<div class="banner crit">' + UI.icon('alert') + '<div><b>کران «' + UI.esc(exp.name) + '» ' + UI.esc(UI.agoDays(exp.lastT)) + ' ساعت ' + UI.esc(exp.lastAt) + ' اجرا نشد.</b> ' +
+        'تا این کران اجرا نشود هیچ اشتراکی منقضی نمی‌شود: ' + UI.n(pd.length) + ' حساب با پرداخت ناموفق (' + UI.money(pdMrr) + ' در ماه) بعد از پایان مهلت هم بدون پرداخت به کار ادامه می‌دهند. ' +
+        (nx ? 'اجرای بعدی ' + (nx.day ? 'فردا' : 'امروز') + ' ' + UI.clock(nx.min) + ' است و تا کوئری اصلاح نشود احتمالاً دوباره شکست می‌خورد. ' : '') +
+        '<a href="sales.html#pastdue">پرداخت‌های ناموفق را پیگیری کنید</a></div></div>';
+    }
+
+    // --- queues
+    const qRows = Q.map(q => {
+      const st = qStatus(q), sla = SLA[q.key] || 60;
+      return '<tr><td><b class="mono">' + UI.esc(q.name) + '</b></td>' +
+        '<td>' + Charts.spark(q.trend, { w: 76, h: 22, color: st.key === 'good' ? 'var(--series-1)' : 'var(--ink-2)' }) + '</td>' +
+        '<td class="num"><b>' + UI.n(q.waiting) + '</b></td>' +
+        '<td class="num">' + UI.n(q.active) + '</td>' +
+        '<td class="num">' + UI.compact(q.throughput) + '</td>' +
+        '<td class="num">' + (q.delay > sla ? '<b>' + secs(q.delay) + '</b>' : secs(q.delay)) + '<span class="s">مجاز: ' + secs(sla) + '</span></td>' +
+        '<td class="num">' + (q.failed24 ? '<b>' + UI.n(q.failed24) + '</b>' : '<span class="faint">۰</span>') + '</td>' +
+        '<td>' + UI.statusBadge(st.key, st.label) + '</td></tr>';
+    }).join('');
+    const hr = ops.hourly;
+    const failHours = hr.filter(x => x.failed > 0);
+    const hLabel = x => UI.clock(x.hr * 60);
+    const hDay = x => x.hr * 60 > C.nowMinutes ? 'دیروز' : 'امروز';
+
+    h += '<div class="grid g-main">' +
+      UI.card({ title: 'صف‌های Bull', hint: 'روند = کارهای در انتظار در ۷ روز اخیر', flush: true,
+        body: '<div class="tbl-wrap"><table class="tbl compact"><thead><tr><th>صف</th><th>روند ۷ روز</th><th class="num">در انتظار</th><th class="num">در حال اجرا</th><th class="num">توان در روز</th><th class="num">تأخیر</th><th class="num">ناموفق ۲۴ ساعت</th><th>وضعیت</th></tr></thead><tbody>' + qRows + '</tbody></table></div>',
+        foot: '<span>بحرانی: ' + UI.n(T.critWaiting) + '+ در انتظار یا ' + UI.n(T.critFailed) + '+ شکست · هشدار: ' + UI.n(T.warnWaiting) + '+ در انتظار، ' + UI.n(T.warnFailed) + '+ شکست یا تأخیر بیش از حد مجاز</span>' }) +
+      UI.card({ title: 'اجرای اتوماسیون در ۲۴ ساعت', hint: 'ساعتی',
+        body: '<div id="c-runs"></div><div class="legend" style="margin-top:8px"><span class="k"><i class="sw" style="background:var(--series-1)"></i>موفق</span><span class="k"><i class="sw" style="background:var(--critical)"></i>ناموفق</span></div>',
+        foot: failHours.length ? '<span>اجرای ناموفق فقط بین ' + hLabel(failHours[0]) + ' و ' + hLabel(failHours[failHours.length - 1]) + ' ' + hDay(failHours[0]) + ' — هم‌زمان با انباشت صف Automation</span>' : '<span>در ۲۴ ساعت اخیر اجرای ناموفقی نبوده</span>' }) +
+      '</div>';
+
+    h += UI.card({ id: 'crons', title: 'کارهای زمان‌بندی‌شده', hint: 'node-cron داخل server.ts', flush: true, bodyId: 'cron-body' });
+
+    h += UI.card({ title: 'یادداشت فنی', hint: 'برای تیم بک‌اند',
+      body: '<div class="prose">' +
+        (exp ? '<p><b>علت شکست «' + UI.esc(exp.name) + '»:</b> <span class="mono">' + UI.esc(exp.error) + '</span> — کرسر Mongo در یک حلقهٔ طولانی منقضی می‌شود. اشتراک‌ها را در دسته‌های کوچک (مثلاً بر اساس <span class="mono">_id</span>) پردازش کنید تا هیچ کرسری باز نماند.</p>' : '') +
+        '<p><b>پیشنهاد:</b> کران‌ها را از <span class="mono">node-cron</span> به <span class="mono">Bull repeatable jobs</span> ببرید. آن‌وقت هر اجرا (شروع، پایان، وضعیت، خطا) در Redis ثبت می‌شود، تلاش مجدد خودکار دارد و جدول بالا به‌جای حدس از داده‌ی واقعی پر می‌شود. امروز نتیجهٔ کران‌ها فقط در <span class="mono">console.error</span> می‌ماند و کسی خبردار نمی‌شود.</p>' +
+        '</div>' });
+
+    B.innerHTML = h;
+
+    Charts.columns(B.querySelector('#c-runs'), {
+      labels: hr.map(hLabel), tipLabels: hr.map(x => hDay(x) + ' ' + hLabel(x)), xEvery: 4, height: 250, total: 'کل اجرا',
+      series: [
+        { name: 'موفق', values: hr.map(x => Math.max(0, x.runs - x.failed)), color: 'var(--series-1)' },
+        { name: 'ناموفق', values: hr.map(x => x.failed), color: 'var(--critical)' },
+      ],
+    });
+
+    const cronBody = B.querySelector('#cron-body');
+    function drawCrons() {
+      const qd = queued();
+      cronBody.innerHTML = '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>کار</th><th>وضعیت</th><th>آخرین اجرا</th><th>مدت</th><th>زمان‌بندی</th><th>اجرای بعدی</th></tr></thead><tbody>' +
+        ops.crons.map(c => {
+          const nx = nextRun(c), isQ = !!qd[c.key];
+          const st = isQ ? UI.statusBadge('info', 'در صف اجرا') : c.status === 'fail' ? UI.statusBadge('crit', 'ناموفق') : UI.statusBadge('good', 'موفق');
+          const btn = isQ ? '<button class="btn sm ghost" data-cancel="' + c.key + '">لغو</button>'
+            : '<button class="btn sm' + (c.status === 'fail' ? ' primary' : '') + '" data-rerun="' + c.key + '">' + UI.icon('refresh') + 'اجرای دوباره</button>';
+          return '<tr><td><b>' + UI.esc(c.name) + '</b>' + (c.isNew ? ' <span class="tag">جدید</span>' : '') + '</td>' +
+            '<td><span class="row" style="gap:8px;flex-wrap:nowrap">' + st + btn + '</span></td>' +
+            '<td class="nowrap">' + UI.esc(UI.agoDays(c.lastT)) + ' ' + UI.esc(c.lastAt) + '</td>' +
+            '<td class="nowrap">' + UI.esc(c.duration) + '</td>' +
+            '<td class="nowrap">' + UI.esc(c.schedule) + '</td>' +
+            '<td class="nowrap">' + (nx ? (nx.day ? 'فردا ' : 'امروز ') + UI.clock(nx.min) + '<span class="s">' + waitText(nx.wait) + '</span>' : '<span class="faint">—</span>') + '</td></tr>' +
+            (c.status === 'fail' && c.error ? '<tr><td colspan="6" style="padding-top:0"><div class="mono" style="position:sticky;right:10px;max-width:min(640px,calc(100vw - 72px));color:var(--crit-ink);background:var(--crit-wash);border-radius:6px;padding:6px 10px;font-size:11.5px;overflow-wrap:anywhere;text-align:left">' + UI.esc(c.error) + '</div></td></tr>' : '');
+        }).join('') + '</tbody></table></div>';
+      cronBody.querySelectorAll('[data-rerun]').forEach(b => b.onclick = () => {
+        const c = ops.crons.find(x => x.key === b.dataset.rerun);
+        const q = queued(); q[c.key] = Date.now(); UI.store.set('cronRuns', q);
+        UI.logAudit('اجرای دوبارهٔ کران «' + c.name + '»');
+        drawCrons();
+        UI.toast('«' + c.name + '» در صف اجرا قرار گرفت', () => { const x = queued(); delete x[c.key]; UI.store.set('cronRuns', x); drawCrons(); });
+      });
+      cronBody.querySelectorAll('[data-cancel]').forEach(b => b.onclick = () => {
+        const c = ops.crons.find(x => x.key === b.dataset.cancel);
+        const x = queued(); delete x[c.key]; UI.store.set('cronRuns', x);
+        drawCrons(); UI.toast('اجرای دوبارهٔ «' + c.name + '» لغو شد');
+      });
+    }
+    drawCrons();
+  },
+});
+})();
+</script>
+</body>
+</html>

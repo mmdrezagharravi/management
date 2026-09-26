@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>سلامت و ریسک — پنل Airsheet</title>
+<link rel="stylesheet" href="shell.css">
+</head>
+<body>
+<script src="assets/data.js"></script>
+<script src="assets/charts.js"></script>
+<script src="assets/ui.js"></script>
+<script>
+(function () {
+const { accounts, CONFIG: C } = DB;
+const CUR = C.currency;
+const COMPS = C.health.components, BANDS = C.health.bands;
+const BAND_COLOR = { good: 'var(--good)', warn: 'var(--warning)', ser: 'var(--serious)', crit: 'var(--critical)' };
+const ACTION = {
+  activity: 'تماس برای فهمیدن دلیل کاهش استفاده',
+  trend: 'بررسی تغییر در تیم یا فرایند مشتری',
+  depth: 'معرفی اتوماسیون و فرم در یک جلسهٔ کوتاه',
+  team: 'جلسه با مدیر حساب برای فعال کردن اعضا',
+  commercial: 'پیگیری پرداخت یا تیکت باز',
+};
+
+/* ---- helpers (page-local) */
+const sum = (list, f) => list.reduce((t, a) => t + f(a), 0);
+const mrrOn = (a, t) => { let v = 0; for (const pe of a.planEvents) { if (pe.t >= t) v = pe.mrr; else break; } return v; };
+const weakest = a => COMPS.reduce((m, c) => a.components[c.key] < a.components[m.key] ? c : m, COMPS[0]);
+const bandOf = s => BANDS.find(b => s >= b.min);
+const bandRange = (b, i) => i === 0 ? UI.fa(b.min) + ' به بالا' : b.min === 0 ? 'زیر ' + UI.fa(BANDS[i - 1].min) : UI.fa(b.min) + '–' + UI.fa(BANDS[i - 1].min - 1);
+const acc = a => '<div style="min-width:150px">' + UI.acctCell(a) + '</div>';
+const ownerCsv = a => { const o = UI.ownerOf(a); return o ? DB.rep(o).name : ''; };
+
+UI.page({
+  id: 'health', title: 'سلامت و ریسک', sources: ['main', 'behavior', 'wallet'],
+  sub: 'کدام مشتری پرداخت‌کننده در خطر است، چرا، و قدم بعدی چیست',
+  render(ctx) {
+    const B = ctx.body;
+    const paying = accounts.filter(a => a.paying);
+    const totalMrr = sum(paying, a => a.mrr);
+    const atRisk = paying.filter(a => a.health < 50 || a.pastDue);
+    const riskMrr = sum(atRisk, a => a.mrr);
+    const avg = sum(paying, a => a.health) / paying.length;
+    const had2w = paying.filter(a => a.health2wAgo != null);
+    const avg2w = sum(had2w, a => a.health2wAgo) / Math.max(1, had2w.length);
+    const drops = paying.filter(a => a.health2wAgo != null && a.health2wAgo - a.health >= 15);
+    const riskN = []; for (let w = 7; w >= 0; w--) riskN.push(accounts.filter(a => { const h = a.healthHistory[7 - w]; return h != null && h < 50 && mrrOn(a, w * 7) > 0; }).length);
+
+    const rp = UI.compactParts(riskMrr);
+    let h = '<div class="kpis">' +
+      UI.kpi({ label: 'درآمد در خطر', value: rp.num, unit: rp.unit + ' ' + CUR, href: '#risk', info: 'درآمد ماهانهٔ مشتریانی که امتیاز سلامت زیر ۵۰ یا پرداخت ناموفق دارند',
+        cmp: UI.fa(atRisk.length) + ' مشتری · ' + UI.pct(riskMrr / totalMrr) + ' کل MRR' }) +
+      UI.kpi({ label: 'میانگین سلامت', info: 'میانگین امتیاز سلامت مشتریان پرداخت‌کننده', value: UI.n(avg, 1), unit: 'از ۱۰۰',
+        delta: UI.delta(avg, avg2w, { abs: true, fmt: v => UI.n(v, 1) }), cmp: '۲ هفته پیش: ' + UI.n(avg2w, 1) }) +
+      UI.kpi({ label: 'افت ۱۵+ امتیاز در ۲ هفته', value: UI.n(drops.length), unit: 'مشتری', href: '#movers', info: 'مشتری پرداخت‌کننده‌ای که امتیازش در دو هفته دست‌کم ۱۵ واحد پایین آمده',
+        cmp: UI.money(sum(drops, a => a.mrr)) + ' در ماه' }) +
+      '</div>';
+
+    // band tiles (status colors carry their label)
+    const dist = BANDS.map(b => ({ b, list: paying.filter(a => a.band.key === b.key), prev: had2w.filter(a => bandOf(a.health2wAgo).key === b.key).length }));
+    h += '<div class="kpis">' + dist.map((d, i) => '<a class="kpi" href="customers.html?health=' + d.b.key + '">' +
+      '<div class="lab" title="امتیاز ' + bandRange(d.b, i) + '">' + UI.statusBadge(d.b.key, d.b.label + ' · ' + bandRange(d.b, i)) + '</div>' +
+      '<div class="val">' + UI.n(d.list.length) + '<small>مشتری</small></div>' +
+      '<div class="foot"><div class="cmp">' + UI.delta(d.list.length, d.prev, { abs: true, goodUp: d.b.key === 'good' }) + ' <span>در ۲ هفته</span><div>' + UI.money(sum(d.list, a => a.mrr)) + ' · ' + UI.pct(sum(d.list, a => a.mrr) / totalMrr) + ' MRR</div></div></div></a>').join('') + '</div>';
+
+    // ---- distribution + trend | how the score works
+    const compAvg = COMPS.map(c => ({ c, v: sum(paying, a => a.components[c.key]) / paying.length }));
+    const weakAvg = compAvg.slice().sort((p, q) => p.v - q.v)[0];
+    h += '<div class="grid g-main"><div class="stack">' +
+      UI.card({ title: 'توزیع سلامت', hint: UI.fa(paying.length) + ' مشتری پرداخت‌کننده',
+        body: '<div class="muted" style="font-size:11.5px;font-weight:700;margin-bottom:6px">بر اساس تعداد مشتری</div><div id="c-dn"></div>' +
+          '<div class="muted" style="font-size:11.5px;font-weight:700;margin:16px 0 6px">بر اساس درآمد ماهانه</div><div id="c-dm"></div>',
+        foot: '<span>' + UI.pct(riskMrr / totalMrr) + ' درآمد ماهانه زیر ۵۰ یا با پرداخت ناموفق است</span><a class="nowrap" href="#risk">فهرست در خطر</a>' }) +
+      UI.card({ title: 'تعداد مشتریان زیر ۵۰', hint: '۸ هفتهٔ اخیر · پرداخت‌کننده در همان هفته', body: '<div id="c-tr"></div>',
+        foot: '<span>' + (riskN[7] > riskN[5] ? UI.fa(riskN[7] - riskN[5]) + ' مشتری بیشتر از دو هفته پیش' : riskN[7] < riskN[5] ? UI.fa(riskN[5] - riskN[7]) + ' مشتری کمتر از دو هفته پیش' : 'بدون تغییر در دو هفته') + '</span><a class="nowrap" href="#movers">چه کسانی افت کردند</a>' }) +
+      '</div>' +
+      UI.card({ title: 'امتیاز سلامت چطور حساب می‌شود', hint: 'پنج مؤلفه × ۲۰ = ۱۰۰',
+        body: '<div class="muted" style="font-size:11.5px;margin-bottom:6px">میانگین هر مؤلفه در مشتریان پرداخت‌کننده</div>' +
+          compAvg.map(x => '<div style="padding:5px 0;border-bottom:1px solid var(--grid)"><div class="comp" style="padding:0"><b style="text-align:right">' + UI.esc(x.c.label) + '</b><span class="tr"><i style="width:' + (x.v / 20 * 100) + '%"></i></span><b>' + UI.n(x.v, 1) + '</b></div><div class="note" style="line-height:1.6">' + UI.esc(x.c.desc) + '</div></div>').join('') +
+          '<div class="muted" style="font-size:11.5px;font-weight:700;margin:12px 0 6px">محدوده‌ها</div><div class="row wrap" style="gap:6px">' +
+          BANDS.map((b, i) => '<span class="row" style="gap:4px">' + UI.statusBadge(b.key, b.label) + '<span class="muted" style="font-size:11.5px">' + bandRange(b, i) + '</span></span>').join('') + '</div>',
+        foot: '<span>ضعیف‌ترین مؤلفه در کل: «' + UI.esc(weakAvg.c.label) + '» (' + UI.n(weakAvg.v, 1) + ' از ۲۰)</span><a class="nowrap" href="settings.html">تعریف‌ها</a>' }) +
+      '</div>';
+
+    // ---- at-risk table
+    h += UI.card({ id: 'risk', title: 'مشتریان در خطر', hint: 'سلامت زیر ۵۰ یا پرداخت ناموفق · بیشترین درآمد بالا', flush: true, body: '<div id="t-risk"></div>',
+      foot: '<span>اقدام پیشنهادی از ضعیف‌ترین مؤلفهٔ هر مشتری می‌آید</span><a class="nowrap" href="sales.html">تمدیدها در میز فروش</a>' });
+
+    // ---- movers
+    const moved = paying.filter(a => a.health2wAgo != null).map(a => ({ a, d: a.health - a.health2wAgo }));
+    const down = moved.filter(x => x.d < 0).sort((p, q) => p.d - q.d || q.a.mrr - p.a.mrr).slice(0, 8);
+    const up = moved.filter(x => x.d > 0).sort((p, q) => q.d - p.d || q.a.mrr - p.a.mrr).slice(0, 8);
+    const moverList = list => list.length ? '<div class="list" style="padding:0 16px">' + list.map(x => '<div class="li"><span class="main"><a class="t" href="' + UI.custLink(x.a) + '" data-acc="' + x.a.id + '">' + UI.esc(x.a.name) + '</a><span class="d">' + UI.n(x.a.health2wAgo) + ' ← ' + UI.n(x.a.health) + ' · ' + UI.esc(C.plans[x.a.plan].name) + ' · ' + UI.compact(x.a.mrr) + ' · ' + UI.repName(UI.ownerOf(x.a), true) + '</span></span><span class="end">' + UI.delta(x.a.health, x.a.health2wAgo, { abs: true }) + '<div class="muted" style="font-size:11px">' + UI.esc(x.d < 0 ? 'ضعیف: ' + weakest(x.a).label : x.a.band.label) + '</div></span></div>').join('') + '</div>'
+      : '<div class="empty"><b>موردی نیست</b></div>';
+    h += '<div class="grid g2" id="movers" style="scroll-margin-top:70px">' +
+      UI.card({ title: 'بیشترین افت', hint: 'دو هفتهٔ اخیر', flush: true, body: moverList(down),
+        foot: '<span>' + UI.fa(drops.length) + ' مشتری ۱۵ امتیاز یا بیشتر افت کرده‌اند — پیش از رسیدن به زیر ۵۰ تماس بگیرید</span>' }) +
+      UI.card({ title: 'بیشترین بهبود', hint: 'دو هفتهٔ اخیر', flush: true, body: moverList(up),
+        foot: '<span>بپرسید چه چیزی کمک کرد؛ همان را به مشتریان مشابه پیشنهاد دهید</span>' }) +
+      '</div>';
+
+    B.innerHTML = h;
+    B.querySelector('#risk').style.scrollMarginTop = '70px';
+
+    // ---- charts
+    const parts = key => dist.map(d => ({ label: d.b.label, value: key === 'n' ? d.list.length : sum(d.list, a => a.mrr), color: BAND_COLOR[d.b.key] }));
+    Charts.stack100(B.querySelector('#c-dn'), { parts: parts('n'), format: v => UI.n(v) });
+    Charts.stack100(B.querySelector('#c-dm'), { parts: parts('m'), format: v => UI.compact(v) });
+    const wl = []; for (let w = 7; w >= 0; w--) wl.push(w === 0 ? 'امروز' : UI.date(w * 7));
+    Charts.line(B.querySelector('#c-tr'), {
+      labels: wl, tipLabels: wl.map((l, i) => i === 7 ? 'امروز' : 'هفتهٔ ' + l), height: 190, xTicks: 4,
+      series: [{ name: 'مشتری زیر ۵۰', values: riskN }], yFormat: v => UI.n(v),
+    });
+
+    UI.table(B.querySelector('#t-risk'), {
+      rows: atRisk, url: true, exportName: 'at-risk', unit: 'مشتری', compact: true,
+      sort: { key: 'mrr', dir: 'desc' }, onRow: a => UI.openAccount(a.id),
+      views: [
+        { key: 'all', label: 'همه', test: null },
+        { key: 'crit', label: 'بحرانی', test: a => a.band.key === 'crit' },
+        { key: 'pastdue', label: 'پرداخت ناموفق', test: a => a.pastDue },
+        { key: 'renew30', label: 'تمدید ≤۳۰ روز', test: a => a.renewIn <= 30 },
+      ],
+      search: { placeholder: 'نام مشتری…', text: a => a.name + ' ' + a.contact.first + ' ' + a.contact.last },
+      filters: [{ key: 'owner', label: 'مسئول', options: [{ v: 'none', l: 'بدون مسئول' }].concat(C.reps.map(r => ({ v: r.id, l: r.name }))), test: (a, v) => v === 'none' ? !UI.ownerOf(a) : UI.ownerOf(a) === v }],
+      emptyTitle: 'مشتری در خطری با این فیلتر نیست',
+      columns: [
+        { key: 'name', label: 'مشتری', render: acc, csv: a => a.name },
+        { key: 'plan', label: 'پلن', sort: a => C.planOrder.indexOf(a.plan) * 1e9 + a.mrr, desc: true, render: a => UI.planBadge(a.plan), csv: a => C.plans[a.plan].name },
+        { key: 'mrr', label: 'درآمد ماهانه', num: true, render: a => '<b>' + UI.compact(a.mrr) + '</b>', csv: a => a.mrr },
+        { key: 'health', label: 'سلامت', num: true, render: a => '<span class="nowrap">' + UI.healthScore(a.health) + ' ' + UI.delta(a.health, a.health2wAgo, { abs: true }) + '</span>' + (a.pastDue ? '<span class="s"><span class="sig due">پرداخت ناموفق</span></span>' : ''), csv: a => a.health },
+        { key: 'weak', label: 'ضعیف‌ترین مؤلفه', sort: a => a.components[weakest(a).key], render: a => { const w = weakest(a); return '<b>' + UI.esc(w.label) + '</b><span class="s">' + UI.fa(a.components[w.key]) + ' از ۲۰</span>'; }, csv: a => weakest(a).label },
+        { key: 'action', label: 'اقدام پیشنهادی', nosort: true, render: a => '<span style="display:block;min-width:170px;max-width:240px;font-size:12px;line-height:1.6">' + UI.esc(ACTION[weakest(a).key]) + '</span>', csv: a => ACTION[weakest(a).key] },
+        { key: 'renew', label: 'تمدید', num: true, sort: a => a.renewIn, render: a => '<span class="nowrap">' + UI.inDays(a.renewIn) + '</span><span class="s">' + UI.date(-a.renewIn) + '</span>', csv: a => a.renewIn },
+        { key: 'owner', label: 'مسئول', sort: a => UI.ownerOf(a) || 'zz', render: a => UI.repName(UI.ownerOf(a), true), csv: ownerCsv },
+      ],
+    });
+    if (location.hash === '#risk' || location.hash === '#movers') { const t = B.querySelector(location.hash); if (t) setTimeout(() => t.scrollIntoView({ block: 'start' }), 0); }
+  },
+});
+})();
+</script>
+</body>
+</html>

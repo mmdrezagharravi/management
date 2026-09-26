@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>درآمد — پنل Airsheet</title>
+<link rel="stylesheet" href="shell.css">
+</head>
+<body>
+<script src="assets/data.js"></script>
+<script src="assets/charts.js"></script>
+<script src="assets/ui.js"></script>
+<script>
+(function () {
+const { agg, accounts, CONFIG: C } = DB;
+const CUR = C.currency;
+
+/* ---- helpers (page-local) */
+const mrrOn = (a, t) => { let v = 0; for (const pe of a.planEvents) { if (pe.t >= t) v = pe.mrr; else break; } return v; };
+// NRR over 90 days ending `end` days ago: accounts paying at the start, their MRR at the end ÷ at the start
+function nrr(end) {
+  let then = 0, now = 0;
+  for (const a of accounts) { const v = mrrOn(a, end + 90); if (v > 0) { then += v; now += mrrOn(a, end); } }
+  return then ? now / then : null;
+}
+const netOf = mv => mv.new + mv.expansion + mv.contraction + mv.churn;
+const lostMrr = a => { for (let i = a.planEvents.length - 1; i >= 0; i--) if (a.planEvents[i].mrr > 0) return a.planEvents[i].mrr; return 0; };
+const lostPlan = a => { for (let i = a.planEvents.length - 1; i >= 0; i--) if (a.planEvents[i].mrr > 0) return a.planEvents[i].plan; return 'basic'; };
+const dur = d => d < 60 ? UI.fa(d) + ' روز' : d < 730 ? UI.fa(Math.round(d / 30.4)) + ' ماه' : UI.n(d / 365, 1) + ' سال';
+const signed = v => (v > 0 ? '+' : v < 0 ? '−' : '') + UI.compact(Math.abs(v));
+const lastInv = a => a.invoices[a.invoices.length - 1];
+const owner = a => UI.repName(UI.ownerOf(a), true);
+const acc = (a, sub) => '<div style="min-width:150px">' + UI.acctCell(a, { sub }) + '</div>';
+const ownerCsv = a => { const o = UI.ownerOf(a); return o ? DB.rep(o).name : ''; };
+
+UI.page({
+  id: 'revenue', title: 'درآمد', range: true, sources: ['wallet'],
+  sub: 'درآمد ماهانهٔ تکرارشونده، جابه‌جایی‌ها و پول دریافتی — هر عدد با بازهٔ هم‌طول قبلی مقایسه شده',
+  render(ctx) {
+    const R = ctx.range, B = ctx.body;
+    const paying = accounts.filter(a => a.paying);
+    const months = agg.mrrMonths(12);
+
+    // ---- KPIs
+    const mrrNow = agg.mrrAt(0), mrrPrev = agg.mrrAt(R);
+    const payNow = agg.payingAt(0), payPrev = agg.payingAt(R);
+    const net = netOf(agg.movements(R, 0)), netPrev = netOf(agg.movements(2 * R, R));
+    const nrrNow = nrr(0), nrrPrev = nrr(R);
+    const arpa = payNow ? mrrNow / payNow : 0, arpaPrev = payPrev ? mrrPrev / payPrev : 0;
+    const mp = UI.compactParts(mrrNow), ap = UI.compactParts(mrrNow * 12), np = UI.compactParts(Math.abs(net)), rp = UI.compactParts(arpa);
+    let h = '<div class="kpis">' +
+      UI.kpi({ label: 'درآمد ماهانه (MRR)', value: mp.num, unit: mp.unit + ' ' + CUR, info: 'جمع اشتراک‌های فعال به ماه؛ سه‌ماهه و سالانه تقسیم بر تعداد ماه',
+        delta: UI.delta(mrrNow, mrrPrev), cmp: 'قبل: ' + UI.compact(mrrPrev), spark: Charts.spark(months.map(m => m.mrr), { area: true }) }) +
+      UI.kpi({ label: 'درآمد سالانه (ARR)', value: ap.num, unit: ap.unit + ' ' + CUR, info: 'MRR × ۱۲',
+        delta: UI.delta(mrrNow * 12, mrrPrev * 12), cmp: 'قبل: ' + UI.compact(mrrPrev * 12) }) +
+      UI.kpi({ label: 'رشد خالص در ' + UI.fa(R) + ' روز', value: (net < 0 ? '−' : '+') + np.num, unit: np.unit + ' ' + CUR, info: 'تغییر MRR در بازه: مشتری جدید + ارتقا − کاهش − ریزش',
+        delta: UI.delta(net, netPrev), cmp: 'بازهٔ قبل: ' + signed(netPrev) }) +
+      UI.kpi({ label: 'نگهداشت درآمد (NRR)', value: UI.pct(nrrNow, 1), info: 'مشتریانی که ۹۰ روز پیش پرداخت می‌کردند: درآمد امروزشان ÷ درآمد آن روزشان. ارتقا بالا می‌بردش، کاهش و ریزش پایین؛ مشتری جدید حساب نمی‌شود.',
+        delta: UI.delta(nrrNow, nrrPrev, { points: true }), cmp: '۹۰ روز اخیر · قبل: ' + UI.pct(nrrPrev, 1) }) +
+      UI.kpi({ label: 'میانگین درآمد هر مشتری', value: rp.num, unit: rp.unit + ' ' + CUR, info: 'ARPA: MRR ÷ مشتریان پرداخت‌کننده',
+        delta: UI.delta(arpa, arpaPrev), cmp: 'قبل: ' + UI.compact(arpaPrev) }) +
+      UI.kpi({ label: 'مشتری پرداخت‌کننده', value: UI.n(payNow), href: 'customers.html',
+        delta: UI.delta(payNow, payPrev), cmp: 'قبل: ' + UI.n(payPrev), spark: Charts.spark(months.map(m => m.paying)) }) +
+      '</div>';
+
+    // ---- MRR movements + trend
+    const tot12 = months.reduce((t, m) => ({ n: t.n + m.new, e: t.e + m.expansion, c: t.c + m.contraction, ch: t.ch + m.churn }), { n: 0, e: 0, c: 0, ch: 0 });
+    const lg = (color, label, v) => '<span class="k"><i class="sw" style="background:' + color + '"></i>' + label + ' <b style="color:var(--ink)">' + signed(v) + '</b></span>';
+    h += '<div class="grid g-main">' +
+      UI.card({ title: 'جابه‌جایی درآمد ماهانه', hint: '۱۲ ماه اخیر · تومان · بالای صفر اضافه شده، پایین صفر از دست رفته',
+        body: '<div id="c-mv"></div><div class="legend" style="margin-top:8px">' +
+          lg('var(--mv-new)', 'مشتری جدید', tot12.n) + lg('var(--mv-exp)', 'ارتقا', tot12.e) + lg('var(--mv-con)', 'کاهش', tot12.c) + lg('var(--mv-churn)', 'ریزش', tot12.ch) +
+          '<span class="faint">جمع ۱۲ ماه</span></div>',
+        foot: '<span>ریزش ' + UI.fa(months[months.length - 1].churnCount) + ' مشتری در ماه جاری</span><a class="nowrap" href="#churn">مشتریان ریزش‌کرده</a>' }) +
+      UI.card({ title: 'روند درآمد ماهانه', hint: 'MRR در پایان هر ماه · تومان', body: '<div id="c-mrr"></div>',
+        foot: '<span>' + UI.signedPct(months.length > 1 ? mrrNow / months[0].mrr - 1 : 0) + ' در ۱۲ ماه</span><span>' + UI.compact(months[0].mrr) + ' ← ' + UI.compact(mrrNow) + '</span>' }) +
+      '</div>';
+
+    // ---- plan mix + cycle mix
+    const mix = (keys, keyOf, nameOf, colorOf) => {
+      const rows = keys.map(k => { const l = paying.filter(a => keyOf(a) === k); const m = l.reduce((t, a) => t + a.mrr, 0); return { k, name: nameOf(k), color: colorOf(k), n: l.length, mrr: m, arpa: l.length ? m / l.length : 0 }; });
+      const tm = rows.reduce((t, r) => t + r.mrr, 0), tn = rows.reduce((t, r) => t + r.n, 0);
+      return { rows, tm, tn };
+    };
+    const planMix = mix(['basic', 'pro', 'ent'], a => a.plan, k => C.plans[k].name, k => 'var(--plan-' + k + ')');
+    const cycMix = mix(['monthly', 'quarterly', 'yearly'], a => a.cycle, k => C.cycles[k].name, k => 'var(--series-' + (['monthly', 'quarterly', 'yearly'].indexOf(k) + 1) + ')');
+    const mixTable = (m, head, keyCell) => '<div class="tbl-wrap" style="margin-top:14px"><table class="tbl compact"><thead><tr><th>' + head + '</th><th class="num">مشتری</th><th class="num">MRR</th><th class="num">هر مشتری</th><th class="num">سهم از MRR</th></tr></thead><tbody>' +
+      m.rows.map(r => '<tr><td>' + keyCell(r) + '</td><td class="num">' + UI.n(r.n) + '</td><td class="num"><b>' + UI.compact(r.mrr) + '</b></td><td class="num">' + UI.compact(r.arpa) + '</td><td class="num">' + UI.pct(m.tm ? r.mrr / m.tm : 0) + '</td></tr>').join('') +
+      '<tr><td class="muted">جمع</td><td class="num muted">' + UI.n(m.tn) + '</td><td class="num"><b>' + UI.compact(m.tm) + '</b></td><td class="num muted">' + UI.compact(m.tn ? m.tm / m.tn : 0) + '</td><td class="num muted">۱۰۰٪</td></tr></tbody></table></div>';
+    const topPlan = planMix.rows.slice().sort((p, q) => q.mrr - p.mrr)[0];
+    const basicUp = paying.filter(a => a.plan === 'basic' && a.segments.includes('upsell')).length;
+    const yearly = cycMix.rows.find(r => r.k === 'yearly'), monthly = cycMix.rows.find(r => r.k === 'monthly');
+    h += '<div class="grid g2">' +
+      UI.card({ title: 'ترکیب پلن‌ها', hint: 'سهم هر پلن از MRR', body: '<div id="c-plan"></div>' + mixTable(planMix, 'پلن', r => UI.planBadge(r.k)),
+        foot: '<span>' + UI.esc(topPlan.name) + ' ' + UI.pct(topPlan.mrr / planMix.tm) + ' درآمد · ' + UI.fa(basicUp) + ' مشتری پایه آمادهٔ ارتقا</span><a class="nowrap" href="sales.html?tab=upsell">فرصت‌های ارتقا</a>' }) +
+      UI.card({ title: 'دورهٔ پرداخت', hint: 'ماهانه، سه‌ماهه، سالانه · سهم از MRR', body: '<div id="c-cyc"></div>' + mixTable(cycMix, 'دوره', r => '<span class="row" style="gap:6px"><i class="dot" style="background:' + r.color + ';border-radius:3px"></i><b>' + UI.esc(r.name) + '</b></span>') +
+          '<div class="note" style="margin-top:8px">تخفیف: ' + ['quarterly', 'yearly'].map(k => C.cycles[k].name + ' ' + UI.pct(C.cycles[k].discount)).join(' · ') + ' — ARPA دوره‌های بلندتر به همین دلیل پایین‌تر است.</div>',
+        foot: '<span>' + UI.pct(monthly.n / cycMix.tn) + ' ماهانه، فقط ' + UI.pct(yearly.n / cycMix.tn) + ' سالانه — به وفادارها پیشنهاد سالانه بدهید</span><a class="nowrap" href="sales.html?tab=champions">مشتریان وفادار</a>' }) +
+      '</div>';
+
+    // ---- collected cash + renewals due
+    const jm = DB.jalaliMonths(12);
+    const cash = jm.map(() => 0), cashN = jm.map(() => 0);
+    for (const a of accounts) for (const inv of a.invoices) {
+      if (inv.status !== 'paid') continue;
+      const i = jm.findIndex(m => inv.t <= m.start && inv.t >= m.end);
+      if (i >= 0) { cash[i] += inv.amount; cashN[i]++; }
+    }
+    const buckets = [{ lo: 1, hi: 30, label: '۳۰ روز آینده' }, { lo: 31, hi: 60, label: '۳۱ تا ۶۰ روز' }, { lo: 61, hi: 90, label: '۶۱ تا ۹۰ روز' }]
+      .map(b => Object.assign(b, { ok: 0, risk: 0, nOk: 0, nRisk: 0 }));
+    for (const a of paying) {
+      const step = C.cycles[a.cycle].days;
+      for (let d = a.renewIn; d <= 90; d += step) {
+        const b = buckets.find(x => d >= x.lo && d <= x.hi); if (!b) continue;
+        if (a.health < 50) { b.risk += a.mrr; b.nRisk++; } else { b.ok += a.mrr; b.nOk++; }
+      }
+    }
+    const rnHtml = buckets.map((b, bi) => {
+      const tot = b.ok + b.risk;
+      return '<div style="padding:' + (bi ? '10px' : '2px') + ' 0 10px;' + (bi < buckets.length - 1 ? 'border-bottom:1px solid var(--grid)' : '') + '">' +
+        '<div class="row between"><b style="font-size:12.8px">' + b.label + '</b><span class="nowrap"><b style="font-size:16px" class="tnum">' + UI.compact(tot) + '</b> <span class="muted" style="font-size:11.5px">' + CUR + '</span></span></div>' +
+        '<div style="display:flex;gap:2px;height:10px;border-radius:4px;overflow:hidden;margin:6px 0 4px;background:var(--grid)">' +
+          (b.ok ? '<i title="سلامت ۵۰ و بالاتر" style="flex:' + b.ok + ' 1 0;background:var(--series-1)"></i>' : '') +
+          (b.risk ? '<i title="سلامت زیر ۵۰" style="flex:' + b.risk + ' 1 0;background:var(--critical);min-width:3px"></i>' : '') + '</div>' +
+        '<div class="note">' + UI.n(b.nOk + b.nRisk) + ' سررسید · <b>' + UI.n(b.nRisk) + '</b> با سلامت زیر ۵۰ (' + UI.compact(b.risk) + ' ' + CUR + ')</div></div>';
+    }).join('');
+    const riskDue = buckets.reduce((t, b) => t + b.risk, 0);
+    h += '<div class="grid g-main">' +
+      UI.card({ title: 'پول دریافتی در هر ماه', hint: 'جمع صورتحساب‌های پرداخت‌شده · تومان', body: '<div id="c-cash"></div>',
+        foot: '<span>ماه جاری تا امروز: ' + UI.money(cash[cash.length - 1]) + ' از ' + UI.n(cashN[cashN.length - 1]) + ' پرداخت</span><span>سالانه‌ها کل سال را یکجا می‌پردازند</span>' }) +
+      UI.card({ title: 'تمدیدهای پیش رو', hint: 'درآمد ماهانه‌ای که سررسید می‌شود', body: rnHtml +
+          '<div class="legend" style="margin-top:10px"><span class="k"><i class="sw" style="background:var(--series-1)"></i>سلامت ۵۰ و بالاتر</span><span class="k"><i class="sw" style="background:var(--critical)"></i>سلامت زیر ۵۰</span></div>' +
+          '<div class="note" style="margin-top:6px">اشتراک ماهانه در هر بازه یک بار سررسید می‌شود.</div>',
+        foot: '<span>' + UI.compact(riskDue) + ' ' + CUR + ' سررسید در خطر</span><a class="nowrap" href="sales.html">برنامهٔ تمدید در میز فروش</a>' }) +
+      '</div>';
+
+    // ---- failed payments + churn
+    const pd = accounts.filter(a => a.pastDue);
+    const churned = accounts.filter(a => a.churnedAt !== undefined && a.churnedAt < R);
+    const reasons = {}; churned.forEach(a => { reasons[a.churnReason] = (reasons[a.churnReason] || 0) + 1; });
+    const topReason = Object.entries(reasons).sort((p, q) => q[1] - p[1])[0];
+    h += UI.card({ id: 'pastdue', title: 'پرداخت‌های ناموفق', hint: UI.fa(pd.length) + ' مشتری در دورهٔ مهلت · ' + UI.money(pd.reduce((t, a) => t + a.mrr, 0)) + ' در ماه', flush: true,
+        body: '<div id="t-pd"></div>',
+        foot: '<span>اگر تا پایان مهلت پرداخت نشود، اشتراک لغو می‌شود — امروز تماس بگیرید</span><a class="nowrap" href="sales.html?tab=pastdue">در میز فروش</a>' });
+    h += UI.card({ id: 'churn', title: 'ریزش در ' + UI.fa(R) + ' روز اخیر', hint: UI.fa(churned.length) + ' مشتری · ' + UI.money(churned.reduce((t, a) => t + lostMrr(a), 0)) + ' درآمد ماهانه از دست رفت', flush: true,
+        body: '<div id="t-ch"></div>',
+        foot: '<span>' + (topReason ? 'بیشترین دلیل: «' + UI.esc(topReason[0]) + '» (' + UI.fa(topReason[1]) + ' مشتری)' : 'در این بازه ریزشی نبوده') + '</span><a class="nowrap" href="sales.html?tab=winback">فهرست بازگرداندنی‌ها</a>' });
+
+    B.innerHTML = h;
+    ['#pastdue', '#churn'].forEach(id => { B.querySelector(id).style.scrollMarginTop = '70px'; });
+
+    // ---- charts
+    const labels = months.map(m => UI.monthLabel(m)), tips = months.map(m => UI.monthLabel(m, true) + (m.end === 0 ? ' (تا امروز)' : ''));
+    Charts.columns(B.querySelector('#c-mv'), {
+      labels, tipLabels: tips, height: 240, total: 'خالص', hideZero: true,
+      yFormat: v => UI.compact(v), tipFormat: v => signed(v),
+      series: [
+        { name: 'مشتری جدید', values: months.map(m => m.new), color: 'var(--mv-new)' },
+        { name: 'ارتقا', values: months.map(m => m.expansion), color: 'var(--mv-exp)' },
+        { name: 'کاهش', values: months.map(m => m.contraction), color: 'var(--mv-con)' },
+        { name: 'ریزش', values: months.map(m => m.churn), color: 'var(--mv-churn)' },
+      ],
+    });
+    Charts.line(B.querySelector('#c-mrr'), {
+      labels, tipLabels: tips, height: 240, xTicks: 4,
+      series: [{ name: 'MRR', values: months.map(m => m.mrr) }],
+      yFormat: v => UI.compact(v), endFormat: v => UI.compact(v), tipFormat: v => UI.money(v),
+    });
+    Charts.stack100(B.querySelector('#c-plan'), { parts: planMix.rows.map(r => ({ label: r.name, value: r.mrr, color: r.color })), format: v => UI.compact(v) });
+    Charts.stack100(B.querySelector('#c-cyc'), { parts: cycMix.rows.map(r => ({ label: r.name, value: r.mrr, color: r.color })), format: v => UI.compact(v) });
+    Charts.columns(B.querySelector('#c-cash'), {
+      labels: jm.map(m => UI.monthLabel(m)), tipLabels: jm.map(m => UI.monthLabel(m, true) + (m.end === 0 ? ' (تا امروز)' : '')),
+      height: 220, yFormat: v => UI.compact(v), tipFormat: v => UI.money(v), valueLabels: 'last', labelFormat: v => UI.compact(v),
+      series: [{ name: 'دریافتی', values: cash, color: 'var(--series-1)' }],
+    });
+
+    // ---- tables
+    const pdT = UI.table(B.querySelector('#t-pd'), {
+      rows: pd, exportName: 'failed-payments', unit: 'مشتری', pageSizes: false, compact: true,
+      sort: { key: 'mrr', dir: 'desc' }, onRow: a => UI.openAccount(a.id),
+      emptyTitle: 'پرداخت ناموفقی نیست', empty: 'همهٔ تمدیدها با موفقیت پرداخت شده‌اند.',
+      columns: [
+        { key: 'name', label: 'مشتری', render: a => acc(a, UI.esc(C.plans[a.plan].name + ' · ' + C.cycles[a.cycle].name)), csv: a => a.name },
+        { key: 'mrr', label: 'درآمد ماهانه', num: true, render: a => '<b>' + UI.compact(a.mrr) + '</b>', csv: a => a.mrr },
+        { key: 'retries', label: 'تلاش ناموفق', num: true, sort: a => lastInv(a).retries || 0, render: a => UI.fa(lastInv(a).retries || 0) + ' بار', csv: a => lastInv(a).retries || 0 },
+        { key: 'inv', label: 'آخرین صورتحساب', sort: a => -lastInv(a).t, render: a => '<span class="nowrap">' + UI.date(lastInv(a).t) + '</span><span class="s">' + UI.agoDays(lastInv(a).t) + ' · ' + UI.money(lastInv(a).amount) + '</span>', csv: a => UI.date(lastInv(a).t) },
+        { key: 'owner', label: 'مسئول', sort: a => UI.ownerOf(a) || 'zz', render: owner, csv: ownerCsv },
+        { key: 'follow', label: 'آخرین پیگیری', nosort: true, render: a => { const n = UI.notes(a.id)[0]; return n ? '<span class="s" style="max-width:220px;white-space:normal">' + UI.esc(n.text) + '</span>' : '<span class="faint">ثبت نشده</span>'; }, csv: a => { const n = UI.notes(a.id)[0]; return n ? n.text : ''; } },
+        { key: 'act', label: '', nosort: true, csv: false, render: a => '<button class="btn sm" data-log="' + a.id + '">' + UI.icon('phone') + 'ثبت پیگیری</button>' },
+      ],
+    });
+    B.querySelector('#t-pd').addEventListener('click', ev => {
+      const b = ev.target.closest('[data-log]'); if (!b) return;
+      const a = DB.byId.get(+b.dataset.log);
+      UI.logOutcome(a, 'pastdue:' + a.id, () => pdT.redraw());
+    });
+    UI.table(B.querySelector('#t-ch'), {
+      rows: churned, exportName: 'churn', unit: 'مشتری', pageSize: 10, pageSizes: false, compact: true,
+      sort: { key: 'when', dir: 'asc' }, onRow: a => UI.openAccount(a.id),
+      emptyTitle: 'در این بازه ریزشی نبوده', empty: 'بازهٔ بلندتری انتخاب کنید.',
+      columns: [
+        { key: 'name', label: 'مشتری', render: a => acc(a, UI.esc(C.plans[lostPlan(a)].name + ' · ' + a.industryName)), csv: a => a.name },
+        { key: 'when', label: 'تاریخ لغو', sort: a => a.churnedAt, render: a => '<span class="nowrap">' + UI.date(a.churnedAt) + '</span><span class="s">' + UI.agoDays(a.churnedAt) + '</span>', csv: a => UI.date(a.churnedAt) },
+        { key: 'lost', label: 'درآمد ازدست‌رفته', num: true, sort: lostMrr, render: a => '<b>' + UI.compact(lostMrr(a)) + '</b>', csv: lostMrr },
+        { key: 'reason', label: 'دلیل', render: a => '<span class="tag">' + UI.esc(a.churnReason) + '</span>', csv: a => a.churnReason },
+        { key: 'tenure', label: 'مدت اشتراک', num: true, sort: a => a.planEvents[0].t - a.churnedAt, render: a => dur(a.planEvents[0].t - a.churnedAt), csv: a => a.planEvents[0].t - a.churnedAt },
+        { key: 'owner', label: 'مسئول', sort: a => UI.ownerOf(a) || 'zz', render: owner, csv: ownerCsv },
+      ],
+    });
+    if (location.hash === '#pastdue' || location.hash === '#churn') { const t = B.querySelector(location.hash); if (t) setTimeout(() => t.scrollIntoView({ block: 'start' }), 0); }
+  },
+});
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>نمای کلی — پنل Airsheet</title>
+<link rel="stylesheet" href="shell.css">
+</head>
+<body>
+<script src="assets/data.js"></script>
+<script src="assets/charts.js"></script>
+<script src="assets/ui.js"></script>
+<script>
+(function () {
+const { agg, accounts, CONFIG: C } = DB;
+
+UI.page({
+  id: 'overview', title: 'نمای کلی', range: true, sources: ['main', 'wallet'], noBanner: true,
+  sub: 'خلاصهٔ وضعیت کسب‌وکار — هر عدد با بازهٔ هم‌طول قبلی مقایسه شده است',
+  render(ctx) {
+    const R = ctx.range, B = ctx.body;
+    const mrrNow = agg.mrrAt(0), mrrPrev = agg.mrrAt(R);
+    const payNow = agg.payingAt(0), payPrev = agg.payingAt(R);
+    const wauNow = agg.activeInWindow(0, 7), wauPrev = agg.activeInWindow(R, 7);
+    const suNow = agg.signups(0, R), suPrev = agg.signups(R, R);
+    const cohort = (from, len) => accounts.filter(a => a.age >= from && a.age < from + len);
+    const actRate = (from, len) => { const c = cohort(from, len); return c.length ? c.filter(a => a.milestones.activated !== undefined).length / c.length : 0; };
+    const arNow = actRate(7, R), arPrev = actRate(7 + R, R);
+    const risk = accounts.filter(a => a.paying && (a.health < 50 || a.pastDue));
+    const riskMrr = risk.reduce((t, a) => t + a.mrr, 0);
+    const weeks = 12;
+    const wk = f => { const o = []; for (let w = weeks - 1; w >= 0; w--) o.push(f(w * 7)); return o; };
+
+    let h = '<div class="kpis">' +
+      UI.kpi({ label: 'درآمد ماهانهٔ تکرارشونده', value: UI.compactParts(mrrNow).num, unit: UI.compactParts(mrrNow).unit + ' ' + C.currency, href: 'revenue.html', info: 'MRR: جمع اشتراک‌های فعال به ماه (سالانه‌ها تقسیم بر ۱۲)',
+        delta: UI.delta(mrrNow, mrrPrev), cmp: 'قبل: ' + UI.compact(mrrPrev), spark: Charts.spark(wk(agg.mrrAt), { area: true }) }) +
+      UI.kpi({ label: 'مشتری پرداخت‌کننده', value: UI.n(payNow), href: 'customers.html',
+        delta: UI.delta(payNow, payPrev), cmp: 'قبل: ' + UI.n(payPrev), spark: Charts.spark(wk(agg.payingAt)) }) +
+      UI.kpi({ label: 'حساب فعال در ۷ روز', value: UI.n(wauNow), info: 'حسابی که در ۷ روز اخیر دست‌کم یک رویداد داشته',
+        delta: UI.delta(wauNow, wauPrev), cmp: UI.n(agg.activeUsersInWindow(0, 7)) + ' کاربر فعال', spark: Charts.spark(wk(d => agg.activeInWindow(d, 7))) }) +
+      UI.kpi({ label: 'ثبت‌نام در ' + UI.fa(R) + ' روز', value: UI.n(suNow), href: 'onboarding.html',
+        delta: UI.delta(suNow, suPrev), cmp: 'قبل: ' + UI.n(suPrev), spark: Charts.spark(wk(d => agg.signups(d, 7))) }) +
+      UI.kpi({ label: 'نرخ فعال‌سازی', value: UI.pct(arNow), href: 'funnel.html', info: 'سهم ثبت‌نام‌هایی که در ۷ روز اول به ' + C.activation.records + ' رکورد رسیده‌اند (کوهورت‌های بالغ)',
+        delta: UI.delta(arNow, arPrev, { points: true }), cmp: 'قبل: ' + UI.pct(arPrev) }) +
+      UI.kpi({ label: 'درآمد در خطر', value: UI.compactParts(riskMrr).num, unit: UI.compactParts(riskMrr).unit + ' ' + C.currency, href: 'health.html', info: 'MRR مشتریانی که امتیاز سلامت زیر ۵۰ یا پرداخت ناموفق دارند',
+        delta: UI.delta(riskMrr, accounts.filter(a => a.paying && a.healthHistory[7 - Math.min(7, Math.round(R / 7))] < 50).reduce((t, a) => t + a.mrr, 0), { goodUp: false }), cmp: UI.fa(risk.length) + ' مشتری · ' + UI.pct(riskMrr / mrrNow) + ' از کل' }) +
+      '</div>';
+
+    // --- MRR + attention
+    const months = agg.mrrMonths(12);
+    const mv = agg.movements(R, 0);
+    const net = mv.new + mv.expansion + mv.contraction + mv.churn;
+    const chip = (label, v, cls, cnt) => '<div style="flex:1;min-width:110px;border:1px solid var(--border);border-radius:9px;padding:8px 11px"><div class="muted" style="font-size:11.5px">' + label + '</div><div style="font-weight:800;font-size:15px" class="' + cls + '">' + (v > 0 ? '+' : v < 0 ? '−' : '') + UI.compact(Math.abs(v)) + '</div><div class="faint" style="font-size:11px">' + cnt + '</div></div>';
+    const att = UI.alerts().slice(0, 4);
+    const topRisk = risk.slice().sort((p, q) => q.mrr - p.mrr).slice(0, 5);
+    h += '<div class="grid g-main">' +
+      UI.card({ title: 'درآمد ماهانه (MRR)', hint: '۱۲ ماه اخیر · تومان', acts: '<a class="btn sm ghost" href="revenue.html">جزئیات درآمد' + UI.icon('chevronL') + '</a>',
+        body: '<div id="c-mrr"></div><div class="row wrap" style="gap:8px;margin-top:12px">' +
+          chip('مشتری جدید', mv.new, '', UI.fa(mv.newCount) + ' حساب') + chip('افزایش پلن/صندلی', mv.expansion, '', UI.fa(mv.expCount) + ' حساب') +
+          chip('کاهش', mv.contraction, '', UI.fa(mv.conCount) + ' حساب') + chip('ریزش', mv.churn, '', UI.fa(mv.churnCount) + ' حساب') +
+          '<div style="flex:1;min-width:110px;border-radius:9px;padding:8px 11px;background:var(--surface-3)"><div class="muted" style="font-size:11.5px">خالص در ' + UI.fa(R) + ' روز</div><div style="font-weight:800;font-size:15px">' + (net >= 0 ? '+' : '−') + UI.compact(Math.abs(net)) + '</div><div class="faint" style="font-size:11px">' + UI.signedPct(net / mrrPrev, 1) + '</div></div></div>' +
+          '<div class="section-title" style="margin:18px 0 8px">ترکیب درآمد ماهانه بر اساس پلن</div><div id="c-mix"></div>' }) +
+      '<div class="stack">' +
+        UI.card({ title: 'نیازمند توجه', hint: UI.fa(att.length) + ' مورد', flush: true,
+          body: '<div class="list" style="padding:0 16px">' + att.map(x => '<a class="li" href="' + x.href + '">' + UI.statusDot(x.lvl) + '<span class="main"><span class="t">' + UI.esc(x.t) + '</span><span class="d">' + UI.esc(x.d) + '</span></span>' + UI.icon('chevronL', 'faint') + '</a>').join('') + '</div>' }) +
+        UI.card({ title: 'بیشترین درآمد در خطر', hint: 'روی نام بزنید', flush: true,
+          body: '<div class="list" style="padding:0 16px">' + topRisk.map(a => '<div class="li"><span class="main"><a class="t" href="' + UI.custLink(a) + '" data-acc="' + a.id + '">' + UI.esc(a.name) + '</a><span class="d">' + (a.pastDue ? 'پرداخت ناموفق · ' : '') + 'تمدید ' + UI.inDays(a.renewIn) + ' · ' + UI.repName(UI.ownerOf(a), true) + '</span></span><span class="end">' + UI.healthScore(a.health) + '<div class="muted" style="font-size:11.5px;margin-top:2px">' + UI.compact(a.mrr) + '</div></span></div>').join('') + '</div>',
+          foot: '<span>' + UI.fa(risk.length) + ' مشتری در خطر</span><a href="health.html">همه را ببینید</a>' }) +
+      '</div></div>';
+
+    // --- activity, signups, funnel
+    h += '<div class="grid g3">' +
+      UI.card({ title: 'حساب‌های فعال روزانه', hint: '۹۰ روز', body: '<div id="c-dau"></div><div class="legend" style="margin-top:8px"><span class="k"><i class="ln" style="background:var(--series-1)"></i>میانگین ۷ روزه</span><span class="k"><i class="ln" style="background:var(--deemph)"></i>روزانه (جمعه‌ها افت دارد)</span></div>' }) +
+      UI.card({ title: 'ثبت‌نام و فعال‌سازی', hint: '۱۲ هفته', body: '<div id="c-su"></div><div class="legend" style="margin-top:8px"><span class="k"><i class="sw" style="background:var(--series-1)"></i>فعال شد</span><span class="k"><i class="sw" style="background:var(--deemph)"></i>هنوز فعال نشده</span></div>' }) +
+      UI.card({ title: 'قیف ۹۰ روز', hint: 'ثبت‌نام‌های ۹۰ تا ۳۰ روز پیش', body: '<div id="c-fn"></div>', foot: '<span>کوهورت بالغ؛ هر پله نسبت به ثبت‌نام</span><a href="funnel.html">قیف کامل</a>' }) +
+      '</div>';
+
+    // --- upsell + team
+    const ups = accounts.filter(a => a.segments.includes('upsell')).sort((p, q) => DB.upgradeValue(q) * q.limitHits30 - DB.upgradeValue(p) * p.limitHits30).slice(0, 6);
+    const since = Math.min(R, 44);
+    const teamRows = C.reps.map(r => {
+      const acts = DB.activities.filter(x => x.rep === r.id && x.t < since);
+      const calls = acts.filter(x => x.type === 'call' || x.type === 'meeting').length;
+      const won = acts.filter(x => x.outcome === 'won_new' || x.outcome === 'won_expansion' || x.outcome === 'renewed').reduce((t, x) => t + (x.mrr || 0), 0);
+      const lost = acts.filter(x => x.outcome === 'lost').length;
+      const book = accounts.filter(a => UI.ownerOf(a) === r.id && a.paying);
+      return { r, calls, won, lost, book: book.reduce((t, a) => t + a.mrr, 0), risk: book.filter(a => a.health < 50).length };
+    });
+    h += '<div class="grid g2">' +
+      UI.card({ title: 'بزرگ‌ترین فرصت‌های ارتقا', hint: 'به سقف خورده‌اند و قیمت را دیده‌اند', flush: true,
+        body: '<div class="tbl-wrap"><table class="tbl compact"><thead><tr><th>مشتری</th><th>سیگنال</th><th>مسئول</th><th class="num">ارزش ارتقا / ماه</th></tr></thead><tbody>' +
+          ups.map(a => '<tr><td>' + UI.acctCell(a, { sub: C.plans[a.plan].name + ' · ' + UI.esc(a.maxUsage.label) + ' ' + UI.pct(a.maxUsage.ratio) }) + '</td><td>' + UI.signals(a) + '</td><td>' + UI.repName(UI.ownerOf(a), true) + '</td><td class="num"><b>+' + UI.compact(DB.upgradeValue(a)) + '</b></td></tr>').join('') + '</tbody></table></div>',
+        foot: '<span>' + UI.fa(accounts.filter(a => a.segments.includes('upsell')).length) + ' حساب آمادهٔ ارتقا</span><a href="customers.html?view=upsell">فهرست کامل</a>' }) +
+      UI.card({ title: 'تیم فروش', hint: UI.fa(since) + ' روز اخیر', flush: true,
+        body: '<div class="tbl-wrap"><table class="tbl compact"><thead><tr><th>کارشناس</th><th class="num">تماس و جلسه</th><th class="num">درآمد بسته‌شده</th><th class="num">ازدست‌رفته</th><th class="num">دفتر مشتریان</th><th class="num">در خطر</th></tr></thead><tbody>' +
+          teamRows.map(t => '<tr><td><span class="row"><span class="avatar">' + UI.esc(UI.initials(t.r.name)) + '</span><b>' + UI.esc(t.r.name) + '</b></span></td><td class="num">' + UI.n(t.calls) + '</td><td class="num"><b>' + UI.compact(t.won) + '</b></td><td class="num">' + UI.n(t.lost) + '</td><td class="num">' + UI.compact(t.book) + '</td><td class="num">' + (t.risk ? '<span class="sig due">' + UI.fa(t.risk) + '</span>' : '—') + '</td></tr>').join('') + '</tbody></table></div>',
+        foot: '<span>درآمد بسته‌شده = خرید اول + ارتقا + تمدید</span><a href="team.html">عملکرد تیم</a>' }) +
+      '</div>';
+
+    B.innerHTML = h;
+
+    // charts
+    Charts.line(B.querySelector('#c-mrr'), {
+      labels: months.map(m => UI.monthLabel(m)), tipLabels: months.map(m => UI.monthLabel(m, true) + (m.end === 0 ? ' (تا امروز)' : '')),
+      series: [{ name: 'MRR', values: months.map(m => m.mrr) }], height: 230, yFormat: v => UI.compact(v), endFormat: v => UI.compact(v), tipFormat: v => UI.money(v),
+    });
+    Charts.stack100(B.querySelector('#c-mix'), { parts: ['basic', 'pro', 'ent'].map(k => ({ label: C.plans[k].name, value: accounts.filter(a => a.plan === k).reduce((t, a) => t + a.mrr, 0), color: 'var(--plan-' + k + ')' })), format: v => UI.compact(v) });
+    const days = 90, daily = agg.daily(d => agg.activeOn(d), days + 6);
+    const ma = []; for (let i = 6; i < daily.length; i++) { let s = 0; for (let k = i - 6; k <= i; k++) s += daily[k]; ma.push(Math.round(s / 7)); }
+    const dlabels = []; for (let d = days - 1; d >= 0; d--) dlabels.push(UI.date(d));
+    Charts.line(B.querySelector('#c-dau'), {
+      labels: dlabels, xTicks: 4,
+      series: [{ name: 'روزانه', values: daily.slice(6), muted: true }, { name: 'میانگین ۷ روزه', values: ma, color: 'var(--series-1)' }], area: false, height: 200,
+    });
+    const wl = [], act = [], nact = [];
+    for (let w = 11; w >= 0; w--) {
+      const c = accounts.filter(a => a.age >= w * 7 && a.age < w * 7 + 7);
+      const x = c.filter(a => a.milestones.activated !== undefined).length;
+      wl.push(UI.date(w * 7 + 6)); act.push(x); nact.push(c.length - x);
+    }
+    Charts.columns(B.querySelector('#c-su'), {
+      labels: wl, xEvery: 3, tipLabels: wl.map(l => 'هفتهٔ ' + l), total: 'ثبت‌نام',
+      series: [{ name: 'فعال شد', values: act, color: 'var(--series-1)' }, { name: 'هنوز فعال نشده', values: nact, color: 'var(--deemph)' }], height: 200,
+    });
+    const f = agg.funnel(30, 60).slice(1);
+    Charts.hbars(B.querySelector('#c-fn'), { labelWidth: 78, items: f.map(s => ({ label: s.label, value: s.n, note: UI.pct(s.fromStart) })), format: v => UI.n(v) });
+  },
+});
+})();
+</script>
+</body>
+</html>

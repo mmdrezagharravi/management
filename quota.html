@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>مصرف و سهمیه — پنل Airsheet</title>
+<link rel="stylesheet" href="shell.css">
+</head>
+<body>
+<script src="assets/data.js"></script>
+<script src="assets/charts.js"></script>
+<script src="assets/ui.js"></script>
+<script>
+(function () {
+const { accounts, CONFIG: C } = DB;
+
+// Our own supplier budgets (what Airsheet buys each month) — not customer plan limits.
+const SMS_BUDGET = 60000;          // بستهٔ ماهانهٔ پیامک نزد اپراتور
+const AI_BUDGET = 12000000;        // سقف ماهانهٔ توکن نزد سرویس هوش مصنوعی
+
+const RES = accounts[0].usage.map(u => ({ key: u.key, label: u.label }));
+const resLabel = k => (RES.find(r => r.key === k) || {}).label || k;
+const usageOf = (a, k) => a.usage.find(u => u.key === k);
+const ratioOf = (a, k) => { const u = usageOf(a, k); return u && u.limit ? u.ratio : 0; };
+const low = a => a.plan === 'free' || a.plan === 'basic';
+const nextPlan = a => C.plans[a.plan === 'free' ? 'basic' : 'pro'].name;
+const fmtUse = k => k === 'storage' ? (v => UI.n(v, 1)) : UI.compact;
+// days until the record limit at the last 30 days' pace; null = already there, Infinity = flat
+function forecast(a, u) {
+  if (u.ratio >= 1) return null;
+  if (u.key !== 'records') return undefined;
+  const rate = a.records30 / 30;
+  return rate > 0 ? Math.ceil((u.limit - u.used) / rate) : Infinity;
+}
+
+UI.page({
+  id: 'quota', title: 'مصرف و سهمیه', sources: ['main', 'wallet'],
+  sub: 'چه کسی به سقف پلن خورده یا نزدیک است — و بودجهٔ پیامک و هوش مصنوعی خودمان',
+  render(ctx) {
+    const B = ctx.body;
+    const rows = accounts.filter(a => a.maxUsage && a.maxUsage.ratio >= 0.8);
+    const full = rows.filter(a => a.maxUsage.ratio >= 1);
+    const fullBy = {}; full.forEach(a => a.usage.forEach(u => { if (u.limit && u.ratio >= 1) fullBy[u.key] = (fullBy[u.key] || 0) + 1; }));
+    const fullTop = Object.entries(fullBy).sort((p, q) => q[1] - p[1]).slice(0, 2).map(([k, v]) => resLabel(k) + ' ' + UI.n(v)).join(' · ');
+    const hits = accounts.reduce((t, a) => t + a.limitHits30, 0), hitAcc = accounts.filter(a => a.limitHits30 > 0).length;
+    const sms = accounts.reduce((t, a) => t + a.sms30, 0), ai = accounts.reduce((t, a) => t + a.ai30, 0);
+    const seen30 = rows.filter(a => a.lastSeenDays <= 30).length;
+
+    let h = '<div class="kpis">' +
+      UI.kpi({ label: 'نزدیک سقف پلن', value: UI.n(rows.length), unit: 'حساب', info: 'حسابی که دست‌کم در یک منبع ۸۰٪ سقف پلن یا بیشتر را مصرف کرده',
+        cmp: UI.n(seen30) + ' حساب در ۳۰ روز اخیر فعال بوده‌اند' }) +
+      UI.kpi({ label: 'در سقف (۱۰۰٪)', value: UI.n(full.length), unit: 'حساب', info: 'دیگر نمی‌توانند در آن منبع چیزی اضافه کنند', href: 'quota.html?sort=usage',
+        cmp: fullTop }) +
+      UI.kpi({ label: 'برخورد با سقف در ۳۰ روز', value: UI.n(hits), unit: 'بار', cmp: 'در ' + UI.n(hitAcc) + ' حساب' }) +
+      UI.kpi({ label: 'پیامک این ماه از بودجهٔ ما', value: UI.pct(sms / SMS_BUDGET), info: 'بستهٔ پیامکی که Airsheet از اپراتور خریده — نه سقف پلن مشتری',
+        cmp: UI.meter('', sms, SMS_BUDGET, { fmt: UI.compact }) }) +
+      UI.kpi({ label: 'توکن هوش مصنوعی از بودجهٔ ما', value: UI.pct(ai / AI_BUDGET), info: 'سقف ماهانه‌ای که با سرویس‌دهندهٔ هوش مصنوعی داریم — نه سقف پلن مشتری',
+        cmp: UI.meter('', ai, AI_BUDGET, { fmt: UI.compact }) }) +
+      '</div>';
+
+    // --- per resource + automatic nudges
+    const perRes = RES.map(r => ({ ...r, n: accounts.filter(a => ratioOf(a, r.key) >= 0.8).length })).filter(r => r.n).sort((p, q) => q.n - p.n);
+    const seen14 = a => a.lastSeenDays <= 14;
+    const r80 = a => a.maxUsage && a.maxUsage.ratio >= 0.8 && a.maxUsage.ratio < 1;
+    const r100 = a => a.maxUsage && a.maxUsage.ratio >= 1;
+    const rules = [
+      { at: 'warn', atL: '۸۰٪', who: 'رایگان و پایه', what: 'نوار داخل بیس: «۸۰٪ سقف … پر شده» با دکمهٔ مقایسهٔ پلن‌ها', n: accounts.filter(a => low(a) && r80(a) && seen14(a)).length },
+      { at: 'crit', atL: '۱۰۰٪', who: 'رایگان و پایه', what: 'پنجرهٔ ارتقای یک‌کلیکی هنگام برخورد + ایمیل به مالک حساب', n: accounts.filter(a => low(a) && r100(a) && seen14(a)).length },
+      { at: 'warn', atL: '۸۰٪', who: 'پرو و سازمانی', what: 'اعلان به مدیر حساب + کار «افزایش سهمیه» برای کارشناس مسئول', n: accounts.filter(a => !low(a) && r80(a) && seen14(a)).length },
+      { at: 'crit', atL: '۱۰۰٪', who: 'پرو و سازمانی', what: '۱۰٪ مازاد موقت تا تماس کارشناس — کار مشتری متوقف نمی‌شود', n: accounts.filter(a => !low(a) && r100(a) && seen14(a)).length },
+    ];
+    const upsellN = accounts.filter(a => a.segments.includes('upsell')).length;
+    h += '<div class="grid g2">' +
+      UI.card({ title: 'حساب‌های نزدیک سقف در هر منبع', hint: '۸۰٪ یا بیشتر · روی هر ردیف بزنید',
+        body: '<div id="c-res"></div>',
+        foot: '<span>یک حساب ممکن است در چند منبع هم‌زمان نزدیک سقف باشد</span><a href="customers.html?view=upsell">' + UI.n(upsellN) + ' حساب آمادهٔ ارتقا</a>' }) +
+      UI.card({ title: 'پیام خودکار داخل محصول', hint: 'پیشنهاد · حساب‌هایی که در ۱۴ روز اخیر وارد شده‌اند', flush: true,
+        body: '<div class="list" style="padding:0 16px">' + rules.map(r =>
+          '<div class="li" style="align-items:flex-start">' + UI.statusBadge(r.at, r.atL) + '<span class="main"><span class="t">' + UI.esc(r.who) + '</span><span class="d" style="white-space:normal">' + UI.esc(r.what) + '</span></span>' +
+          '<span class="end"><b style="font-size:15px">' + UI.n(r.n) + '</b><div class="muted" style="font-size:11px">حساب امروز</div></span></div>').join('') + '</div>',
+        foot: '<span>امروز این پیام‌ها وجود ندارند؛ فقط کارشناس فروش از برخورد با سقف خبردار می‌شود</span>' }) +
+      '</div>';
+
+    h += '<div class="card" id="tb"></div>';
+    B.innerHTML = h;
+
+    Charts.hbars(B.querySelector('#c-res'), {
+      labelWidth: 120, format: v => UI.n(v),
+      items: perRes.map(r => ({ label: r.label, value: r.n, href: 'quota.html?view=' + r.key })),
+    });
+
+    // --- the list
+    const viewRes = () => { const v = UI.param('view'); return RES.some(r => r.key === v) ? v : null; };
+    const resOf = a => { const k = viewRes(); return k ? usageOf(a, k) : a.maxUsage; };
+    const acts = () => UI.store.get('quotaActions', {});
+    const tEl = B.querySelector('#tb');
+    const t = UI.table(tEl, {
+      rows, url: true, exportName: 'quota', unit: 'حساب',
+      views: [{ key: 'all', label: 'همه', test: null }].concat(perRes.map(r => ({ key: r.key, label: r.label, test: a => ratioOf(a, r.key) >= 0.8 }))),
+      sort: { key: 'hits', dir: 'desc' },
+      search: { placeholder: 'نام حساب یا شخص…', text: a => a.name + ' ' + a.contact.first + ' ' + a.contact.last + ' ' + a.slug },
+      filters: [
+        { key: 'plan', label: 'پلن', options: C.planOrder.map(k => ({ v: k, l: C.plans[k].name })), test: (a, v) => a.plan === v },
+        { key: 'seen', label: 'فعالیت', options: [{ v: '14', l: 'فعال در ۱۴ روز' }, { v: '30', l: 'فعال در ۳۰ روز' }], test: (a, v) => a.lastSeenDays <= +v },
+        { key: 'owner', label: 'مسئول', options: [{ v: 'none', l: 'بدون مسئول' }].concat(C.reps.map(r => ({ v: r.id, l: r.name }))), test: (a, v) => v === 'none' ? !UI.ownerOf(a) : UI.ownerOf(a) === v },
+      ],
+      onRow: a => UI.openAccount(a.id),
+      columns: [
+        { key: 'name', label: 'حساب', render: a => UI.acctCell(a), csv: a => a.name },
+        { key: 'plan', label: 'پلن', sort: a => C.planOrder.indexOf(a.plan), desc: true, render: a => UI.planBadge(a.plan), csv: a => C.plans[a.plan].name },
+        { key: 'res', label: 'منبع', sort: a => resOf(a).label, render: a => '<span class="nowrap">' + UI.esc(resOf(a).label) + '</span>', csv: a => resOf(a).label },
+        { key: 'usage', label: 'مصرف', num: true, sort: a => resOf(a).ratio, render: a => { const u = resOf(a); return '<div style="min-width:170px;text-align:right">' + UI.meter('', u.used, u.limit, { fmt: fmtUse(u.key) }) + '</div>'; }, csv: a => Math.round(resOf(a).ratio * 100) + '%' },
+        { key: 'fc', label: 'رسیدن به ۱۰۰٪', num: true, title: 'با سرعت ۳۰ روز اخیر — فقط برای رکورد قابل پیش‌بینی است', desc: false,
+          sort: a => { const f = forecast(a, resOf(a)); return f === null ? -1 : f === undefined || f === Infinity ? 1e9 : f; },
+          render: a => { const f = forecast(a, resOf(a)); return f === null ? '<span class="sig due">رسیده</span>' : f === undefined || f === Infinity ? '<span class="faint" title="' + (f === Infinity ? 'در ۳۰ روز اخیر رکوردی اضافه نشده' : 'فقط برای رکورد پیش‌بینی می‌شود') + '">—</span>' : '<b>' + UI.esc(UI.inDays(f)) + '</b>'; },
+          csv: a => { const f = forecast(a, resOf(a)); return f === null ? 0 : f === undefined || f === Infinity ? '' : f; } },
+        { key: 'hits', label: 'برخورد با سقف', num: true, title: 'تعداد برخورد با سقف در ۳۰ روز', sort: a => a.limitHits30 * 100 + a.pricingVisits30, render: a => a.limitHits30 ? '<span class="sig limit">' + UI.fa(a.limitHits30) + '×</span>' : '<span class="faint">—</span>', csv: a => a.limitHits30 },
+        { key: 'pv', label: 'بازدید قیمت', num: true, title: 'بازدید صفحهٔ قیمت در ۳۰ روز', sort: a => a.pricingVisits30, render: a => a.pricingVisits30 ? '<span class="sig price">' + UI.fa(a.pricingVisits30) + '×</span>' : '<span class="faint">—</span>', csv: a => a.pricingVisits30 },
+        { key: 'owner', label: 'مسئول', sort: a => UI.ownerOf(a) || 'zz', render: a => UI.repName(UI.ownerOf(a), true), csv: a => { const o = UI.ownerOf(a); return o ? DB.rep(o).name : ''; } },
+        { key: 'act', label: 'اقدام', nosort: true, sort: false, csv: false, render: a => {
+          const done = acts()[a.id];
+          if (done) return '<span class="badge st-good"><i class="dot"></i>' + (done.kind === 'upgrade' ? 'پیشنهاد ثبت شد' : 'درخواست ثبت شد') + '</span>';
+          return low(a) ? '<button class="btn sm primary" data-offer="' + a.id + '">' + UI.icon('up') + 'پیشنهاد ارتقا</button>'
+            : '<button class="btn sm" data-offer="' + a.id + '">' + UI.icon('plus') + 'افزایش سهمیه</button>';
+        } },
+      ],
+    });
+
+    tEl.addEventListener('click', ev => {
+      const b = ev.target.closest('[data-offer]'); if (!b) return;
+      ev.stopPropagation();
+      const a = DB.byId.get(+b.dataset.offer), u = resOf(a);
+      const kind = low(a) ? 'upgrade' : 'quota';
+      const text = kind === 'upgrade'
+        ? 'پیشنهاد ارتقا به ' + nextPlan(a) + ' (+' + UI.money(DB.upgradeValue(a)) + ' در ماه) — ' + UI.pct(u.ratio) + ' سقف ' + u.label + ' پر شده'
+        : 'درخواست افزایش سهمیهٔ ' + u.label + ' — ' + UI.pct(u.ratio) + ' مصرف شده';
+      const all = acts(); all[a.id] = { kind, key: u.key, at: Date.now() }; UI.store.set('quotaActions', all);
+      UI.addNote(a.id, { kind: 'offer', text });
+      t.redraw();
+      UI.toast((kind === 'upgrade' ? 'پیشنهاد ارتقا برای «' : 'درخواست افزایش سهمیه برای «') + a.name + '» ثبت شد', () => {
+        const x = acts(); delete x[a.id]; UI.store.set('quotaActions', x);
+        const ns = UI.store.get('notes', {}); if (ns[a.id]) { ns[a.id] = ns[a.id].filter(n => n.text !== text); UI.store.set('notes', ns); }
+        t.redraw();
+      });
+    });
+  },
+});
+})();
+</script>
+</body>
+</html>

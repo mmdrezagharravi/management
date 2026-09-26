@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>تحلیل هوشمند — پنل Airsheet</title>
+<link rel="stylesheet" href="shell.css">
+<style>
+.ai-link { font-weight: 700; color: var(--accent-ink); }
+.ai-link:hover { text-decoration: underline; }
+.ai-card .prose p + p { margin-top: 8px; }
+.ai-stamp { font-size: 11.5px; color: #8ea3b8; margin-top: 14px; padding-top: 10px; border-top: 1px solid rgba(255, 255, 255, .09); line-height: 1.9; }
+.ai-stamp .ltr { color: #c6d3e0; }
+.find .kick { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
+.find h3 { font-size: 14.5px; font-weight: 800; letter-spacing: -.2px; line-height: 1.5; margin-top: 8px; }
+.find .ex { font-size: 12.5px; color: var(--ink-2); line-height: 1.95; margin-top: 4px; }
+.find .ev { font-size: 11.8px; color: var(--muted); background: var(--surface-2); border: 1px solid var(--grid); border-radius: 8px; padding: 7px 10px; margin-top: 10px; line-height: 1.8; }
+.find .ev b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.fb.on { background: var(--accent-wash); border-color: color-mix(in srgb, var(--accent) 55%, transparent); color: var(--accent-ink); }
+.hist .li { align-items: flex-start; }
+.hist .hl { font-weight: 700; font-size: 12.8px; line-height: 1.7; }
+.hist .when { font-size: 11.5px; color: var(--muted); white-space: nowrap; min-width: 92px; }
+.hist .when b { display: block; color: var(--ink); font-size: 12px; }
+.hist .li .d { white-space: normal; }
+</style>
+</head>
+<body>
+<script src="assets/data.js"></script>
+<script src="assets/charts.js"></script>
+<script src="assets/ui.js"></script>
+<script>
+(function () {
+const { accounts, agg, CONFIG: C } = DB;
+
+// run settings of the daily brief job (not data): model and token pricing used to estimate the cost line
+const RUN = { model: 'gpt-5.5', promptTokens: 1800, tokensPerAccount: 24, outputTokens: 1400, usdPerMIn: 1.25, usdPerMOut: 10 };
+
+/* ------------------------------------------------------------- helpers */
+const sum = (list, f) => list.reduce((t, a) => t + f(a), 0);
+const median = arr => { const v = arr.slice().sort((p, q) => p - q); return v.length ? v[Math.floor(v.length / 2)] : 0; };
+const mrrAtFor = (a, t) => { let v = 0; for (const pe of a.planEvents) if (pe.t >= t) v = pe.mrr; else break; return v; };
+const sgn = x => x > 0 ? '+' : x < 0 ? '−' : '';
+const cm = x => sgn(x) + UI.compact(Math.abs(x));
+const times = x => UI.n(x, 1);
+// The model only ever sees account IDs. Names are joined back here, in the browser.
+const acc = (id, cls) => { const a = DB.byId.get(id); return a ? '<a class="' + (cls || 'ai-link') + '" href="customer.html?id=' + id + '" data-acc="' + id + '">' + UI.esc(a.name) + '</a>' : ''; };
+const ownerTxt = a => { const o = UI.ownerOf(a); return o ? DB.rep(o).name : 'بدون مسئول'; };
+const thumb = down => '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"' + (down ? ' style="transform:scaleY(-1)"' : '') + '><path d="M7 11v9H4v-9z"/><path d="M7 11l4-7a2 2 0 0 1 3.2 1.9L13.5 10h5.3a2 2 0 0 1 2 2.4l-1.3 6A2 2 0 0 1 17.5 20H7"/></svg>';
+// "at risk" = below the lowest band that is not a risk band (same line the health page and the risk segment use)
+const RISK = C.health.bands.find(b => b.key === 'warn').min;
+const dayKey = (() => { const j = DB.jalali(0); return j.y + '-' + j.m + '-' + j.d; })();
+
+UI.page({
+  id: 'ai', title: 'تحلیل هوشمند', sources: ['main', 'behavior', 'wallet'], noBanner: true,
+  sub: 'گزارش روزانه — هر جمله از عددهای همین پنل ساخته شده؛ روی نام هر مشتری بزنید تا نمای سریع باز شود',
+  actions: () => '<button class="btn sm" id="copy">' + UI.icon('copy') + 'کپی متن گزارش</button>',
+  render(ctx) {
+    const B = ctx.body;
+
+    /* ------------------------------------------------------------ facts */
+    const paying = accounts.filter(a => a.paying);
+    const mrrNow = agg.mrrAt(0), mrr30 = agg.mrrAt(30);
+    const mv = agg.movements(30, 0);
+    const net = mv.new + mv.expansion + mv.contraction + mv.churn;
+    const risky = paying.filter(a => a.health < RISK).sort((p, q) => q.mrr - p.mrr);
+    const riskTop = risky[0];
+    const ups = accounts.filter(a => a.segments.includes('upsell'));
+    const upScore = a => DB.upgradeValue(a) * 1e4 + a.limitHits30 * (1 + a.pricingVisits30);
+    const upsSorted = ups.slice().sort((p, q) => upScore(q) - upScore(p));
+    const oppTop = upsSorted[0];
+    const src = agg.sources(30, 90);
+    const srcN = sum(src, s => s.signups), srcPaid = sum(src, s => s.paid);
+    const avgPaid = srcN ? srcPaid / srcN : 0;
+    const minN = Math.max(20, Math.round(srcN / src.length / 2));          // ignore channels too small to compare
+    const best = src.filter(s => s.signups >= minN).sort((p, q) => q.paidRate - p.paidRate)[0];
+    const beh = DB.ops.ingestion.find(s => s.key === 'behavior');
+    const cron = DB.ops.crons.find(c => c.key === 'brief') || { lastAt: '', duration: '' };
+    const lagDays = Math.ceil(beh.lagMin / 1440);
+    const analysed = accounts.filter(a => a.paying || a.lastSeenDays <= 30);
+    const tokensIn = RUN.promptTokens + analysed.length * RUN.tokensPerAccount;
+    const cost = tokensIn / 1e6 * RUN.usdPerMIn + RUN.outputTokens / 1e6 * RUN.usdPerMOut;
+
+    /* ------------------------------------------------------------ hero */
+    const chg = mrr30 ? (mrrNow - mrr30) / mrr30 : 0;
+    const p = [];
+    p.push('درآمد ماهانهٔ تکرارشونده امروز <b>' + UI.money(mrrNow) + '</b> است؛ ' +
+      '<span class="' + (chg >= 0 ? 'hl-good' : 'hl-bad') + '">' + UI.signedPct(chg, 1) + '</span> نسبت به ۳۰ روز پیش (' + UI.compact(mrr30) + '). ' +
+      'خالص درآمد جدید این ۳۰ روز <b>' + cm(net) + '</b> بود: ' + UI.fa(mv.newCount) + ' مشتری جدید (' + cm(mv.new) + ') و ' + UI.fa(mv.expCount) + ' ارتقا (' + cm(mv.expansion) + ')، ' +
+      'منهای ' + UI.fa(mv.churnCount) + ' ریزش (' + cm(mv.churn) + ')' + (mv.conCount ? ' و ' + UI.fa(mv.conCount) + ' کاهش پلن (' + cm(mv.contraction) + ')' : '') + '.');
+    if (riskTop) p.push('<b>بزرگ‌ترین ریسک:</b> ' + acc(riskTop.id, ' ') + ' با ' + UI.money(riskTop.mrr) + ' در ماه و سلامت <span class="hl-bad">' + UI.n(riskTop.health) + '</span>' +
+      (riskTop.pastDue ? '؛ پرداخت تمدیدش هم ناموفق مانده' : '') + '. تمدید بعدی ' + UI.date(-riskTop.renewIn) + ' (' + UI.inDays(riskTop.renewIn) + ') · مسئول: ' + UI.esc(ownerTxt(riskTop)) + '.');
+    if (oppTop) p.push('<b>بزرگ‌ترین فرصت:</b> ' + acc(oppTop.id, ' ') + ' — ' + UI.fa(oppTop.limitHits30) + ' بار به سقف ' + UI.esc(oppTop.maxUsage.label) + ' خورده و ' + UI.fa(oppTop.pricingVisits30) + ' بار صفحهٔ قیمت را دیده؛ ارتقا یعنی <span class="hl-good">+' + UI.money(DB.upgradeValue(oppTop)) + '</span> در ماه.');
+    if (best) p.push('<b>بهترین کانال جذب:</b> ' + UI.esc(best.name) + ' — ' + UI.pct(best.paidRate) + ' از ثبت‌نام‌های ۳۰ تا ۱۲۰ روز پیشش پرداخت کرده‌اند (' + UI.fa(best.paid) + ' از ' + UI.fa(best.signups) + ')، ' + times(avgPaid ? best.paidRate / avgPaid : 0) + ' برابر میانگین ' + UI.pct(avgPaid) + '.');
+    p.push('<b>احتیاط:</b> لاگ رفتاری ' + UI.lagText(beh.lagMin) + ' عقب است و در ۲۴ ساعت گذشته ' + UI.n(beh.dropped24) + ' رویداد نرسیده؛ فعالیت ' + UI.fa(lagDays) + ' روز اخیر کمتر از واقع دیده می‌شود و ممکن است چند حساب بی‌دلیل «در خطر» به نظر برسند.');
+
+    let h = '<section class="card ai-card" id="brief"><div class="card-h"><h2><span style="color:#7fb2f0;display:inline-flex">' + UI.icon('sparkle') + '</span>وضعیت امروز</h2><span class="hint">' + UI.WEEKDAYS[DB.dayDate(0).getUTCDay()] + ' ' + UI.date(0) + '</span></div>' +
+      '<div class="card-b"><div class="prose" id="brief-text">' + p.map(x => '<p>' + x + '</p>').join('') + '</div>' +
+      '<div class="ai-stamp">تولید امروز ساعت ' + UI.esc(cron.lastAt) + (cron.duration ? ' در ' + UI.esc(cron.duration) : '') + ' · مدل <span class="ltr">' + UI.esc(RUN.model) + '</span>' +
+        ' · ورودی بی‌نام: فقط شناسهٔ ' + UI.n(analysed.length) + ' حساب و عددهایشان به مدل رفت و نام‌ها همین‌جا در مرورگر جایگزین شدند' +
+        ' · ' + UI.n(tokensIn + RUN.outputTokens) + ' توکن · هزینه ≈ ' + UI.n(cost, 2) + ' دلار</div></div></section>';
+
+    /* ------------------------------------------------------------ findings */
+    const fb = UI.store.get('aiFeedback', {});
+    // anomaly: the automation queue against its own recent median
+    const q = DB.ops.queues.find(x => x.key === 'automation');
+    const qPrev = q.trend.slice(0, -1), qBase = median(qPrev);
+    const autos = accounts.filter(a => a.segments.includes('automators'));
+    const autosPaying = autos.filter(a => a.paying).sort((x, y) => y.mrr - x.mrr);
+    // risk: renewals in the next 30 days with a failing score
+    const ren = paying.filter(a => a.renewIn <= 30 && a.health < RISK).sort((x, y) => y.mrr - x.mrr);
+    const renMrr = sum(ren, a => a.mrr);
+    // opportunity: upgrade-ready accounts, and how many have nobody on them
+    const upVal = sum(ups, a => DB.upgradeValue(a));
+    const upFree = ups.filter(a => !UI.ownerOf(a));
+
+    const findings = [
+      { key: 'queue-automation', kind: 'ناهنجاری', cls: 'warn',
+        title: 'صف اتوماسیون ' + times(qBase ? q.waiting / qBase : 0) + ' برابر حالت عادی',
+        text: UI.n(q.waiting) + ' اجرا در صف مانده و ' + UI.n(q.failed24) + ' اجرا در ۲۴ ساعت ناموفق بوده؛ اتوماسیون‌های ' + UI.n(autos.length) + ' حساب خودکارساز دیر اجرا می‌شود' +
+          (autosPaying[0] ? '، از جمله ' + acc(autosPaying[0].id) + '.' : '.') + ' پیش از رسیدن شکایت، به تیم فنی خبر دهید.',
+        ev: 'در انتظار <b>' + UI.n(q.waiting) + '</b> · میانهٔ ' + UI.fa(qPrev.length) + ' روز قبل <b>' + UI.n(qBase) + '</b> · ناموفق ۲۴ ساعت <b>' + UI.n(q.failed24) + '</b> · درآمد ماهانهٔ خودکارسازها <b>' + UI.money(sum(autos, a => a.mrr)) + '</b>',
+        link: { href: 'jobs.html', label: 'صف‌ها و زمان‌بندی' } },
+      { key: 'renewals-at-risk', kind: 'ریسک', cls: 'crit',
+        title: UI.fa(ren.length) + ' تمدید پرریسک در ۳۰ روز آینده',
+        text: 'مجموع ' + UI.money(renMrr) + ' در ماه با سلامت زیر ' + UI.fa(RISK) + ' به تمدید می‌رسد' +
+          (ren.length ? '؛ بزرگ‌ترین‌ها ' + ren.slice(0, 2).map(a => acc(a.id) + ' (' + UI.inDays(a.renewIn) + ')').join(' و ') : '') + '. پیش از تاریخ تمدید تماس بگیرید، نه بعد از آن.',
+        ev: '<b>' + UI.fa(ren.length) + '</b> حساب · <b>' + UI.compact(renMrr) + '</b> در ماه · <b>' + UI.pct(mrrNow ? renMrr / mrrNow : 0, 1) + '</b> از کل درآمد ماهانه · میانگین سلامت <b>' + UI.n(ren.length ? sum(ren, a => a.health) / ren.length : 0) + '</b> · پرداخت ناموفق <b>' + UI.fa(ren.filter(a => a.pastDue).length) + '</b>',
+        link: { href: 'health.html', label: 'سلامت و ریسک' } },
+      { key: 'upsell-unassigned', kind: 'فرصت', cls: 'good',
+        title: UI.fa(ups.length) + ' حساب آمادهٔ ارتقا؛ ' + UI.fa(upFree.length) + ' تا بی‌مسئول',
+        text: 'به سقف پلن خورده‌اند و صفحهٔ قیمت را دیده‌اند. ارتقای همه‌شان ' + UI.money(upVal) + ' به درآمد ماهانه اضافه می‌کند' +
+          (oppTop ? '؛ قوی‌ترین سیگنال از ' + acc(oppTop.id) + ' است' : '') + '. سرنخ‌های بی‌مسئول را امروز تقسیم کنید.',
+        ev: '<b>' + UI.fa(ups.length) + '</b> حساب · ارزش <b>+' + UI.compact(upVal) + '</b> در ماه (' + UI.pct(mrrNow ? upVal / mrrNow : 0, 1) + ' از درآمد ماهانه) · بدون مسئول <b>' + UI.fa(upFree.length) + '</b>',
+        link: { href: 'segments.html?seg=upsell', label: 'فهرست آمادهٔ ارتقا' } },
+    ];
+    const findingActs = f => {
+      const open = (UI.taskState('ai:' + f.key) || {}).status === 'open';
+      const v = fb[dayKey + ':' + f.key];
+      return (open ? '<button class="btn sm ghost good" data-task="' + f.key + '" title="لغو وظیفه">' + UI.icon('check') + 'وظیفه ساخته شد</button>'
+                   : '<button class="btn sm primary" data-task="' + f.key + '">' + UI.icon('plus') + 'ساخت وظیفه</button>') +
+        '<a class="btn sm ghost" href="' + f.link.href + '">' + UI.esc(f.link.label) + UI.icon('chevronL') + '</a>' +
+        '<span style="margin-right:auto;display:inline-flex;gap:4px">' +
+          '<button class="btn sm icon fb' + (v === 'up' ? ' on' : '') + '" data-fb="' + f.key + '" data-v="up" aria-pressed="' + (v === 'up') + '" title="مفید بود" aria-label="مفید بود">' + thumb(false) + '</button>' +
+          '<button class="btn sm icon fb' + (v === 'down' ? ' on' : '') + '" data-fb="' + f.key + '" data-v="down" aria-pressed="' + (v === 'down') + '" title="مفید نبود" aria-label="مفید نبود">' + thumb(true) + '</button>' +
+        '</span>';
+    };
+    h += '<div class="grid g3">' + findings.map(f => '<section class="card find" data-find="' + f.key + '"><div class="card-b">' +
+      '<div class="kick">' + UI.statusBadge(f.cls, f.kind) + '</div>' +
+      '<h3>' + f.title + '</h3><div class="ex">' + f.text + '</div><div class="ev">شواهد: ' + f.ev + '</div></div>' +
+      '<div class="card-f" style="justify-content:flex-start;flex-wrap:wrap;gap:6px" data-facts="' + f.key + '">' + findingActs(f) + '</div></section>').join('') + '</div>';
+
+    /* ------------------------------------------------------------ ranked actions */
+    const cand = [];
+    paying.filter(a => a.pastDue).forEach(a => {
+      const inv = a.invoices[a.invoices.length - 1];
+      cand.push({ key: 'pastdue:' + a.id, a, risk: true, value: a.mrr, title: acc(a.id) + ' — پرداخت ناموفق را پیگیری کنید', why: 'تمدید ' + UI.fa(inv.retries || 1) + ' بار ناموفق · اشتراک در دورهٔ مهلت · سلامت ' + UI.fa(a.health) });
+    });
+    paying.filter(a => a.health < RISK && a.renewIn <= 30 && !a.pastDue).forEach(a => cand.push({ key: 'renew:' + a.id, a, risk: true, value: a.mrr,
+      title: acc(a.id) + ' — پیش از تمدید تماس بگیرید', why: 'سلامت ' + UI.fa(a.health) + ' · تمدید ' + UI.date(-a.renewIn) + ' (' + UI.inDays(a.renewIn) + ')' }));
+    paying.filter(a => a.health2wAgo != null && a.health2wAgo - a.health >= 20 && a.health < 60).forEach(a => cand.push({ key: 'drop:' + a.id, a, risk: true, value: a.mrr,
+      title: acc(a.id) + ' — علت افت را بپرسید', why: 'سلامت از ' + UI.fa(a.health2wAgo) + ' به ' + UI.fa(a.health) + ' در دو هفته' }));
+    upsSorted.slice(0, 5).forEach(a => cand.push({ key: 'upsell:' + a.id, a, risk: false, value: DB.upgradeValue(a),
+      title: acc(a.id) + ' — پیشنهاد ارتقا', why: UI.fa(a.limitHits30) + ' بار سقف ' + UI.esc(a.maxUsage.label) + ' · ' + UI.fa(a.pricingVisits30) + ' بار صفحهٔ قیمت · پلن ' + UI.esc(C.plans[a.plan].name) }));
+    paying.filter(a => a.plan !== 'basic' && a.memberCount >= a.seats && a.activeMembers7 >= a.seats).forEach(a => cand.push({ key: 'seats:' + a.id, a, risk: false, value: C.plans[a.plan].seatPrice * 2,
+      title: acc(a.id) + ' — پیشنهاد صندلی بیشتر', why: UI.fa(a.memberCount) + ' عضو روی ' + UI.fa(a.seats) + ' صندلی، همه این هفته فعال' }));
+    // one line per customer: keep its biggest reason
+    const byAcc = new Map();
+    cand.forEach(c => { const o = byAcc.get(c.a.id); if (!o || c.value > o.value) byAcc.set(c.a.id, c); });
+    const actions = [...byAcc.values()];
+    if (upFree.length) actions.push({ key: 'seg:upsell-unassigned', seg: true, risk: false, value: sum(upFree, a => DB.upgradeValue(a)),
+      title: '<a class="ai-link" href="segments.html?seg=upsell&owner=none">' + UI.fa(upFree.length) + ' سرنخ ارتقای بی‌مسئول</a> — بین کارشناس‌ها تقسیم کنید', why: 'دستهٔ «آمادهٔ ارتقا» · مجموع ارزش ارتقای این سرنخ‌ها' });
+    actions.sort((x, y) => y.value - x.value);
+    const top = actions.slice(0, 9);
+    const actRow = (x, i) => {
+      const done = (UI.taskState('ai:today:' + x.key) || {}).status === 'open';
+      const owner = x.seg ? 'مدیر فروش' : ownerTxt(x.a);
+      return '<div class="task" data-row="' + i + '"><span class="ico ' + (x.risk ? 'p1' : 'p3') + '"><b>' + UI.fa(i + 1) + '</b></span>' +
+        '<div style="min-width:0"><div class="tt"><span>' + x.title + '</span></div><div class="why">' + x.why + '</div>' +
+        '<div class="meta"><span>' + (x.risk ? '<span class="sig due">در خطر ' + UI.compact(x.value) + ' در ماه</span>' : '<span class="sig price">فرصت +' + UI.compact(x.value) + ' در ماه</span>') + '</span><span>مسئول: <b style="color:var(--ink-2)">' + UI.esc(owner) + '</b></span></div></div>' +
+        '<div class="acts">' + (done ? '<button class="btn sm ghost good" data-today="' + i + '" title="حذف از کارهای امروز">' + UI.icon('check') + 'در کارهای امروز</button>'
+                                    : '<button class="btn sm" data-today="' + i + '">' + UI.icon('inbox') + 'ثبت در کارهای امروز</button>') + '</div></div>';
+    };
+
+    /* ------------------------------------------------------------ data used + history */
+    const ev30 = sum(analysed, a => a.events30);
+    let inv30 = 0; accounts.forEach(a => a.invoices.forEach(iv => { if (iv.t < 30) inv30++; }));
+    const riskAt = d => { let n = 0; for (const a of accounts) if (mrrAtFor(a, d) > 0 && DB.metrics(a, d).health < RISK) n++; return n; };
+    const riskSeries = []; for (let d = 0; d <= 7; d++) riskSeries.push(riskAt(d));
+    const hist = [];
+    for (let d = 0; d < 7; d++) {
+      const su = accounts.filter(a => a.age === d).length;
+      const news = [], churns = [];
+      accounts.forEach(a => a.planEvents.forEach((pe, k) => {
+        if (pe.t !== d) return;
+        if (pe.kind === 'new') news.push({ a, v: pe.mrr });
+        else if (pe.kind === 'churn') churns.push({ a, v: k ? a.planEvents[k - 1].mrr : 0 });
+      }));
+      news.sort((x, y) => y.v - x.v); churns.sort((x, y) => y.v - x.v);
+      const r = riskSeries[d], dr = r - riskSeries[d + 1];
+      let hl;
+      if (churns.length) hl = 'ریزش ' + acc(churns[0].a.id) + ' (−' + UI.compact(churns[0].v) + ' در ماه)' + (churns.length > 1 ? ' و ' + UI.fa(churns.length - 1) + ' ریزش دیگر' : '');
+      else if (news.length) hl = UI.fa(news.length) + ' مشتری جدید پرداخت کرد؛ بزرگ‌ترین ' + acc(news[0].a.id) + ' (+' + UI.compact(news[0].v) + ')';
+      else hl = 'مشتریان در خطر: ' + UI.fa(r) + (dr ? ' (' + (dr > 0 ? '+' : '−') + UI.fa(Math.abs(dr)) + ')' : '');
+      hist.push({ d, hl, sub: UI.fa(su) + ' ثبت‌نام · در خطر ' + UI.fa(r) + (dr ? ' (' + (dr > 0 ? '+' : '−') + UI.fa(Math.abs(dr)) + ')' : '') + ' · ' + UI.fa(news.length) + ' خرید اول · ' + UI.fa(churns.length) + ' ریزش' });
+    }
+
+    h += '<div class="grid g-main">' +
+      UI.card({ title: 'اقدام‌های پیشنهادی', hint: 'به ترتیب اثر بر درآمد ماهانه', flush: true, id: 'acts',
+        body: '<div id="act-list">' + top.map(actRow).join('') + '</div>',
+        foot: '<span>' + UI.fa(actions.length) + ' مورد بررسی شد؛ ' + UI.fa(top.length) + ' مورد پراثرتر اینجاست</span><a href="today.html">کارهای امروز</a>' }) +
+      '<div class="stack">' +
+        UI.card({ title: 'چه داده‌ای استفاده شد', body:
+          '<div class="kv"><span class="k">حساب‌های تحلیل‌شده</span><span class="v">' + UI.n(analysed.length) + ' <span class="muted" style="font-weight:400">از ' + UI.n(accounts.length) + '</span></span></div>' +
+          '<div class="kv"><span class="k">رویدادهای ۳۰ روز اخیر</span><span class="v">' + UI.n(ev30) + '</span></div>' +
+          '<div class="kv"><span class="k">پرداخت‌های ۳۰ روز اخیر</span><span class="v">' + UI.n(inv30) + '</span></div>' +
+          '<div class="kv"><span class="k">ثبت‌نام‌ها برای مقایسهٔ کانال‌ها</span><span class="v">' + UI.n(srcN) + '</span></div>' +
+          '<div class="kv"><span class="k">بازهٔ تحلیل</span><span class="v">۳۰ روز فعالیت · ' + UI.fa(riskSeries.length - 1) + ' روز تاریخچهٔ سلامت</span></div>' +
+          '<div class="kv"><span class="k">تأخیر لاگ رفتاری</span><span class="v"><span class="sig due">' + UI.lagText(beh.lagMin) + '</span></span></div>' +
+          '<div class="note" style="margin-top:8px">به مدل فقط شناسهٔ حساب و عدد می‌رسد؛ نام، شماره و ایمیل از پنل خارج نمی‌شود. <a href="data-health.html" style="color:var(--accent-ink);font-weight:600">سلامت داده</a></div>' }) +
+        UI.card({ title: 'تاریخچه', hint: '۷ گزارش اخیر', flush: true,
+          body: '<div class="list hist" style="padding:0 16px">' + hist.map(x => '<div class="li"><span class="when"><b>' + (x.d === 0 ? 'امروز' : x.d === 1 ? 'دیروز' : UI.WEEKDAYS[DB.dayDate(x.d).getUTCDay()]) + '</b>' + UI.date(x.d) + '</span>' +
+            '<span class="main"><span class="hl">' + x.hl + '</span><span class="d">' + x.sub + '</span></span></div>').join('') + '</div>' }) +
+      '</div></div>';
+
+    B.innerHTML = h;
+
+    /* ------------------------------------------------------------ wiring */
+    B.addEventListener('click', ev => {
+      const tb = ev.target.closest('[data-task]');
+      if (tb) {
+        const f = findings.find(x => x.key === tb.dataset.task);
+        const open = (UI.taskState('ai:' + f.key) || {}).status === 'open';
+        const plain = tb.closest('.find').querySelector('h3').textContent;
+        UI.setTask('ai:' + f.key, open ? { status: null } : { status: 'open', title: plain, kind: f.kind, due: 0 });
+        B.querySelector('[data-facts="' + f.key + '"]').innerHTML = findingActs(f);
+        UI.toast(open ? 'وظیفه لغو شد' : 'وظیفه ساخته شد: ' + plain, open ? null : () => { UI.setTask('ai:' + f.key, { status: null }); B.querySelector('[data-facts="' + f.key + '"]').innerHTML = findingActs(f); });
+        return;
+      }
+      const fbb = ev.target.closest('[data-fb]');
+      if (fbb) {
+        const all = UI.store.get('aiFeedback', {}), k = dayKey + ':' + fbb.dataset.fb;
+        if (all[k] === fbb.dataset.v) delete all[k]; else all[k] = fbb.dataset.v;
+        UI.store.set('aiFeedback', all); Object.keys(fb).forEach(x => delete fb[x]); Object.assign(fb, all);
+        const f = findings.find(x => x.key === fbb.dataset.fb);
+        B.querySelector('[data-facts="' + f.key + '"]').innerHTML = findingActs(f);
+        UI.toast(all[k] ? 'بازخورد ثبت شد — ممنون' : 'بازخورد برداشته شد');
+        return;
+      }
+      const td = ev.target.closest('[data-today]');
+      if (td) {
+        const i = +td.dataset.today, x = top[i];
+        const id = 'ai:today:' + x.key, on = (UI.taskState(id) || {}).status === 'open';
+        const owner = x.seg ? null : UI.ownerOf(x.a);
+        UI.setTask(id, on ? { status: null } : { status: 'open', due: 0, accountId: x.a ? x.a.id : null, owner, value: x.value, why: x.why.replace(/<[^>]+>/g, '') });
+        B.querySelector('[data-row="' + i + '"]').outerHTML = actRow(x, i);
+        UI.toast(on ? 'از کارهای امروز برداشته شد' : 'در کارهای امروز ' + (owner ? DB.rep(owner).short : 'مدیر فروش') + ' ثبت شد');
+      }
+    });
+    const cp = document.getElementById('copy');
+    if (cp) cp.onclick = () => {
+      const txt = 'وضعیت امروز — ' + UI.date(0) + '\n\n' + B.querySelector('#brief-text').innerText;
+      const ok = () => UI.toast('متن گزارش کپی شد');
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(ok, () => fallback(txt, ok)); else fallback(txt, ok);
+    };
+    function fallback(txt, ok) { const ta = document.createElement('textarea'); ta.value = txt; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); ok(); } catch (e) { UI.toast('کپی نشد؛ متن را دستی انتخاب کنید'); } ta.remove(); }
+  },
+});
+})();
+</script>
+</body>
+</html>
