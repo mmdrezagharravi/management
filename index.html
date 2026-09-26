@@ -1,94 +1,14 @@
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>پنل مدیریت Airsheet — گالری صفحه‌ها</title>
-<link rel="stylesheet" href="shell.css">
-<style>
-  .wrap { max-width: 1240px; margin: 0 auto; padding: 36px 20px 60px; }
-  .hero-h { display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; flex-wrap: wrap; margin-bottom: 22px; }
-  .hero-h h1 { font-size: 28px; font-weight: 800; letter-spacing: -.6px; }
-  .hero-h p { color: var(--ink-2); font-size: 14px; max-width: 720px; line-height: 2; margin-top: 4px; }
-  .kick { color: var(--accent-ink); font-weight: 800; font-size: 12px; letter-spacing: .03em; }
-  .gal { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 14px; }
-  .pc { display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow); transition: transform .12s, box-shadow .12s; }
-  .pc:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
-  .pc .th { aspect-ratio: 16 / 10; background: var(--surface-3) center top / cover no-repeat; border-bottom: 1px solid var(--border); }
-  .pc .m { padding: 11px 13px 13px; }
-  .pc h3 { font-size: 14px; font-weight: 800; display: flex; align-items: center; gap: 7px; }
-  .pc p { font-size: 12px; color: var(--ink-2); line-height: 1.85; margin-top: 3px; }
-  .grp-t { font-size: 13px; font-weight: 800; color: var(--muted); margin: 28px 0 10px; display: flex; align-items: center; gap: 8px; }
-  .grp-t::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-  .facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; margin-top: 8px; }
-  .fact { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; font-size: 12.5px; line-height: 1.9; color: var(--ink-2); }
-  .fact b { color: var(--ink); display: block; font-size: 13.5px; margin-bottom: 2px; }
-</style>
-</head>
-<body>
-<div class="wrap">
-  <div class="hero-h">
-    <div>
-      <div class="kick">Airsheet · پنل مدیریت مشتری · نسخهٔ ۲</div>
-      <h1>همهٔ صفحه‌ها</h1>
-      <p>۲۲ صفحه در پنج بخش. همهٔ عددها از <b>یک مجموعه داده</b> حساب می‌شوند، پس هیچ دو صفحه‌ای دربارهٔ یک مشتری با هم تناقض ندارند.
-      برای مسئول فروش از «کارهای امروز» و برای مدیر از «نمای کلی» شروع کنید.</p>
-    </div>
-    <div class="row wrap">
-      <a class="btn primary" href="today.html">کارهای امروز</a>
-      <a class="btn" href="overview.html">نمای کلی</a>
-      <a class="btn ghost" href="_v1/index.html">نسخهٔ قبلی</a>
-    </div>
-  </div>
-
-  <div class="facts">
-    <div class="fact"><b>سریع کار کنید</b><span class="kbd">Ctrl K</span> جستجو در مشتری، شماره، ایمیل و بیس · کلیک روی هر نام = نمای سریع · <span class="kbd">j</span>/<span class="kbd">k</span> حرکت در ردیف‌ها · <span class="kbd">?</span> همهٔ میان‌برها</div>
-    <div class="fact"><b>نقش‌ها</b>از منوی بالا-چپ «مدیر فروش» یا یکی از کارشناس‌ها را انتخاب کنید؛ «کارهای امروز» و «مشتریان من» بر همین اساس عوض می‌شوند.</div>
-    <div class="fact"><b>تغییرها ذخیره می‌شوند</b>ثبت تماس، یادداشت، تعویق، تعیین مسئول و «انجام شد» در همین مرورگر می‌مانند. نمایش شماره و خروجی CSV در گزارش ممیزی ثبت می‌شود.</div>
-    <div class="fact"><b>داده‌ها ساختگی‌اند</b>۴٬۲۰۰ حساب با یک بذر ثابت ساخته شده‌اند و زمان ماکاپ ۳۱ شهریور ۱۴۰۵ است. تعریف همهٔ معیارها در «تعریف‌ها و دسترسی» آمده است.</div>
-  </div>
-
-  <div id="gal"></div>
-</div>
-<script>
-const PAGES = [
-  ['کار روزانه', [
-    ['today.html', 'کارهای امروز', 'فهرست کارهای هر کارشناس، مرتب بر اساس فوریت و ارزش؛ ثبت نتیجهٔ تماس و تعویق با یک کلیک.', 1],
-    ['overview.html', 'نمای کلی', 'درآمد ماهانه، مشتری فعال، ثبت‌نام، فعال‌سازی و درآمد در خطر، با مقایسه با دورهٔ قبل.'],
-    ['ai.html', 'تحلیل هوشمند', 'خلاصهٔ روزانه که از خود داده ساخته می‌شود؛ هر نام به مشتری وصل است و به وظیفه تبدیل می‌شود.'],
-  ]],
-  ['مشتریان', [
-    ['customers.html', 'همهٔ مشتریان', 'همهٔ حساب‌ها با نماهای آماده، فیلتر، مرتب‌سازی، خروجی CSV و تعیین مسئول گروهی.'],
-    ['customer.html', 'پروفایل مشتری', 'چرا امتیاز سلامتش این است و قدم بعدی چیست؛ مسیر، اعضا، بیس‌ها، فاکتورها و تماس‌ها.'],
-    ['health.html', 'سلامت و ریسک', 'مشتریان در خطر مرتب بر اساس درآمد، ضعیف‌ترین مؤلفهٔ هر کدام و اقدام پیشنهادی.'],
-    ['segments.html', 'دسته‌بندی‌ها', 'نُه دسته با قاعدهٔ شفاف، هم‌پوشانی دسته‌ها و فهرست اعضای هر دسته.'],
-    ['onboarding.html', 'ثبت‌نام‌های تازه', 'هر ثبت‌نام جدید کجا گیر کرده و قدم بعدی برای فعال شدنش چیست.', 1],
-  ]],
-  ['فروش و درآمد', [
-    ['revenue.html', 'درآمد', 'روند MRR، مشتری جدید، ارتقا، کاهش و ریزش، ترکیب پلن‌ها و پرداخت‌های ناموفق.', 1],
-    ['sales.html', 'میز فروش', 'تقویم تمدید، فرصت‌های ارتقا، مشتریان بازگرداندنی و پرداخت‌های ناموفق در یک جا.'],
-    ['team.html', 'عملکرد تیم فروش', 'تماس، نرخ پاسخ، قرارداد بسته‌شده و حجم کار هر کارشناس.', 1],
-  ]],
-  ['رشد محصول', [
-    ['funnel.html', 'قیف تبدیل', 'قیف مرحله‌به‌مرحله برای کوهورت‌های بالغ، به تفکیک منبع و زمان رسیدن به هر مرحله.'],
-    ['retention.html', 'نگهداشت', 'نگهداشت ماهانهٔ کوهورت‌ها، اثر اتوماسیون، نگهداشت درآمد و دلیل ریزش.'],
-    ['acquisition.html', 'منابع جذب', 'کیفیت هر کانال از بازدید تا پرداخت، هزینهٔ جذب و روند هفتگی.'],
-    ['features.html', 'استفاده از قابلیت‌ها', 'کدام قابلیت پرکاربرد است و کدام بیشترین اثر را روی ماندن مشتری دارد.'],
-    ['journey.html', 'نقشهٔ مسیر مشتری', 'نقشهٔ مسیر با عددهای زنده، نقطه‌های درد و فرصت‌های بهبود در هر مرحله.'],
-  ]],
-  ['زیرساخت و تنظیمات', [
-    ['bases.html', 'بیس‌ها', 'همهٔ بیس‌ها با جستجو، پرکارترین‌ها و توزیع حجم رکورد.'],
-    ['base.html', 'جزئیات بیس', 'محتوا، افراد، فعالیت و مصرف یک بیس.'],
-    ['quota.html', 'مصرف و سهمیه', 'چه کسی به سقف پلن نزدیک است، کِی می‌رسد و چه پیشنهادی بگیرد.'],
-    ['jobs.html', 'صف‌ها و زمان‌بندی', 'صف‌های پس‌زمینه، اجراهای ساعتی و وضعیت کارهای زمان‌بندی‌شده.'],
-    ['data-health.html', 'سلامت داده', 'تأخیر هر منبع داده، رویدادهای گم‌شده و صفحه‌هایی که تحت تأثیرند.', 1],
-    ['settings.html', 'تعریف‌ها و دسترسی', 'تعریف معیارها، آستانه‌ها، نقش‌ها و گزارش ممیزی.', 1],
-  ]],
-];
-const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-document.getElementById('gal').innerHTML = PAGES.map(([g, items]) => '<div class="grp-t">' + esc(g) + '</div><div class="gal">' + items.map(([href, t, d, isNew]) =>
-  '<a class="pc" href="' + href + '"><div class="th" style="background-image:url(\'screens/' + href.replace('.html', '') + '.png\')"></div><div class="m"><h3>' + esc(t) + (isNew ? '<span class="badge st-info">جدید</span>' : '') + '</h3><p>' + esc(d) + '</p></div></a>').join('') + '</div>').join('');
-try { const th = localStorage.getItem('as.theme'); if (th) document.documentElement.setAttribute('data-theme', JSON.parse(th)); } catch (e) {}
-</script>
-</body>
+  <head>
+    <title><%= productName %></title>
+    <meta charset="utf-8">
+    <meta name="description" content="<%= productDescription %>">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  </head>
+  <body>
+    <!-- quasar:entry-point -->
+  </body>
 </html>

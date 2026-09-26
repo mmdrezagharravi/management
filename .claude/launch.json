@@ -1,0 +1,7 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    { "name": "management", "runtimeExecutable": "npx", "runtimeArgs": ["quasar", "dev"], "port": 9100 },
+    { "name": "management-static", "runtimeExecutable": "npx", "runtimeArgs": ["vite", "preview", "--outDir", "dist/spa", "--port", "9101", "--strictPort"], "port": 9101 }
+  ]
+}

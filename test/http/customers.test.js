@@ -1,0 +1,102 @@
+import { describe, it, expect, vi } from 'vitest'
+
+// local (browser) stores and the axios client are replaced; the adapters only see server-shaped JSON
+vi.mock('stores/local', () => ({ useLocalStore: () => ({ owners: {}, notes: { a1: [{ who: 'من', text: 'زنگ زدم', kind: 'call' }] }, tasks: {} }) }))
+vi.mock('stores/session', () => ({ useSessionStore: () => ({ token: 't', user: null }) }))
+vi.mock('src/api/http/client', () => {
+  const memo = (fn) => fn
+  const get = vi.fn(), all = vi.fn()
+  return { get, all, post: vi.fn(), memo }
+})
+const { get, all } = await import('src/api/http/client')
+const { customers, search, alerts, navBadges, freshness } = await import('src/api/http/customers')
+const { customer, quickView } = await import('src/api/http/customer')
+
+const iso = (d) => new Date(Date.now() - d * 864e5).toISOString()
+const day = (d) => iso(d).slice(0, 10)
+const summary = (o = {}) => ({
+  id: 'a1', name: 'شرکت نمونه', mobile: '09121234567', plan: 'team', seats: 5, cycle: '12m', paying: true, everPaid: true, mrr: 500000, until: iso(-40), renewIn: 40, pastDue: true,
+  signedUpAt: iso(200), age: 200, blocked: false, referredBy: null, bases: 2, records: 1200, automations: 3, runs: 10, runsLimit: 100, atLimit: false,
+  memberCount: 3, activeMembers7: 2, lastSeenDays: 1, events7: 20, events30: 90, activeDays7: 4, activeDays28: 15, trendPct: -20, activated: true, habit: true, firstBaseDays: 1,
+  firstPaidAt: iso(150), payingDays: 150, lifetimeRevenue: 1100000, health: 25, band: 'crit', components: { activity: 5, trend: 3, depth: 8, team: 6, commercial: 3 }, segments: ['upsell'],
+  health2wAgo: 40, healthHistory: [50, 48, 45, 44, 40, 35, 30, 25], ...o,
+})
+const detail = () => ({
+  ...summary(), email: 'x@y.z', referredBy: null, referrals: 0,
+  basesList: [{ id: 'b'.repeat(24), name: 'فروش', createdAt: iso(199), isTemplate: false, records: 1000, recordsLimit: 50000, usage: 0.02, atLimit: false, tables: 4, automations: 3, collaborators: 2, lastSeenDays: 1 }],
+  members: [{ id: 'a1', name: 'علی', mobile: '0912', lastSeenDays: 0 }, { id: 'm2', name: null, mobile: '09351112233', lastSeenDays: 30 }],
+  invoices: [
+    { id: 'i3', type: 'PlanInvoice', status: 'Failed', amount: 6000000, createdAt: iso(2), paidAt: null, plan: 'team', cycle: '12m', seats: 5 },
+    { id: 'i2', type: 'PlanInvoice', status: 'Paid', amount: 6000000, createdAt: iso(100), paidAt: iso(100), plan: 'team', cycle: '12m', seats: 5 },
+    { id: 'i1', type: 'PlanInvoice', status: 'Paid', amount: 3000000, createdAt: iso(150), paidAt: iso(150), plan: 'team', cycle: '12m', seats: 2 },
+  ],
+  contract: null,
+  activity: Array.from({ length: 90 }, (_, i) => ({ day: day(89 - i), events: i })),
+  features: { Record: 40, View: 3, Automation: 0 },
+  healthHistory: [{ day: day(14), score: 41, band: 'warn' }, { day: day(0), score: 25, band: 'crit' }],
+})
+
+// keys of the mock twins (src/api/mock/customer.js, shared.js enrich())
+const ACCOUNT_KEYS = ['id', 'name', 'slug', 'industry', 'industryName', 'city', 'source', 'age', 'contact', 'plan', 'cycle', 'seats', 'mrr', 'paying', 'everPaid', 'health', 'band', 'components', 'health2wAgo', 'healthHistory', 'lastSeenDays', 'lastSeenMin', 'online', 'memberCount', 'activeMembers7', 'activeDays28', 'activeDays7', 'events30', 'records30', 'records', 'trendPct', 'renewIn', 'churnedAt', 'churnReason', 'pastDue', 'tenureDays', 'limitHits30', 'pricingVisits30', 'tickets', 'nps', 'segments', 'maxUsage', 'usage', 'bases', 'automations', 'upgradeValue', 'owner', 'last30', 'milestones', 'feat', 'invitesSent', 'wk', 'decline']
+const CUSTOMER_KEYS = ['fallback', 'account', 'ev120', 'au120', 'paidTotal', 'paidCount', 'lastInvoiceRetries', 'weakest', 'nextStep', 'log', 'activeMembersToday', 'invitesAccepted', 'cycleDiscount', 'members', 'bases', 'invoices', 'planEvents', 'timeline', 'interactions', 'notes', 'limits', 'featureList']
+
+describe('http customers adapter', () => {
+  it('customers() lists every account, no cities', async () => {
+    all.mockResolvedValue([summary(), summary({ id: 'a2', paying: false, plan: 'basic', mrr: 0, health: 80, band: 'good', pastDue: false, segments: [] })])
+    const d = await customers()
+    expect(d.cities).toEqual([])
+    expect(d.rows).toHaveLength(2)
+    for (const k of ACCOUNT_KEYS) expect(d.rows[0]).toHaveProperty(k)
+    expect(d.rows[0].plan).toBe('team'); expect(d.rows[1].plan).toBe('free')
+  })
+  it('search() hits both lists', async () => {
+    get.mockImplementation((p) => Promise.resolve(p === '/customers' ? { items: [summary()], total: 1 } : { items: [{ id: 'b'.repeat(24), name: 'فروش', records: 9, creator: { id: 'a1', name: 'شرکت نمونه' } }], total: 1 }))
+    const r = await search('فروش')
+    expect(r.customers[0].contact.mobile).toBe('09121234567')
+    expect(r.bases[0]).toEqual({ id: 'b'.repeat(24), name: 'فروش', slug: 'bbbbbbbb', records: 9, accountName: 'شرکت نمونه' })
+    expect(await search('  ')).toEqual({ customers: [], bases: [] })
+  })
+  it('alerts()/navBadges()/freshness() from customers + jobs + data-health', async () => {
+    get.mockImplementation((p) => Promise.resolve(p === '/jobs' ? { crons: [{ key: 'k', name: 'شبانه', lastStatus: 'fail', lastRunAt: iso(1), lastError: 'boom' }], sync: {} } : { lagDays: 3 }))
+    const al = await alerts()
+    expect(al.map((x) => x.to)).toEqual(['/jobs', '/data-health', '/sales?tab=pastdue', '/health', '/customers?view=unassigned'])
+    expect(al[2].mrr).toBe(500000)
+    for (const x of al) expect(Object.keys(x)).toEqual(expect.arrayContaining(['lvl', 't', 'd', 'to']))
+    expect(await navBadges()).toEqual({ today: null, health: { n: 1, warn: true }, jobs: { n: 1, warn: true }, 'data-health': { n: 1, warn: true } })
+    expect(await freshness(['main'])).toEqual({ key: 'behavior', name: 'index=behavior', desc: 'رویدادهای رفتاری', lagMin: 3 * 1440, status: 'warn' })
+  })
+})
+
+describe('http customer adapter', () => {
+  it('customer() has every mock key and derives billing/timeline', async () => {
+    get.mockResolvedValue(detail())
+    const d = await customer('a1')
+    for (const k of CUSTOMER_KEYS) expect(d).toHaveProperty(k)
+    for (const k of ACCOUNT_KEYS) expect(d.account).toHaveProperty(k)
+    expect(d.fallback).toBe(false)
+    expect(d.account.healthHistory).toEqual([41, 25])
+    expect(d.ev120).toHaveLength(90); expect(d.ev120[89]).toBe(89)
+    expect(d.invoices.map((i) => i.status)).toEqual(['paid', 'paid', 'failed'])
+    expect(d.invoices[0].plan).toBe('team'); expect(d.invoices[0].mrr).toBe(250000)
+    expect(d.paidTotal).toBe(9000000); expect(d.paidCount).toBe(2)
+    expect(d.planEvents.map((e) => e.kind)).toEqual(['new', 'expansion'])
+    expect(d.members.map((m) => m.role)).toEqual(['مالک', 'عضو'])
+    expect(d.bases[0]).toMatchObject({ slug: 'bbbbbbbb', tables: 4, lastActive: 1, created: 199 })
+    expect(d.weakest).toBe('trend'); expect(d.nextStep).toBeTruthy()
+    expect(d.log).toEqual([{ local: true, who: 'من', what: 'زنگ زدم', kind: 'تماس' }])
+    expect(d.account.feat).toEqual({ Record: { count: 40, last: null }, View: { count: 3, last: null } })
+    expect(d.featureList.some((f) => f.key === 'View')).toBe(true)
+    expect(d.timeline[d.timeline.length - 1].title).toBe('امروز')
+    expect(d.timeline.map((e) => e.title)).toContain('پرداخت تمدید ناموفق')
+    expect(d.timeline.every((e, i, arr) => i === 0 || arr[i - 1].t >= e.t)).toBe(true)
+  })
+  it('customer() rethrows the 404, quickView() returns null', async () => {
+    get.mockRejectedValue(new Error('مشتری پیدا نشد.'))
+    await expect(customer('zzz')).rejects.toThrow('پیدا نشد')
+    expect(await quickView('zzz')).toBeNull()
+    get.mockResolvedValue(detail())
+    const q = await quickView('a1')
+    expect(Object.keys(q)).toEqual(['account', 'tasks', 'notes', 'interactions'])
+    expect(q.notes).toHaveLength(1)
+  })
+})
