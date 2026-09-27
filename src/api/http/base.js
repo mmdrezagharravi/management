@@ -21,7 +21,7 @@ export async function base(id) {
   const members = d.members || []
   return {
     fallback: false, requestedId: id, exact: true, recordsUsed: row.records, // activity/runs are this base's own, limits are per base
-    base: { id: d.id, name: d.name, slug: d.slug || row.slug, created: row.created, tables: row.tables, records: row.records, automations: row.automations, pages: c.pages ?? 0, shares: null, collaborators: row.collaborators, lastActive: row.la },
+    base: { id: d.id, name: d.name, slug: d.slug || row.slug, created: row.created, tables: row.tables, records: row.records, automations: row.automations, portals: c.portals ?? 0, collaborators: row.collaborators, lastActive: row.la },
     account: a,
     limits: { records: d.recordsLimit || 0, runs: a.runsLimit || 0 }, seatLim: a.collaboratorLimit,
     share, autoShare, runsEst: c.runs30 ?? 0, failedRuns30: c.failedRuns30 ?? 0,

@@ -10,7 +10,7 @@ const META = {
   new: { rule: 'signup_age <= 14', desc: 'در دو هفتهٔ اخیر ثبت‌نام کرده‌اند' },
   stuck: { rule: 'signup_age 3..30 AND NOT activated', desc: 'ثبت‌نام کرده‌اند ولی در هفتهٔ اول فعال نشده‌اند' },
   builders: { rule: 'bases >= 2 AND last_seen <= 30', desc: 'بیش از یک بیس فعال ساخته‌اند' },
-  automators: { rule: 'automations >= 1 AND last_seen <= 30', desc: 'اتوماسیون فعال دارند — چسبنده‌ترین گروه' },
+  automators: { rule: 'automations >= 1 AND last_seen <= 30', desc: 'خودکارسازی فعال دارند — چسبنده‌ترین گروه' },
   teams: { rule: 'active_members_7d >= 2', desc: 'بیش از یک نفر در هفتهٔ اخیر کار کرده' },
   upsell: { rule: 'plan = basic AND at_limit AND last_seen <= 14', desc: 'در پلن پایه به سقف خورده‌اند و همین دو هفته فعال بوده‌اند' },
   risk: { rule: 'paying AND health < 50', desc: 'پرداخت‌کننده با امتیاز سلامت زیر ۵۰' },

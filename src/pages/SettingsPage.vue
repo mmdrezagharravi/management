@@ -10,7 +10,7 @@
         <div class="grid g2">
           <PanelCard title="فعالیت و فعال‌سازی" flush>
             <div class="list" style="padding: 0 16px">
-              <DefRow name="حساب فعال" :text="'حسابی که در ' + fa(D.activeWindow) + ' روز اخیر دست‌کم یک رویداد (ساخت یا ویرایش رکورد، اجرای اتوماسیون و…) داشته.'" :val="n(D.active7)" />
+              <DefRow name="حساب فعال" :text="'حسابی که در ' + fa(D.activeWindow) + ' روز اخیر دست‌کم یک رویداد (ساخت یا ویرایش رکورد، اجرای خودکارسازی و…) داشته.'" :val="n(D.active7)" />
               <DefRow name="فعال‌سازی" :text="'ثبت‌نامی که در ' + fa(D.activation.days) + ' روز اول به ' + fa(D.activation.records) + ' رکورد رسیده. نرخ آن فقط برای کوهورت‌هایی که ۷ روزشان تمام شده حساب می‌شود.'" />
               <DefRow name="عادت" :text="'حساب فعال‌شده‌ای که در ' + fa(D.habit.weeks) + ' هفته از ' + fa(D.habit.of) + ' هفتهٔ اول کار کرده.'" />
               <DefRow name="حساب خاموش" :text="'بیش از ' + fa(D.dormantDays) + ' روز هیچ فعالیتی نداشته.'" :val="n(D.dormant)" />
@@ -183,7 +183,7 @@ const planRows = [
   { label: 'هر همکار اضافه', cell: (p) => (p.seatPrice ? { cls: '', text: money(p.seatPrice) } : { cls: 'faint', text: '—' }) },
   { label: 'سقف همکار', cell: (p) => lim(p.limits.seats) },
   { label: 'رکورد (کل حساب)', cell: (p) => lim(p.limits.records) },
-  { label: 'اجرای اتوماسیون در ماه', cell: (p) => lim(p.limits.runs) },
+  { label: 'اجرای خودکارسازی در ماه', cell: (p) => lim(p.limits.runs) },
   { label: 'پیامک در ماه', cell: (p) => lim(p.limits.sms) },
   { label: 'توکن هوش مصنوعی در ماه', cell: (p) => lim(p.limits.ai, compact) },
   { label: 'فضای ذخیره', cell: (p) => lim(p.limits.storage, (v) => n(v) + ' گیگ') },

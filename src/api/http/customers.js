@@ -66,5 +66,5 @@ export const interactionsOf = () => []
 /** One page of the customer list: the server applies view, filters, search and sort (GET /management/customers). */
 export async function customersPage(params) {
   const r = await get('/customers', params)
-  return { rows: r.items.map(toAccount), total: r.total, counts: r.counts || {} }
+  return { rows: r.items.map(toAccount), total: r.total, counts: r.counts || {}, totals: r.totals || r.counts || {} }
 }

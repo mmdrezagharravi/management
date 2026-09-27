@@ -81,7 +81,7 @@ const views = [
   { key: 'all', label: 'همه' },
   { key: 'active', label: 'فعال ۷ روز' },
   { key: 'idle', label: 'بدون فعالیت ۳۰ روز' },
-  { key: 'auto', label: 'با اتوماسیون' },
+  { key: 'auto', label: 'با خودکارسازی' },
 ]
 const filters = [{ key: 'plan', label: 'پلن', options: PLAN_ORDER.map((k) => ({ v: k, l: PLAN_NAME[k] })) }]
 const search = { placeholder: 'نام بیس یا نام حساب…' }
@@ -91,7 +91,7 @@ const columns = [
   { key: 'plan', sortKey: 'planRank', label: 'پلن', sort: (r) => PLAN_ORDER.indexOf(r.plan), desc: true, csv: (r) => PLAN_NAME[r.plan] },
   { key: 'tables', sortKey: 'tables', label: 'جدول', num: true },
   { key: 'records', sortKey: 'records', label: 'رکورد', num: true },
-  { key: 'automations', sortKey: 'automations', label: 'اتوماسیون', num: true },
+  { key: 'automations', sortKey: 'automations', label: 'خودکارسازی', num: true },
   { key: 'collaborators', sortKey: 'collaborators', label: 'همکار', num: true },
   { key: 'created', sortKey: 'createdAt', label: 'ساخته‌شده', sort: (r) => -r.created, desc: true, csv: (r) => r.created },
   { key: 'la', sortKey: 'recent', label: 'آخرین فعالیت', sort: (r) => -r.la, desc: true, csv: (r) => r.la },

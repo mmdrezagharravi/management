@@ -1,5 +1,5 @@
 <template>
-  <PageShell title="همهٔ مشتریان" :sub="meta ? n(meta.counts.all) + ' حساب · ' + n(meta.counts.paying) + ' پرداخت‌کننده — روی هر ردیف بزنید تا پروفایل کامل باز شود' : ''" :sources="['main', 'behavior']" :banner="false">
+  <PageShell title="همهٔ مشتریان" :sub="meta ? n(meta.totals.all) + ' حساب · ' + n(meta.totals.paying) + ' پرداخت‌کننده — روی هر ردیف بزنید تا پروفایل کامل باز شود' : ''" :sources="['main', 'behavior']" :banner="false">
     <template v-if="true">
       <PanelCard flush>
         <DataTable :remote="api.customersPage" :columns="columns" :views="views" default-view="paying" :filters="filters" :search="search" :sort="{ key: 'mrr', dir: 'desc' }" url export-name="customers" unit="مشتری" :on-row="(a) => router.push('/customers/' + a.id)" @loaded="(r) => (meta = r)">

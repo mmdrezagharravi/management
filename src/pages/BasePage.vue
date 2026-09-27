@@ -16,7 +16,7 @@
           <template #cmp><UsageMeter label="" :used="d.recordsUsed ?? a.records" :limit="L.records" :fmt="compact" /><div style="margin-top: 3px">{{ d.recordsUsed != null ? 'از سقف این بیس' : 'کل حساب' }} · {{ pct(d.share) }} رکوردهای حساب در این بیس</div></template>
         </KpiTile>
         <KpiTile label="جدول" :value="n(b.tables)" :cmp="'میانگین ' + n(b.records / Math.max(1, b.tables)) + ' رکورد در هر جدول'" />
-        <KpiTile label="اتوماسیون" :value="n(b.automations)" :info="d.exact ? 'اجراهای ۳۰ روز اخیر اتوماسیون‌های این بیس' : 'اجراها سهم این بیس از اجرای ۳۰ روز حساب است (به نسبت تعداد اتوماسیون)'" :cmp="autoCmp" />
+        <KpiTile label="خودکارسازی" :value="n(b.automations)" :info="d.exact ? 'اجراهای ۳۰ روز اخیر خودکارسازی‌های این بیس' : 'اجراها سهم این بیس از اجرای ۳۰ روز حساب است (به نسبت تعداد خودکارسازی)'" :cmp="autoCmp" />
         <KpiTile label="همکار" :value="n(b.collaborators)" :unit="d.seatLim == null ? 'بدون سقف' : 'از ' + n(d.seatLim) + ' همکار'" :cmp="n(a.activeMembers7) + ' عضو حساب این هفته فعال بوده‌اند'" />
         <KpiTile label="آخرین فعالیت" :value="agoDays(b.lastActive)">
           <template #cmp><span v-if="b.lastActive === 0 && a.online" class="live"><i />هم‌اکنون آنلاین</span><template v-else>{{ date(b.lastActive) }}</template></template>
@@ -65,7 +65,7 @@
               </div>
             </div>
             <div class="kv"><span class="k">امتیاز سلامت</span><span class="v"><HealthScore :score="a.health" /></span></div>
-            <div class="kv"><span class="k">بیس‌ها</span><span class="v">{{ n(a.bases) }} بیس · {{ n(a.memberCount) }} عضو</span></div>
+            <div class="kv"><span class="k">بیس‌ها</span><span class="v">{{ n(a.bases) }} بیس ساخته<template v-if="a.coOwnedBases || a.sharedBases"> · {{ n((a.coOwnedBases || 0) + (a.sharedBases || 0)) }} هم‌مالک یا اشتراکی</template> · {{ n(a.memberCount) }} عضو</span></div>
             <div v-if="a.paying" class="kv"><span class="k">تمدید بعدی</span><span class="v">{{ date(-a.renewIn) }} · {{ inDays(a.renewIn) }}</span></div>
             <div v-if="up" style="margin-top: 10px"><UsageMeter :label="mu.label" :used="mu.used" :limit="mu.limit" /></div>
             <template #footer>
@@ -103,15 +103,14 @@ import { api } from 'src/api'
 import { useAsync } from 'src/composables/useAsync'
 import { useUiStore } from 'stores/ui'
 import { n, fa, pct, compact, money, date, agoDays, inDays, initials } from 'src/lib/format'
-import { PLAN_ORDER } from 'src/lib/refs'
 
 const route = useRoute(), ui = useUiStore()
 const { data: d, loading, error } = useAsync(() => api.base(route.params.id), [() => route.params.id])
 const b = computed(() => d.value.base), a = computed(() => d.value.account), L = computed(() => d.value.limits)
 const mu = computed(() => a.value.maxUsage)
 const up = computed(() => mu.value && mu.value.ratio >= 0.8)
-const autoCmp = computed(() => !b.value.automations ? (L.value.runs ? 'اتوماسیونی ندارد — فرصت آموزش' : 'پلن رایگان اجرای اتوماسیون ندارد')
-  : !L.value.runs ? 'پلن رایگان اجرای اتوماسیون ندارد'
+const autoCmp = computed(() => !b.value.automations ? (L.value.runs ? 'خودکارسازی ندارد — فرصت آموزش' : 'پلن رایگان اجرای خودکارسازی ندارد')
+  : !L.value.runs ? 'پلن رایگان اجرای خودکارسازی ندارد'
   : '≈ ' + n(d.value.runsEst) + ' اجرا در ۳۰ روز · ' + pct(d.value.autoShare) + ' از اجراهای حساب')
 const actChart = computed(() => {
   const labels = d.value.activity.map((x) => date(x.daysAgo))
@@ -120,8 +119,7 @@ const actChart = computed(() => {
 const cells = computed(() => [
   { label: 'جدول', value: n(b.value.tables), sub: n(b.value.records / Math.max(1, b.value.tables)) + ' رکورد در هر جدول' },
   { label: 'رکورد', value: n(b.value.records), sub: (d.value.recordsUsed != null ? 'سقف هر بیس: ' : 'سقف حساب: ') + compact(L.value.records) },
-  { label: 'صفحهٔ درگاه', value: b.value.pages ? n(b.value.pages) : null, sub: b.value.pages ? 'درگاه منتشرشده' : PLAN_ORDER.indexOf(a.value.plan) < 2 ? 'درگاه از پلن کسب و کار' : 'هنوز درگاهی نساخته' },
-  { label: 'نمای اشتراکی', value: b.value.shares ? n(b.value.shares) : null, sub: b.value.shares ? 'لینک عمومی یا مهمان' : b.value.shares == null ? 'هنوز از بک‌اند نمی‌آید' : 'اشتراکی نساخته' },
-  { label: 'اتوماسیون', value: b.value.automations ? n(b.value.automations) : null, sub: L.value.runs ? 'سقف حساب: ' + compact(L.value.runs) + ' اجرا در ماه' : 'در پلن رایگان اجرا نمی‌شود' },
+  { label: 'درگاه', value: n(b.value.portals || 0), sub: b.value.portals ? '' : 'درگاهی ندارد' },
+  { label: 'خودکارسازی', value: b.value.automations ? n(b.value.automations) : null, sub: L.value.runs ? 'سقف حساب: ' + compact(L.value.runs) + ' اجرا در ماه' : 'در پلن رایگان اجرا نمی‌شود' },
 ])
 </script>

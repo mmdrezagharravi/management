@@ -1,8 +1,8 @@
 /* GET /management/customers/:id → the profile page and the quick-view drawer. */
 import { get } from './client'
 import { toAccount, notesOf, planKey, RECORD_LIMITS, CYCLE_MAP } from './account'
-import { fa, money, ago, daysAgo } from 'src/lib/format'
-import { HEALTH_COMPONENTS, sourceName } from 'src/lib/refs'
+import { fa, money, ago, daysAgo, date, dateTime } from 'src/lib/format'
+import { HEALTH_COMPONENTS } from 'src/lib/refs'
 import { PLAN_NAME } from 'src/lib/ui'
 
 const CYCLE_MONTHS = { monthly: 1, quarterly: 3, semiannual: 6, yearly: 12 }
@@ -10,11 +10,11 @@ const CYCLE_MONTHS = { monthly: 1, quarterly: 3, semiannual: 6, yearly: 12 }
 const INV_STATUS = { Paid: 'paid', Pending: 'pending', Processing: 'pending', Overdue: 'failed', Failed: 'failed' }
 const peCls = (k) => (k === 'churn' ? 'crit' : k === 'contraction' ? 'warn' : 'good')
 const PE_TITLE = { new: 'اولین پرداخت', expansion: 'ارتقا', contraction: 'کاهش پلن', churn: 'لغو اشتراک' }
-const FEATURE_LABEL = { Record: 'رکورد', Cell: 'ویرایش سلول', View: 'نما و فیلتر', Automation: 'اتوماسیون', Collaborator: 'افزودن همکار', Page: 'درگاه و صفحه', Role: 'نقش و دسترسی', AI: 'هوش مصنوعی', ExportTemplate: 'خروجی تمپلیت' }
+const FEATURE_LABEL = { Record: 'رکورد', Cell: 'ویرایش سلول', View: 'نما و فیلتر', Automation: 'خودکارسازی', Collaborator: 'افزودن همکار', Page: 'درگاه و صفحه', Role: 'نقش و دسترسی', AI: 'هوش مصنوعی', ExportTemplate: 'خروجی تمپلیت' }
 const ACTIONS = {
   activity: 'تماس بگیرید و دلیل کاهش استفاده را بپرسید — معمولاً تغییر آدم‌ها یا فرایند کار در سمت مشتری است.',
   trend: 'فعالیت دو هفتهٔ اخیر افت کرده؛ بپرسید چه چیزی در تیم یا کارشان تغییر کرده.',
-  depth: 'فقط جدول‌ها را استفاده می‌کنند؛ یک جلسهٔ ۲۰ دقیقه‌ای برای اتوماسیون و فرم پیشنهاد دهید.',
+  depth: 'فقط جدول‌ها را استفاده می‌کنند؛ یک جلسهٔ ۲۰ دقیقه‌ای برای خودکارسازی و فرم پیشنهاد دهید.',
   team: 'بیشتر اعضا وارد نمی‌شوند؛ با مدیر حساب برای فعال کردن تیم هماهنگ کنید.',
   commercial: 'مشکل پرداخت، تیکت باز یا برخورد مکرر با سقف دارد؛ اول همین را حل کنید.',
 }
@@ -36,24 +36,18 @@ function planEventsOf(a, invoices) {
   paid.forEach((i, k) => {
     const prev = paid[k - 1]
     const kind = !prev ? 'new' : i.amount > prev.amount ? 'expansion' : i.amount < prev.amount ? 'contraction' : null
-    if (kind) out.push({ t: i.t, kind, plan: i.plan, seats: i.seats, cycle: i.cycle, mrr: i.mrr })
+    if (kind) out.push({ t: i.t, at: i.at, kind, plan: i.plan, seats: i.seats, cycle: i.cycle, mrr: i.mrr })
   })
   if (a.churnedAt != null && paid.length) { const last = paid[paid.length - 1]; out.push({ t: a.churnedAt, kind: 'churn', plan: last.plan, seats: last.seats, cycle: last.cycle, mrr: last.mrr }) }
   return out
 }
 
-/** The customer's journey using only events with a real timestamp. */
-function timeline(a, bases, invoices, planEvents) {
-  const ev = []
-  const add = (t, cls, title, desc) => ev.push({ t, cls, title, desc })
-  add(a.age, 'mut', 'ثبت‌نام', 'از ' + sourceName(a.source) + ' · ' + a.contact.first)
-  const firstBase = bases.slice().sort((p, q) => q.created - p.created)[0]
-  if (firstBase) add(firstBase.created, '', 'اولین بیس', '«' + firstBase.name + '»')
-  planEvents.forEach((e) => add(e.t, peCls(e.kind), PE_TITLE[e.kind], e.kind === 'churn' ? a.churnReason : 'پلن ' + PLAN_NAME[e.plan] + ' · ' + money(e.mrr) + ' در ماه'))
+/** The payment steps of the journey; every other step comes from GET /customers/:id/journey (customerJourney). */
+function timeline(a, invoices, planEvents) {
+  const ev = planEvents.map((e) => ({ t: e.t, at: e.at, cls: peCls(e.kind), title: PE_TITLE[e.kind], desc: e.kind === 'churn' ? a.churnReason : 'پلن ' + PLAN_NAME[e.plan] + ' · ' + money(e.mrr) + ' در ماه' }))
   const lastFailed = invoices.slice().reverse().find((invoice) => invoice.status === 'failed')
-  if (a.pastDue && lastFailed) add(lastFailed.t, 'crit', 'پرداخت تمدید ناموفق', 'فاکتور پرداخت نشد')
-  if (a.lastSeenDays < 9999) add(a.lastSeenDays, 'good', 'آخرین فعالیت', ago(a.lastSeenMin))
-  return ev.sort((p, q) => q.t - p.t)
+  if (a.pastDue && lastFailed) ev.push({ t: lastFailed.t, at: lastFailed.at, cls: 'crit', title: 'پرداخت تمدید ناموفق', desc: 'فاکتور پرداخت نشد' })
+  return ev
 }
 
 /** Full profile page. Unknown id → the server's 404 error (the page shows it). */
@@ -62,10 +56,10 @@ export async function customer(id) {
   const a = accountOf(s)
   const invoices = (s.invoices || []).slice().reverse().map((inv, i) => {
     const cycle = inv.plan ? CYCLE_MAP[inv.cycle || 'monthly'] : null // PlanInvoiceService defaults to monthly
-    return { id: i, t: daysAgo(inv.paidAt || inv.createdAt), type: inv.type, status: INV_STATUS[inv.status] || 'failed', amount: inv.amount, plan: inv.plan ? planKey(inv.plan) : null, cycle, seats: inv.seats ?? a.seats, mrr: Math.round(inv.amount / (CYCLE_MONTHS[cycle] || 1)), retries: 0 }
+    return { id: i, t: daysAgo(inv.paidAt || inv.createdAt), at: inv.paidAt || inv.createdAt, type: inv.type, status: INV_STATUS[inv.status] || 'failed', amount: inv.amount, plan: inv.plan ? planKey(inv.plan) : null, cycle, seats: inv.seats ?? a.seats, mrr: Math.round(inv.amount / (CYCLE_MONTHS[cycle] || 1)), retries: 0 }
   })
   const paid = invoices.filter((i) => i.status === 'paid')
-  const bases = (s.basesList || []).map((b) => ({ id: b.id, name: b.name, slug: b.id.slice(-8), tables: b.tables, records: b.records, automations: b.automations, pages: 0, shares: 0, collaborators: b.collaborators, lastActive: b.lastSeenDays ?? 9999, created: daysAgo(b.createdAt) ?? a.age }))
+  const bases = (s.basesList || []).map((b) => ({ id: b.id, name: b.name, slug: b.id.slice(-8), tables: b.tables, records: b.records, automations: b.automations, portals: b.portals ?? 0, collaborators: b.collaborators, lastActive: b.lastSeenDays ?? 9999, created: daysAgo(b.createdAt) ?? a.age, role: b.role || 'creator', creatorId: b.creator ? b.creator.id : null, creatorName: b.creator ? b.creator.name || fa(b.creator.mobile || '') : null }))
   const planEvents = planEventsOf(a, invoices)
   const weakest = HEALTH_COMPONENTS.slice().sort((p, q) => a.components[p.key] - a.components[q.key])[0].key
   const featureKeys = Object.keys(FEATURE_LABEL)
@@ -85,13 +79,57 @@ export async function customer(id) {
     bases,
     invoices,
     planEvents: planEvents.map((e) => ({ ...e, title: { new: 'اولین خرید', expansion: 'افزایش', contraction: 'کاهش', churn: 'لغو اشتراک' }[e.kind], cls: peCls(e.kind) })),
-    timeline: timeline(a, bases, invoices, planEvents),
+    timeline: timeline(a, invoices, planEvents),
     interactions: [],
     notes: notesOf(a.id),
     limits: { records: RECORD_LIMITS[s.plan] || RECORD_LIMITS.basic, seats: a.collaboratorLimit, runs: a.runsLimit },
     featureList: featureKeys.map((k) => ({ key: k, label: FEATURE_LABEL[k] || k })),
     profile: s.profile || null,
   }
+}
+
+const VIEW_TYPE = { Grid: 'جدولی', Gallery: 'گالری', Kanban: 'کانبان', Map: 'نقشه', Form: 'فرم', Calendar: 'تقویم', Gantt: 'گانت', Timeline: 'خط زمانی' }
+const ACTION_LABEL = { Record: 'کار با رکورد', Cell: 'ویرایش سلول', View: 'کار با نما', Table: 'کار با جدول', Field: 'کار با فیلد', Automation: 'کار با خودکارسازی', Page: 'کار با صفحه', Collaborator: 'کار با همکاران', Role: 'کار با نقش‌ها', File: 'کار با فایل', ExportTemplate: 'خروجی', Export: 'خروجی', AI: 'هوش مصنوعی', Chat: 'گفتگو', Base: 'کار با بیس' }
+const topActions = (byType) => Object.entries(byType || {}).filter(([k, v]) => ACTION_LABEL[k] && v > 0).sort((p, q) => q[1] - p[1]).slice(0, 3).map(([k, v]) => fa(v) + ' ' + ACTION_LABEL[k]).join('، ')
+const named = (d) => d.name || (d.mobile ? fa(d.mobile) : 'یک کاربر')
+const JOURNEY_STEP = {
+  signup: (d) => ({ cls: 'mut', title: 'ثبت‌نام', desc: d.referrer ? 'با دعوت ' + named(d.referrer) : 'ورود مستقیم' }),
+  base: (d) => ({ title: 'اولین بیس', desc: '«' + d.name + '» · ' + (d.afterDays ? fa(d.afterDays) + ' روز بعد از ثبت‌نام' : 'همان روز ثبت‌نام') }),
+  table: (d) => ({ title: 'اولین جدول', desc: '«' + d.name + '»' + (d.base ? ' در بیس «' + d.base + '»' : '') }),
+  excelImport: () => ({ title: 'اولین ورود داده از Excel', desc: 'یک جدول را از فایل Excel ساخت' }),
+  record: () => ({ title: 'اولین رکورد', desc: 'اولین رکوردی که خودش ساخت' }),
+  activated: (d) => ({ cls: 'good', title: 'فعال‌سازی', desc: 'در ' + fa(d.dayIndex + 1) + ' روز اول به ' + fa(d.records) + ' ساخت یا ویرایش رکورد رسید' }),
+  view: (d) => ({ title: 'اولین نمای جدید', desc: '«' + d.name + '»' + (d.type ? ' · ' + (VIEW_TYPE[d.type] || d.type) : '') }),
+  viewUse: () => ({ title: 'اولین تنظیم نما', desc: 'فیلتر، مرتب‌سازی یا ستون‌های یک نما را تغییر داد' }),
+  automation: (d) => ({ title: 'اولین خودکارسازی', desc: '«' + d.name + '»' }),
+  automationRun: (d) => ({ cls: d.success ? '' : 'warn', title: 'اولین اجرای خودکارسازی', desc: d.success ? 'موفق' : 'ناموفق' }),
+  collaborator: (d) => ({ title: 'اولین همکار', desc: named(d) + (d.base ? ' به بیس «' + d.base + '»' : '') + ' اضافه شد' }),
+  habit: (d) => ({ cls: 'good', title: 'عادت', desc: 'در ' + fa(d.weeks) + ' هفته از ' + fa(d.of) + ' هفتهٔ اول فعال بود' }),
+  page: () => ({ title: 'اولین صفحه', desc: 'یک صفحه (درگاه) ساخت' }),
+  pagePublish: () => ({ title: 'اولین انتشار صفحه', desc: 'یک صفحه را عمومی کرد' }),
+  role: () => ({ title: 'اولین نقش دسترسی', desc: 'برای همکاران نقش تعریف کرد' }),
+  export: () => ({ title: 'اولین خروجی', desc: 'خروجی Excel یا Word گرفت' }),
+  ai: () => ({ title: 'اولین استفاده از هوش مصنوعی', desc: 'سرویس هوش مصنوعی را به یک بیس اضافه کرد' }),
+  wallet: () => ({ title: 'اولین شارژ کیف پول', desc: '' }),
+  lastSeen: (d, at) => {
+    const top = topActions(d.byType)
+    return { cls: d.online ? 'good' : 'mut', title: 'آخرین فعالیت', desc: (d.online ? 'هم‌اکنون آنلاین است' : ago((Date.now() - Date.parse(at)) / 60000)) + (top && d.day ? ' · کارهای روز ' + date(daysAgo(d.day)) + ': ' + top : '') }
+  },
+}
+const NOT_YET = { base: 'ساخت بیس', table: 'ساخت جدول', record: 'ساخت رکورد', view: 'نمای جدید', viewUse: 'تنظیم نما', automation: 'خودکارسازی', collaborator: 'دعوت همکار', activated: 'فعال‌سازی', habit: 'عادت' }
+const BEHAVIOR_KEYS = ['record', 'viewUse', 'activated', 'habit']
+
+/** GET /customers/:id/journey → the journey card's steps, oldest first, plus what the customer has not done yet. */
+export async function customerJourney(id) {
+  const r = await get('/customers/' + id + '/journey')
+  const steps = r.steps.filter((s) => JOURNEY_STEP[s.key]).map((s) => ({
+    ...JOURNEY_STEP[s.key](s.detail || {}, s.at),
+    key: s.key, at: s.at, earliestSeen: !!s.earliestSeen,
+    when: s.precision === 'day' ? date(daysAgo(s.at), { year: true }) : dateTime(s.at),
+  }))
+  const done = new Set(steps.map((s) => s.key))
+  const notYet = Object.keys(NOT_YET).filter((k) => !done.has(k) && (r.fullyObserved || !BEHAVIOR_KEYS.includes(k))).map((k) => NOT_YET[k])
+  return { steps, notYet, observedSince: r.observedSince, fullyObserved: r.fullyObserved, behaviorAvailable: r.behaviorAvailable }
 }
 
 /** Quick-view drawer. Unknown id → null, like the mock. Tasks/calls have no backend → empty. */

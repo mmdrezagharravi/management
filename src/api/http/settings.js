@@ -13,7 +13,7 @@ const SEGMENT_RULES = {
   new: ['signup_age <= 14', 'در دو هفتهٔ اخیر ثبت‌نام کرده‌اند'],
   stuck: ['signup_age 3..30 AND NOT activated', 'ثبت‌نام کرده‌اند ولی فعال نشده‌اند'],
   builders: ['bases >= 2 AND last_seen <= 30', 'بیش از یک بیس ساخته‌اند'],
-  automators: ['automations >= 1 AND last_seen <= 30', 'اتوماسیون دارند — چسبنده‌ترین گروه'],
+  automators: ['automations >= 1 AND last_seen <= 30', 'خودکارسازی دارند — چسبنده‌ترین گروه'],
   teams: ['active_members_7d >= 2', 'بیش از یک نفر در هفتهٔ اخیر کار کرده'],
   upsell: ['plan = basic AND at_record_limit AND last_seen <= 14', 'به سقف رکورد پلن رایگان خورده‌اند'],
   risk: ['paying AND health < 50', 'پرداخت‌کننده با امتیاز سلامت زیر ۵۰'],

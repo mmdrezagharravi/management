@@ -1,7 +1,7 @@
 <template>
   <PageShell :title="d ? a.name : 'پروفایل مشتری'" :sources="['main', 'behavior', 'wallet']" :banner="false" :loading="loading" :error="error">
     <template #crumbs><router-link to="/customers">مشتریان</router-link> › <span v-if="d && d.fallback" class="faint">نمونه: بیشترین درآمد در خطر</span></template>
-    <template v-if="d" #sub><PlanBadge :plan="a.plan" /><template v-if="a.industryName"> · {{ a.industryName }}</template><template v-if="a.city"> · {{ a.city }}</template> · عضو از {{ date(a.age, { year: true }) }} ({{ sourceName(a.source) }})</template>
+    <template v-if="d" #sub><PlanBadge :plan="a.plan" /><template v-if="a.industryName"> · {{ a.industryName }}</template><template v-if="a.city"> · {{ a.city }}</template> · عضو از {{ date(signupDaysAgo(a), { year: true }) }} ({{ sourceName(a.source) }})</template>
     <template v-if="d" #actions>
       <button class="btn" @click="dialogs.addNote(a)"><AppIcon name="note" />یادداشت</button>
       <button class="btn primary" @click="dialogs.logCall(a)"><AppIcon name="phone" />ثبت تماس</button>
@@ -48,8 +48,15 @@
               <span><span class="muted">اعضای فعال امروز:</span> <b>{{ n(d.activeMembersToday) }}</b></span>
             </div>
           </PanelCard>
-          <PanelCard title="مسیر این مشتری" hint="از اولین بازدید تا امروز">
-            <div class="tl"><div v-for="(e, i) in d.timeline" :key="i" class="ev" :class="e.cls"><div class="t">{{ e.title }} <span class="w">{{ date(e.t, { year: true }) }}</span></div><div class="d">{{ e.desc }}</div></div></div>
+          <PanelCard title="مسیر این مشتری" hint="از ثبت‌نام تا آخرین فعالیت">
+            <div class="tl"><div v-for="(e, i) in journey" :key="i" class="ev" :class="e.cls"><div class="t">{{ e.title }} <span class="w">{{ e.when || date(e.t, { year: true }) }}</span><span v-if="e.earliestSeen" class="w"> · زودترین مورد ثبت‌شده</span></div><div v-if="e.desc" class="d">{{ e.desc }}</div></div></div>
+            <div v-if="jLoading" class="note" style="margin-top: 12px">در حال خواندن قدم‌ها…</div>
+            <div v-else-if="jError" class="note" style="margin-top: 12px">قدم‌های مسیر خوانده نشد: {{ jError.message }}</div>
+            <template v-else-if="jr">
+              <div v-if="jr.notYet.length" class="note" style="margin-top: 12px">هنوز انجام نداده: {{ jr.notYet.join('، ') }}</div>
+              <div v-if="!jr.behaviorAvailable" class="note" style="margin-top: 8px">گزارش رفتار در دسترس نبود؛ قدم‌هایی مثل اولین رکورد و تنظیم نما نمایش داده نشده‌اند.</div>
+              <div v-else-if="!jr.fullyObserved && jr.observedSince" class="note" style="margin-top: 8px">رفتار کاربران از {{ date(daysAgo(jr.observedSince), { year: true }) }} ثبت می‌شود و این مشتری قبل از آن ثبت‌نام کرده؛ قدم‌های «زودترین مورد ثبت‌شده» ممکن است زودتر هم انجام شده باشند، و فعال‌سازی و عادت که به هفته‌های اول ثبت‌نام بسته‌اند قابل محاسبه نیستند.</div>
+            </template>
           </PanelCard>
         </div>
         <div class="stack">
@@ -130,12 +137,14 @@
 
       <!-- bases -->
       <PanelCard v-if="tab === 'bases'" flush>
+        <div style="padding: 12px 16px 0; font-size: 12.5px"><b>{{ fa(a.bases) }}</b> بیس ساخته<template v-if="a.coOwnedBases"> · <b>{{ fa(a.coOwnedBases) }}</b> هم‌مالک</template><template v-if="a.sharedBases"> · <b>{{ fa(a.sharedBases) }}</b> اشتراکی</template><span class="faint"> — سقف تعداد بیس پلن فقط بیس‌های ساخته‌شده را می‌شمارد</span></div>
         <DataTable :rows="d.bases" :columns="baseCols" unit="بیس" :export-name="'bases-' + a.slug" :sort="{ key: 'records', dir: 'desc' }" :on-row="(b) => router.push('/bases/' + b.id)" empty-title="هنوز بیسی نساخته" :empty="'این مشتری ثبت‌نام کرده ولی بیسی نساخته است — ایمیل تمپلیت‌های صنعت ' + a.industryName + ' را بفرستید.'">
           <template #col-name="{ row }"><router-link class="nm" :to="'/bases/' + row.id">{{ row.name }}</router-link><span class="s mono">/{{ row.slug }}</span></template>
+          <template #col-role="{ row }"><span v-if="!row.role || row.role === 'creator'">سازنده</span><template v-else>{{ ROLE_LABEL[row.role] }}<router-link v-if="row.creatorId" class="s" :to="'/customers/' + row.creatorId" @click.stop>بیسِ {{ row.creatorName }}</router-link></template></template>
           <template #col-tables="{ row }">{{ n(row.tables) }}</template>
           <template #col-records="{ row }">{{ n(row.records) }}</template>
           <template #col-automations="{ row }">{{ n(row.automations) }}</template>
-          <template #col-pages="{ row }">{{ n(row.pages) }}</template>
+          <template #col-portals="{ row }">{{ n(row.portals) }}</template>
           <template #col-collaborators="{ row }">{{ n(row.collaborators) }}</template>
           <template #col-created="{ row }">{{ date(row.created, { year: true }) }}</template>
           <template #col-lastActive="{ row }">{{ agoDays(row.lastActive) }}</template>
@@ -204,20 +213,23 @@ import { useAsync } from 'src/composables/useAsync'
 import { useQueryParam } from 'src/composables/useUrlState'
 import { useDialogs } from 'src/composables/useDialogs'
 import { useUiStore } from 'stores/ui'
-import { n, fa, pct, compact, compactParts as cp, money, date, dateTime, ago, agoDays, inDays, clock, initials, CURRENCY } from 'src/lib/format'
+import { n, fa, pct, compact, compactParts as cp, money, date, dateTime, ago, agoDays, inDays, clock, initials, daysAgo, signupDaysAgo, CURRENCY } from 'src/lib/format'
 import { CYCLE_NAME, HEALTH_COMPONENTS, SEGMENT_LABEL, sourceName } from 'src/lib/refs'
 import { PLAN_NAME, band, toast } from 'src/lib/ui'
 
 const route = useRoute(), router = useRouter(), ui = useUiStore(), dialogs = useDialogs()
 const tab = useQueryParam('tab', 'summary')
 const { data: d, loading, error } = useAsync(() => api.customer(route.params.id), [() => route.params.id])
+const { data: jr, loading: jLoading, error: jError } = useAsync(() => api.customerJourney(route.params.id), [() => route.params.id])
+const stepTime = (e) => (e.at ? Date.parse(e.at) : Date.now() - e.t * 864e5)
+const journey = computed(() => [...d.value.timeline, ...(jr.value ? jr.value.steps : [])].sort((p, q) => stepTime(p) - stepTime(q)))
 const a = computed(() => d.value.account)
 const p = computed(() => d.value.profile)
 const copy = (v) => navigator.clipboard.writeText(v).then(() => toast('کپی شد'), () => toast('کپی نشد'))
 const bandLabel = computed(() => band(a.value.health).label)
 const tabs = computed(() => [
   { key: 'summary', label: 'خلاصه' }, { key: 'activity', label: 'فعالیت' },
-  { key: 'members', label: 'اعضا', n: a.value.memberCount }, { key: 'bases', label: 'بیس‌ها', n: a.value.bases },
+  { key: 'members', label: 'اعضا', n: a.value.memberCount }, { key: 'bases', label: 'بیس‌ها', n: a.value.bases + (a.value.coOwnedBases || 0) + (a.value.sharedBases || 0) },
   { key: 'billing', label: 'مالی', n: d.value.invoices.length }, { key: 'log', label: 'تعامل‌ها', n: d.value.log.length },
 ])
 
@@ -235,12 +247,14 @@ const memberCols = [
   { key: 'lastSeen', label: 'آخرین فعالیت', csv: (m) => m.lastSeen },
   { key: 'active', label: 'این هفته', sort: (m) => (m.lastSeen <= 6 ? 1 : 0), csv: (m) => (m.lastSeen <= 6 ? 'فعال' : 'غیرفعال') },
 ]
+const ROLE_LABEL = { creator: 'سازنده', owner: 'هم‌مالک', collaborator: 'همکار' }
 const baseCols = [
   { key: 'name', label: 'بیس', csv: (b) => b.name },
+  { key: 'role', label: 'نقش', sort: (b) => ['creator', 'owner', 'collaborator'].indexOf(b.role), csv: (b) => ROLE_LABEL[b.role || 'creator'] + (b.creatorName ? ' · ' + b.creatorName : '') },
   { key: 'tables', label: 'جدول', num: true },
   { key: 'records', label: 'رکورد', num: true },
-  { key: 'automations', label: 'اتوماسیون', num: true },
-  { key: 'pages', label: 'صفحهٔ درگاه', num: true },
+  { key: 'automations', label: 'خودکارسازی', num: true },
+  { key: 'portals', label: 'درگاه', num: true },
   { key: 'collaborators', label: 'همکار', num: true },
   { key: 'created', label: 'ساخته‌شده', sort: (b) => -b.created, csv: (b) => date(b.created, { year: true }) },
   { key: 'lastActive', label: 'آخرین فعالیت', sort: (b) => -b.lastActive, csv: (b) => b.lastActive },

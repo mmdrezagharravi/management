@@ -10,7 +10,7 @@
         <KpiTile label="بیشترین رشد" info="بیشترین افزایش نفوذ نسبت به بازهٔ هم‌طول قبلی" :delta="{ cur: grow.rate, prev: grow.prevRate, points: true }" :cmp="'اکنون ' + pct(grow.rate)">
           <template #value><span style="font-size: 19px">{{ grow.label }}</span></template>
         </KpiTile>
-        <KpiTile label="اتوماسیون" :value="pct(au.rate)" :delta="{ cur: au.rate, prev: au.prevRate, points: true }" :cmp="n(au.users) + ' حساب'" />
+        <KpiTile label="خودکارسازی" :value="pct(au.rate)" :delta="{ cur: au.rate, prev: au.prevRate, points: true }" :cmp="n(au.users) + ' حساب'" />
         <KpiTile label="هوش مصنوعی" :value="pct(ai.rate)" :delta="{ cur: ai.rate, prev: ai.prevRate, points: true }" :cmp="n(ai.users) + ' حساب'" />
       </div>
 

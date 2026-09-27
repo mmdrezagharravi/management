@@ -28,7 +28,7 @@ export function base(id) {
   const people = a.members.slice(0, b.collaborators)
   return ok({
     fallback, requestedId: reqId,
-    base: { id: b.id, name: b.name, slug: b.slug, created: b.created, tables: b.tables, records: recsOf(b), automations: b.automations, pages: b.pages, shares: b.shares, collaborators: b.collaborators, lastActive: la },
+    base: { id: b.id, name: b.name, slug: b.slug, created: b.created, tables: b.tables, records: recsOf(b), automations: b.automations, portals: b.pages, collaborators: b.collaborators, lastActive: la },
     account: enrich(a),
     limits: { records: L.records, runs: L.runs }, seatLim, share, autoShare, runsEst: Math.round(a.runs30 * autoShare),
     activity, activeDays: activity.filter((x) => x.v > 0).length, sumEv: activity.reduce((t, x) => t + x.v, 0),

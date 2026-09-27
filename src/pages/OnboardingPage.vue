@@ -2,17 +2,17 @@
   <PageShell title="ثبت‌نام‌های تازه" sub="هر حساب تازه، قدم‌هایی که برداشته و قدم بعدی پیشنهادی — روی هر ردیف بزنید تا نمای سریع باز شود" range v-model:range="range" :sources="['main', 'behavior']" :loading="loading" :error="error">
     <template v-if="d">
       <div class="kpis">
-        <KpiTile :label="'ثبت‌نام در ' + fa(range) + ' روز'" :value="n(k.signups.now)" :delta="{ cur: k.signups.now, prev: k.signups.prev }" :cmp="'قبل: ' + n(k.signups.prev)" :spark="{ values: k.signups.spark, bars: true, w: 76 }" />
-        <KpiTile label="ساختن اولین بیس" :value="pct(k.firstBase.rate)" info="سهم ثبت‌نام‌های این بازه که دست‌کم یک بیس ساخته‌اند" :delta="{ cur: k.firstBase.rate, prev: k.firstBase.prev, points: true }" :cmp="fa(k.firstBase.n) + ' حساب'" />
-        <KpiTile label="فعال‌سازی" :value="k.activation.rate == null ? '—' : pct(k.activation.rate)"
+        <KpiTile :label="'ثبت‌نام در ' + fa(range) + ' روز'" :to="viewTo('all')" :value="n(k.signups.now)" :delta="{ cur: k.signups.now, prev: k.signups.prev }" :cmp="'قبل: ' + n(k.signups.prev)" :spark="{ values: k.signups.spark, bars: true, w: 76 }" />
+        <KpiTile label="ساختن اولین بیس" :to="viewTo('base')" :value="pct(k.firstBase.rate)" info="سهم ثبت‌نام‌های این بازه که دست‌کم یک بیس ساخته‌اند" :delta="{ cur: k.firstBase.rate, prev: k.firstBase.prev, points: true }" :cmp="fa(k.firstBase.n) + ' حساب'" />
+        <KpiTile label="فعال‌سازی" :to="viewTo('act')" :value="k.activation.rate == null ? '—' : pct(k.activation.rate)"
           :info="'رسیدن به ' + fa(ACT.records) + ' رکورد در ' + fa(ACT.days) + ' روز اول. فقط حساب‌هایی در مخرج‌اند که دست‌کم ' + fa(ACT.days) + ' روز از ثبت‌نامشان گذشته'"
           :delta="k.activation.rate == null ? null : { cur: k.activation.rate, prev: k.activation.prev, points: true }"
           :cmp="k.activation.rate == null ? 'هنوز هیچ ثبت‌نامی ' + fa(ACT.days) + ' روزه نشده' : 'فقط ' + fa(k.activation.mature) + ' حساب ' + fa(ACT.days) + ' روزه به بالا'" />
-        <KpiTile label="میانهٔ زمان تا اولین بیس" :value="k.firstBaseDays.median == null ? '—' : k.firstBaseDays.median === 0 ? 'همان روز' : n(k.firstBaseDays.median)" :unit="k.firstBaseDays.median ? 'روز' : ''"
+        <KpiTile label="میانهٔ زمان تا اولین بیس" :to="viewTo('base')" :value="k.firstBaseDays.median == null ? '—' : k.firstBaseDays.median === 0 ? 'همان روز' : n(k.firstBaseDays.median)" :unit="k.firstBaseDays.median ? 'روز' : ''"
           info="روزهای بین ثبت‌نام و ساختن اولین بیس، برای حساب‌هایی که بیس ساخته‌اند" :cmp="pct(k.firstBaseDays.sameDay) + ' همان روز ثبت‌نام'" />
         <KpiTile label="گیر کرده" :value="n(k.stuck.n)" :to="viewTo('stuck')" :info="'دست‌کم ۳ روز از ثبت‌نام گذشته و هنوز فعال نشده (بیس ندارد یا به ' + fa(ACT.records) + ' رکورد نرسیده)'"
           :cmp="fa(k.stuck.n - k.stuck.lost) + ' هنوز سر می‌زنند · ' + fa(k.stuck.lost) + ' ازدست‌رفته'" />
-        <KpiTile label="پرپتانسیل ولی گیر کرده" :value="n(k.highPot.stuck)" :to="viewTo('hp')" :info="'پرپتانسیل: ' + d.hpDef" :cmp="'از ' + fa(k.highPot.total) + ' حساب پرپتانسیل · تماس خوشامد'" />
+        <KpiTile label="پرپتانسیل ولی گیر کرده" :value="n(k.highPot.stuck)" :to="viewTo('hpStuck')" :info="'پرپتانسیل: ' + d.hpDef" :cmp="'از ' + fa(k.highPot.total) + ' حساب پرپتانسیل · تماس خوشامد'" />
       </div>
 
       <div class="grid g-main">
@@ -20,8 +20,8 @@
           <ColumnChart :options="signupChart" />
           <div class="legend" style="margin-top: 8px"><span class="k"><i class="sw" style="background: var(--series-1)" />فعال شد</span><span class="k"><i class="sw" style="background: var(--deemph)" />هنوز فعال نشده</span></div>
         </PanelCard>
-        <PanelCard title="کجا می‌ایستند" :hint="fa(d.rows.length) + ' ثبت‌نام این بازه'">
-          <HBars :items="d.buckets.map((b) => ({ label: BUCKET_LABEL[b.key], value: b.value, note: pct(d.rows.length ? b.value / d.rows.length : 0) }))" :label-width="150" :format="(v) => n(v)" />
+        <PanelCard title="کجا می‌ایستند" :hint="fa(k.signups.now) + ' ثبت‌نام این بازه'">
+          <HBars :items="d.buckets.map((b) => ({ label: BUCKET_LABEL[b.key], value: b.value, note: pct(k.signups.now ? b.value / k.signups.now : 0) }))" :label-width="150" :format="(v) => n(v)" />
           <template v-if="d.steps.length">
             <div class="muted" style="font-size: 11.5px; font-weight: 700; margin: 14px 0 2px">کارهای باز، به ترتیب تعداد</div>
             <div class="list">
@@ -33,9 +33,9 @@
       </div>
 
       <PanelCard id="list" flush style="scroll-margin-top: 70px">
-        <DataTable ref="tbl" :rows="d.rows" :columns="columns" :views="views" default-view="all" :filters="filters" :search="search" :sort="{ key: 'signup', dir: 'asc' }" url select :export-name="'onboarding-' + range + 'd'" unit="ثبت‌نام" :row-class="(a) => (a.done ? 'onb-done' : '')" :on-row="(a) => ui.openAccount(a.id)">
+        <DataTable ref="tbl" :remote="signupsPage" :columns="columns" :views="views" default-view="all" :filters="filters" :search="search" :sort="{ key: 'signup', dir: 'asc' }" url select :export-name="'onboarding-' + range + 'd'" unit="ثبت‌نام" :row-class="(a) => (a.done ? 'onb-done' : '')" :on-row="(a) => ui.openAccount(a.id)">
           <template #col-name="{ row }"><AccountCell :a="row"><template #sub>{{ row.sourceName }}<template v-if="row.city"> · {{ row.city }}</template></template></AccountCell></template>
-          <template #col-signup="{ row }"><span class="nowrap">{{ date(row.age) }}</span><span class="s">{{ agoDays(row.age) }}</span></template>
+          <template #col-signup="{ row }"><span class="nowrap">{{ date(signupDaysAgo(row)) }}</span><span class="s">{{ agoDays(signupDaysAgo(row)) }}</span></template>
           <template #col-check="{ row }">
             <span class="ck" :title="tip(row)"><i v-for="(x, i) in row.checklist" :key="i" :class="x.s" :title="x.l + ' — ' + x.d" /><b>{{ fa(doneCount(row)) }}/{{ fa(row.checklist.filter((x) => x.s !== 'na').length) }}</b><span class="sr">{{ tip(row) }}</span></span>
           </template>
@@ -51,7 +51,7 @@
           </template>
         </DataTable>
       </PanelCard>
-      <div class="note">«پرپتانسیل» یعنی {{ d.hpDef }}. نقطه‌ها به ترتیب: بیس، {{ fa(ACT.records) }} رکورد، دعوت همکار، اتوماسیون، بازگشت در هفتهٔ ۲ — نقطهٔ خط‌چین یعنی هنوز وقتش نرسیده، نقطهٔ کم‌رنگ یعنی داده‌ای برایش نداریم. «انجام شد» فقط در همین مرورگر ذخیره می‌شود.</div>
+      <div class="note">«پرپتانسیل» یعنی {{ d.hpDef }}. نقطه‌ها به ترتیب: بیس، {{ fa(ACT.records) }} رکورد، دعوت همکار، خودکارسازی، بازگشت در هفتهٔ ۲ — نقطهٔ خط‌چین یعنی هنوز وقتش نرسیده، نقطهٔ کم‌رنگ یعنی داده‌ای برایش نداریم. «انجام شد» فقط در همین مرورگر ذخیره می‌شود.</div>
     </template>
   </PageShell>
 </template>
@@ -74,8 +74,7 @@ import { useAsync } from 'src/composables/useAsync'
 import { useRange } from 'src/composables/useRange'
 import { useQueryParam } from 'src/composables/useUrlState'
 import { useUiStore } from 'stores/ui'
-import { n, fa, pct, date, agoDays, weekdayName } from 'src/lib/format'
-import { SOURCES } from 'src/lib/refs'
+import { n, fa, pct, date, agoDays, weekdayName, signupDaysAgo } from 'src/lib/format'
 import { toast } from 'src/lib/ui'
 
 const ui = useUiStore(), route = useRoute()
@@ -99,9 +98,10 @@ const signupChart = computed(() => ({
 }))
 
 /* KPI tiles and the step list filter the table in place: they only change the URL, the watcher below applies it */
-const viewTo = (v) => ({ query: { ...route.query, view: v }, hash: '#list' })
+const viewTo = (v) => ({ query: { ...(route.query.r ? { r: route.query.r } : {}), view: v }, hash: '#list' })
 const nxTo = (k) => ({ query: { ...route.query, nx: k }, hash: '#list' })
 const tbl = ref(null)
+const signupsPage = (p) => api.onboardingPage({ ...p, range: range.value })
 watch([viewQ, nxQ, () => route.hash], ([v, nx, hash]) => {
   const st = tbl.value?.st; if (!st) return
   st.view = v || 'all'; st.f.nx = nx || ''; st.page = 0; st.focus = -1
@@ -112,25 +112,27 @@ const doneCount = (a) => a.checklist.filter((x) => x.s === 'done').length
 const tip = (a) => a.checklist.map((x) => (x.s === 'done' ? '✓ ' : x.s === 'wait' ? '… ' : x.s === 'na' ? '? ' : '○ ') + x.l + ' — ' + x.d).join('\n')
 
 const views = [
-  { key: 'all', label: 'همه', test: null },
-  { key: 'stuck', label: 'گیر کرده', test: (a) => a.stuck },
-  { key: 'hp', label: 'پرپتانسیل', test: (a) => a.highPot },
-  { key: 'act', label: 'فعال شده', test: (a) => a.activated },
+  { key: 'all', label: 'همه' },
+  { key: 'base', label: 'بیس ساخته' },
+  { key: 'act', label: 'فعال شده' },
+  { key: 'stuck', label: 'گیر کرده' },
+  { key: 'hp', label: 'پرپتانسیل' },
+  { key: 'hpStuck', label: 'پرپتانسیل گیر کرده' },
 ]
-const search = { placeholder: 'نام، شخص، شماره یا شهر…', text: (a) => a.name + ' ' + a.contact.first + ' ' + a.contact.last + ' ' + a.contact.mobile + ' ' + a.city + ' ' + a.industryName }
+const search = { placeholder: 'نام یا شمارهٔ موبایل…' }
 const filters = computed(() => [
-  { key: 'st', label: 'وضعیت', options: Object.keys(ST).map((k) => ({ v: k, l: ST[k].label })), test: (a, v) => a.status === v },
-  { key: 'src', label: 'منبع', options: SOURCES.map((s) => ({ v: s.key, l: s.name })), test: (a, v) => a.source === v },
-  { key: 'nx', label: 'قدم بعدی', options: Object.keys(d.value.stepLabels).map((k) => ({ v: k, l: d.value.stepLabels[k] })), test: (a, v) => a.next.key === v },
+  { key: 'st', param: 'status', label: 'وضعیت', options: Object.keys(ST).map((k) => ({ v: k, l: ST[k].label })) },
+  { key: 'src', param: 'source', label: 'منبع', options: [{ v: 'invite', l: 'دعوت همکار' }, { v: 'direct', l: 'مستقیم' }] },
+  { key: 'nx', param: 'next', label: 'قدم بعدی', options: Object.keys(d.value.stepLabels).map((k) => ({ v: k, l: d.value.stepLabels[k] })) },
 ])
 const columns = [
   { key: 'name', label: 'حساب', cls: 'nmcol', csv: (a) => a.name },
-  { key: 'signup', label: 'ثبت‌نام', sort: (a) => a.age, csv: (a) => date(a.age) },
-  { key: 'check', label: 'قدم‌ها', sort: doneCount, desc: true, csv: (a) => a.checklist.filter((x) => x.s === 'done').map((x) => x.l).join(' / ') },
-  { key: 'status', label: 'وضعیت', sort: (a) => ST[a.status].o, csv: (a) => ST[a.status].label },
-  { key: 'lastSeen', label: 'آخرین فعالیت', sort: (a) => -a.lastSeenMin, desc: true, csv: (a) => a.lastSeenDays },
-  { key: 'next', label: 'قدم بعدی پیشنهادی', sort: (a) => a.next.key, csv: (a) => a.next.text },
-  { key: 'done', label: '', sort: false, csv: false },
+  { key: 'signup', sortKey: 'signup', label: 'ثبت‌نام', csv: (a) => date(signupDaysAgo(a), { year: true }) },
+  { key: 'check', sortKey: 'steps', label: 'قدم‌ها', desc: true, csv: (a) => a.checklist.filter((x) => x.s === 'done').map((x) => x.l).join(' / ') },
+  { key: 'status', sortKey: 'status', label: 'وضعیت', csv: (a) => ST[a.status].label },
+  { key: 'lastSeen', sortKey: 'lastSeen', label: 'آخرین فعالیت', desc: true, csv: (a) => a.lastSeenDays },
+  { key: 'next', sortKey: 'next', label: 'قدم بعدی پیشنهادی', csv: (a) => a.next.text },
+  { key: 'done', label: '', csv: false },
 ]
 
 async function setDone(a, on) {

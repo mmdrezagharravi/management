@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { fa, n, compact, compactParts, pct, signedPct, date, ago, inDays, clock, norm, setNow, jalali } from '../src/lib/format.js'
+import { fa, n, compact, compactParts, pct, signedPct, date, ago, inDays, clock, norm, setNow, jalali, signupDaysAgo } from '../src/lib/format.js'
 import { delta, band } from '../src/lib/ui.js'
 
 // the mock world's fixed "today": 31 Shahrivar 1405
@@ -56,5 +56,12 @@ describe('ui helpers', () => {
   })
   it('health bands are contiguous', () => {
     expect(band(70).key).toBe('good'); expect(band(69).key).toBe('warn'); expect(band(49).key).toBe('ser'); expect(band(0).key).toBe('crit')
+  })
+})
+
+describe('signup date', () => {
+  it('comes from signedUpAt (User.createdAt), not from the account age', () => {
+    expect(date(signupDaysAgo({ signedUpAt: '2024-01-28T07:44:01.271Z', age: 999 }), { year: true })).toBe('۸ بهمن ۱۴۰۲')
+    expect(signupDaysAgo({ age: 3 })).toBe(3)
   })
 })

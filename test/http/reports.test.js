@@ -92,7 +92,7 @@ describe('features', () => {
     const d = await features({ range: 30 })
     hasKeys(d, ['range', 'active', 'activePrev', 'rows', 'top', 'grow', 'imp', 'medRate', 'gaps', 'top2', 'planHeat'])
     hasKeys(d.rows[0], ['id', 'key', 'label', 'keyFeature', 'users', 'rate', 'prevRate', 'ch', 'pay', 'free', 'gated'])
-    expect(d.rows.map((r) => r.label)).toEqual(['رکورد', 'اتوماسیون', 'Zed'])
+    expect(d.rows.map((r) => r.label)).toEqual(['رکورد', 'خودکارسازی', 'Zed'])
     expect(d.top).toBe('Automation'); expect(d.grow).toBe('Record')
     expect(d.imp).toEqual([]); expect(d.planHeat).toBeNull(); expect(d.active).toBe(40)
   })

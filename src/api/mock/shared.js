@@ -126,7 +126,8 @@ export function interactionsOf(id) {
 export function pageOf(all, p, { views, sorts, filters = {}, text }) {
   const q = p.q ? norm(p.q) : ''
   const matching = all.filter((r) => Object.entries(filters).every(([k, test]) => !p[k] || test(r, p[k])) && (!q || norm(text(r)).includes(q)))
-  const counts = Object.fromEntries(Object.entries(views).map(([k, test]) => [k, matching.filter(test).length]))
+  const countIn = (rows) => Object.fromEntries(Object.entries(views).map(([k, test]) => [k, rows.filter(test).length]))
+  const counts = countIn(matching)
   let rows = matching.filter(views[p.view || 'all'] || views.all)
   const read = sorts[p.sort]
   if (read) {
@@ -134,6 +135,6 @@ export function pageOf(all, p, { views, sorts, filters = {}, text }) {
     rows = rows.slice().sort((a, b) => { const x = read(a), y = read(b); if (x == null) return 1; if (y == null) return -1; return (x > y ? 1 : x < y ? -1 : 0) * dir })
   }
   const size = p.size ?? 25, page = p.page ?? 0
-  return ok({ rows: size === 0 ? rows : rows.slice(page * size, page * size + size), total: rows.length, counts })
+  return ok({ rows: size === 0 ? rows : rows.slice(page * size, page * size + size), total: rows.length, counts, totals: countIn(all) })
 }
 

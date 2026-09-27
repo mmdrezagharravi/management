@@ -28,8 +28,8 @@
       </PanelCard>
 
       <PanelCard cls="tint-accent">
-        <template #title><AppIcon name="zap" />اتوماسیون، قوی‌ترین نشانهٔ ماندن</template>
-        <div class="prose">در هفتهٔ {{ fa(lastWeek) }} پس از ثبت‌نام، <b>{{ pct(cv.automation.values[lastWeek]) }}</b> از حساب‌های دارای اتوماسیون هنوز فعال‌اند؛ بقیه فقط <b>{{ pct(cv.noAutomation.values[lastWeek]) }}</b> — یعنی <b>{{ n(cv.lift, 1) }} برابر</b>. اما تنها {{ pct(cv.autoShare) }} از حساب‌های فعال اتوماسیون دارند و {{ n(cv.payNoAuto) }} مشتری پرداخت‌کننده هنوز یکی هم نساخته‌اند. برایشان قالب اتوماسیون آماده بفرستید و در دموی فروش به حساب‌های رایگان، اتوماسیون را اول نشان دهید.</div>
+        <template #title><AppIcon name="zap" />خودکارسازی، قوی‌ترین نشانهٔ ماندن</template>
+        <div class="prose">در هفتهٔ {{ fa(lastWeek) }} پس از ثبت‌نام، <b>{{ pct(cv.automation.values[lastWeek]) }}</b> از حساب‌های دارای خودکارسازی هنوز فعال‌اند؛ بقیه فقط <b>{{ pct(cv.noAutomation.values[lastWeek]) }}</b> — یعنی <b>{{ n(cv.lift, 1) }} برابر</b>. اما تنها {{ pct(cv.autoShare) }} از حساب‌های فعال خودکارسازی دارند و {{ n(cv.payNoAuto) }} مشتری پرداخت‌کننده هنوز یکی هم نساخته‌اند. برایشان قالب خودکارسازی آماده بفرستید و در دموی فروش به حساب‌های رایگان، خودکارسازی را اول نشان دهید.</div>
         <template #footer><span>همبستگی است، نه اثبات علت</span><router-link to="/features">اثر قابلیت‌ها بر نگهداشت</router-link></template>
       </PanelCard>
 
@@ -37,8 +37,8 @@
         <PanelCard title="منحنی نگهداشت هفتگی" hint="سهم فعال در هر هفته پس از ثبت‌نام">
           <LineChart :options="curveChart" />
           <div class="legend" style="margin-top: 8px">
-            <span class="k"><i class="ln" style="background: var(--series-1)" />با اتوماسیون <span class="faint">({{ n(cv.automation.n) }} حساب)</span></span>
-            <span class="k"><i class="ln" style="background: var(--series-2)" />بدون اتوماسیون <span class="faint">({{ n(cv.noAutomation.n) }})</span></span>
+            <span class="k"><i class="ln" style="background: var(--series-1)" />با خودکارسازی <span class="faint">({{ n(cv.automation.n) }} حساب)</span></span>
+            <span class="k"><i class="ln" style="background: var(--series-2)" />بدون خودکارسازی <span class="faint">({{ n(cv.noAutomation.n) }})</span></span>
             <span class="k"><i class="ln" style="background: var(--series-3)" />تیمی — همکار دعوت کرده <span class="faint">({{ n(cv.team.n) }})</span></span>
           </div>
           <template #footer><span>حساب‌هایی که دست‌کم ۱۲ هفته از ثبت‌نامشان گذشته</span><router-link to="/segments">دسته‌بندی‌ها</router-link></template>
@@ -124,7 +124,7 @@ const heat = computed(() => {
 const curveChart = computed(() => {
   const wl = []; for (let w = 0; w <= lastWeek.value; w++) wl.push('هفتهٔ ' + fa(d.value.weeks ? w + 1 : w))
   return { labels: wl, height: 250, yFormat: (v) => pct(v), area: false,
-    series: [{ name: 'با اتوماسیون', values: cv.value.automation.values }, { name: 'بدون اتوماسیون', values: cv.value.noAutomation.values }, { name: 'تیمی', values: cv.value.team.values }] }
+    series: [{ name: 'با خودکارسازی', values: cv.value.automation.values }, { name: 'بدون خودکارسازی', values: cv.value.noAutomation.values }, { name: 'تیمی', values: cv.value.team.values }] }
 })
 
 const filters = computed(() => !ch.value.reasonList.length ? [] : [{ key: 'reason', label: 'دلیل', options: ch.value.reasonList.map((r) => ({ v: r, l: r })), test: (a, v) => a.churnReason === v }])

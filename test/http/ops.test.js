@@ -27,7 +27,7 @@ const baseRow = (o = {}) => ({ id: B1, name: 'فروش', isTemplate: false, crea
 const routes = {
   '/customers': () => [customer(), paying],
   '/bases': () => [baseRow(), baseRow({ id: B2, name: 'انبار', records: 5, usage: 0.005, atLimit: false, lastSeenDays: null, events30: 0 })],
-  ['/bases/' + B1]: () => ({ ...baseRow(), slug: 'sales', cloneCount: 0, counts: { fields: 12, views: 4, pages: 1, roles: 0, recordRoles: 0, webhooks: 0, plugins: 0, automationsActive: 1, runs30: 40, failedRuns30: 2 }, members: [{ id: 'a1', name: 'علی', mobile: '0912', type: 'owner' }, { id: 'm2', name: null, mobile: '09351112233', type: 'collaborator' }], activity: Array.from({ length: 90 }, (_, i) => ({ day: day(89 - i), events: i % 3 })), features: { Record: 40 } }),
+  ['/bases/' + B1]: () => ({ ...baseRow(), slug: 'sales', cloneCount: 0, counts: { fields: 12, views: 4, portals: 3, roles: 0, recordRoles: 0, webhooks: 0, plugins: 0, automationsActive: 1, runs30: 40, failedRuns30: 2 }, members: [{ id: 'a1', name: 'علی', mobile: '0912', type: 'owner' }, { id: 'm2', name: null, mobile: '09351112233', type: 'collaborator' }], activity: Array.from({ length: 90 }, (_, i) => ({ day: day(89 - i), events: i % 3 })), features: { Record: 40 } }),
   '/customers/a1': () => ({ ...customer(), email: null, referredBy: null, referrals: 0, basesList: [], members: [{ id: 'm2', name: null, mobile: '0935', lastSeenDays: 30 }], invoices: [], contract: null, activity: [], features: {}, healthHistory: [] }),
   '/quota': () => ({ nearRatio: 0.8, bases: [baseRow()], automation: [{ ...customer(), runsUsage: 0.9 }] }),
   '/jobs': () => ({
@@ -64,7 +64,8 @@ describe('base(id)', () => {
   it('joins detail, creator and siblings', async () => {
     const d = await base(B1)
     expectKeys(d, ['fallback', 'requestedId', 'base', 'account', 'limits', 'seatLim', 'share', 'autoShare', 'runsEst', 'activity', 'activeDays', 'sumEv', 'people', 'peopleTotal', 'siblings', 'ownerName'])
-    expectKeys(d.base, ['id', 'name', 'slug', 'created', 'tables', 'records', 'automations', 'pages', 'shares', 'collaborators', 'lastActive'])
+    expectKeys(d.base, ['id', 'name', 'slug', 'created', 'tables', 'records', 'automations', 'portals', 'collaborators', 'lastActive'])
+    expect(d.base.portals).toBe(3)
     expect(d.fallback).toBe(false)
     expect(d.base.slug).toBe('sales')
     expect(d.account.id).toBe('a1')

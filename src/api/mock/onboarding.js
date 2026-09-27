@@ -1,6 +1,6 @@
 /* GET /management/onboarding?range=30 — signups of the range, their checklist, status and suggested next step. */
 import { DB } from 'src/mock/engine'
-import { C, enrich, taskState } from './shared'
+import { C, enrich, taskState, pageOf } from './shared'
 import { fa } from 'src/lib/format'
 
 const ACT = C.activation
@@ -29,7 +29,7 @@ function checklist(a) {
     { l: 'بیس', s: hasBase(a) ? 'done' : 'open', d: hasBase(a) ? (m.firstBase ? 'روز ' + fa(m.firstBase) : 'همان روز') : 'هنوز نساخته' },
     { l: fa(ACT.records) + ' رکورد', s: activated(a) ? 'done' : a.age < ACT.days ? 'wait' : 'open', d: activated(a) ? 'روز ' + fa(m.activated) : a.age < ACT.days ? 'تا روز ' + fa(ACT.days) + ' فرصت دارد' : 'نرسید' },
     { l: 'دعوت همکار', s: invited(a) ? 'done' : 'open', d: invited(a) ? fa(Math.max(1, a.invitesSent)) + ' دعوت' : 'هنوز نه' },
-    { l: 'اتوماسیون', s: automated(a) ? 'done' : 'open', d: automated(a) ? 'ساخته' : 'هنوز نه' },
+    { l: 'خودکارسازی', s: automated(a) ? 'done' : 'open', d: automated(a) ? 'ساخته' : 'هنوز نه' },
     { l: 'بازگشت در هفتهٔ ۲', s: week2(a) ? 'done' : a.age < 14 ? 'wait' : 'open', d: week2(a) ? 'برگشت' : a.age < 7 ? 'هنوز زود است' : a.age < 14 ? 'هفتهٔ ۲ در جریان است' : 'برنگشت' },
   ]
 }
@@ -40,7 +40,7 @@ const STEPS = {
   excel: 'راهنمای ورود داده از Excel',
   back: 'پیام بازگشت',
   invite: 'پیشنهاد دعوت همکار',
-  auto: 'معرفی اتوماسیون',
+  auto: 'معرفی خودکارسازی',
   plan: 'پیشنهاد پلن پایه',
   paid: 'تماس خوشامد مشتری پرداخت‌کننده',
   wait: 'فعلاً صبر',
@@ -52,7 +52,7 @@ function nextStep(a) {
   if (!activated(a)) return s('excel')
   if (lost(a)) return s('back', 'پیام بازگشت با نمونهٔ ' + a.industryName)
   if (!invited(a)) return s('invite')
-  if (!automated(a)) return s('auto', 'معرفی اتوماسیون با یک نمونهٔ آماده')
+  if (!automated(a)) return s('auto', 'معرفی خودکارسازی با یک نمونهٔ آماده')
   return a.paying ? s('paid') : s('plan')
 }
 const isDone = (a) => (taskState('onb:' + a.id) || {}).status === 'done'
@@ -110,9 +110,23 @@ export async function onboarding({ range: R = 30 } = {}) {
       sourceName: DB.source(a.source).name,
       status: status(a),
       checklist: checklist(a),
-      stuck: stuck(a), highPot: highPot(a), activated: activated(a),
+      stuck: stuck(a), highPot: highPot(a), activated: activated(a), hasBase: hasBase(a),
       next: nextStep(a),
       done: isDone(a),
     })),
   }
+}
+
+const VIEWS = { all: () => true, base: (a) => a.hasBase, act: (a) => a.activated, stuck: (a) => a.stuck, hp: (a) => a.highPot, hpStuck: (a) => a.highPot && a.stuck }
+const ORDER = { stuck: 0, path: 1, act: 2, lost: 3 }
+const SORTS = {
+  signup: (a) => a.age, steps: (a) => a.checklist.filter((x) => x.s === 'done').length, status: (a) => ORDER[a.status],
+  lastSeen: (a) => -a.lastSeenMin, next: (a) => a.next.key,
+}
+const FILTERS = { status: (a, v) => a.status === v, source: (a, v) => a.source === v, next: (a, v) => a.next.key === v }
+
+/* GET /management/onboarding/signups — one page of the signup table */
+export async function onboardingPage(p = {}) {
+  const { rows } = await onboarding({ range: p.range })
+  return pageOf(rows, p, { views: VIEWS, sorts: SORTS, filters: FILTERS, text: (a) => a.name + ' ' + a.contact.first + ' ' + a.contact.last + ' ' + a.contact.mobile })
 }

@@ -78,8 +78,8 @@ export function aiBrief() {
   ren.slice(0, 2).forEach((a, i) => { if (i) renTop.push(' و '); renTop.push(acc(a), ' (' + inDays(a.renewIn) + ')') })
   const findings = [
     { key: 'queue-automation', kind: 'ناهنجاری', cls: 'warn',
-      title: 'صف اتوماسیون ' + times(qBase ? q.waiting / qBase : 0) + ' برابر حالت عادی',
-      text: [n(q.waiting) + ' اجرا در صف مانده و ' + n(q.failed24) + ' اجرا در ۲۴ ساعت ناموفق بوده؛ اتوماسیون‌های ' + n(autos.length) + ' حساب خودکارساز دیر اجرا می‌شود',
+      title: 'صف خودکارسازی ' + times(qBase ? q.waiting / qBase : 0) + ' برابر حالت عادی',
+      text: [n(q.waiting) + ' اجرا در صف مانده و ' + n(q.failed24) + ' اجرا در ۲۴ ساعت ناموفق بوده؛ خودکارسازی‌های ' + n(autos.length) + ' حساب خودکارساز دیر اجرا می‌شود',
         ...(autosPaying[0] ? ['، از جمله ', acc(autosPaying[0]), '.'] : ['.']), ' پیش از رسیدن شکایت، به تیم فنی خبر دهید.'],
       ev: ['در انتظار ', { b: n(q.waiting) }, ' · میانهٔ ' + fa(qPrev.length) + ' روز قبل ', { b: n(qBase) }, ' · ناموفق ۲۴ ساعت ', { b: n(q.failed24) }, ' · درآمد ماهانهٔ خودکارسازها ', { b: money(sum(autos, (a) => a.mrr)) }],
       link: { to: '/jobs', label: 'صف‌ها و زمان‌بندی' } },

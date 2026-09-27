@@ -25,7 +25,7 @@ export function toAccount(s) {
   const collaboratorLimit = s.collaboratorLimit ?? null
   const usage = [
     { key: 'records', label: 'رکورد در پرمصرف‌ترین بیس', used: recordMax, limit: recLimit, ratio: recordMax / recLimit },
-    { key: 'runs', label: 'اجرای اتوماسیون', used: s.runs || 0, limit: s.runsLimit || 0, ratio: s.runsLimit ? (s.runs || 0) / s.runsLimit : 0 },
+    { key: 'runs', label: 'اجرای خودکارسازی', used: s.runs || 0, limit: s.runsLimit || 0, ratio: s.runsLimit ? (s.runs || 0) / s.runsLimit : 0 },
     { key: 'seats', label: 'همکار', used: collaborators, limit: collaboratorLimit, ratio: collaboratorLimit ? collaborators / collaboratorLimit : 0 },
   ]
   const maxUsage = usage.slice().sort((p, q) => q.ratio - p.ratio)[0]
@@ -43,7 +43,7 @@ export function toAccount(s) {
     renewIn: s.renewIn ?? 0, churnedAt: lapsed ? -s.renewIn : undefined, churnReason: lapsed ? 'تمدید نشد' : null,
     pastDue: !!s.pastDue, tenureDays: s.payingDays ?? 0,
     limitHits30: 0, pricingVisits30: 0, tickets: 0, nps: null,
-    segments: s.segments || [], maxUsage, usage, bases: s.bases ?? 0, automations: s.automations ?? 0,
+    segments: s.segments || [], maxUsage, usage, bases: s.bases ?? 0, coOwnedBases: s.coOwnedBases ?? 0, sharedBases: s.sharedBases ?? 0, automations: s.automations ?? 0,
     upgradeValue: 0, last30: Array.isArray(s.last30) ? s.last30 : [], milestones: milestonesOf(s), feat: {},
     invitesSent: 0, wk: [], decline: null,
     // backend-only extras, kept for adapters that need them

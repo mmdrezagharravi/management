@@ -5,7 +5,7 @@
     </div>
     <div class="toolbar" style="padding: 12px 16px">
       <label v-if="search" class="searchbox"><AppIcon name="search" /><input class="input" v-model="st.q" :placeholder="search.placeholder || 'جستجو…'" @input="st.page = 0" /></label>
-      <select v-for="f in filters || []" :key="f.key" class="select" v-model="st.f[f.key]" :aria-label="f.label" @change="st.page = 0">
+      <select v-for="f in filters || []" :key="f.key" class="select" :class="{ on: st.f[f.key] }" v-model="st.f[f.key]" :aria-label="f.label" @change="st.page = 0">
         <option value="">{{ f.label }}: همه</option>
         <option v-for="op in f.options" :key="op.v" :value="String(op.v)">{{ op.l }}</option>
       </select>

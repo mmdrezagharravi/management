@@ -78,7 +78,7 @@ const CONFIG = {
     { key: 'new',       label: 'تازه‌وارد',          rule: 'signup_age <= 14',                                   desc: 'در دو هفتهٔ اخیر ثبت‌نام کرده‌اند' },
     { key: 'stuck',     label: 'فعال‌نشده',          rule: 'signup_age 3..30 AND NOT activated',                 desc: 'ثبت‌نام کرده‌اند ولی به ۴۰ رکورد نرسیده‌اند' },
     { key: 'builders',  label: 'سازندگان',           rule: 'bases >= 2 AND last_seen <= 30',                                       desc: 'بیش از یک بیس فعال ساخته‌اند' },
-    { key: 'automators',label: 'خودکارساز',          rule: 'automations >= 1 AND last_seen <= 30',                                 desc: 'اتوماسیون فعال دارند — چسبنده‌ترین گروه' },
+    { key: 'automators',label: 'خودکارساز',          rule: 'automations >= 1 AND last_seen <= 30',                                 desc: 'خودکارسازی فعال دارند — چسبنده‌ترین گروه' },
     { key: 'teams',     label: 'تیمی',               rule: 'active_members_7d >= 2',                             desc: 'بیش از یک نفر در هفتهٔ اخیر کار کرده' },
     { key: 'upsell',    label: 'آمادهٔ ارتقا',        rule: 'plan IN (free, basic) AND limit_hits_30d >= 2 AND pricing_visits_30d >= 1 AND last_seen <= 14', desc: 'به سقف پلن خورده‌اند و صفحهٔ قیمت را دیده‌اند' },
     { key: 'risk',      label: 'در خطر ریزش',        rule: 'paying AND health < 50',                             desc: 'پرداخت‌کننده با امتیاز سلامت زیر ۵۰' },
@@ -90,7 +90,7 @@ const CONFIG = {
     { key: 'tables',     label: 'جدول و رکورد',   key_feature: false },
     { key: 'views',      label: 'نما و فیلتر',    key_feature: true },
     { key: 'forms',      label: 'فرم',            key_feature: true },
-    { key: 'automation', label: 'اتوماسیون',      key_feature: true },
+    { key: 'automation', label: 'خودکارسازی',      key_feature: true },
     { key: 'share',      label: 'نمای اشتراکی',   key_feature: true },
     { key: 'portal',     label: 'درگاه و صفحه',   key_feature: true },
     { key: 'export',     label: 'خروجی Excel',    key_feature: false },
@@ -503,7 +503,7 @@ function maxUsage(a) {
   const L = plans[a.plan].limits;
   const u = [
     { key: 'records', label: 'رکورد', used: a.records, limit: L.records },
-    { key: 'runs', label: 'اجرای اتوماسیون', used: a.runs30, limit: L.runs },
+    { key: 'runs', label: 'اجرای خودکارسازی', used: a.runs30, limit: L.runs },
     { key: 'sms', label: 'پیامک', used: a.sms30, limit: L.sms },
     { key: 'ai', label: 'توکن هوش مصنوعی', used: a.ai30, limit: L.ai },
     { key: 'storage', label: 'فضای ذخیره (گیگ)', used: a.storage, limit: L.storage },

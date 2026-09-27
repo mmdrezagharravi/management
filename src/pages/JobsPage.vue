@@ -41,7 +41,7 @@
           </table></div>
           <template #footer><span>بحرانی: {{ n(d.thresholds.critWaiting) }}+ در انتظار یا {{ n(d.thresholds.critFailed) }}+ شکست · هشدار: {{ n(d.thresholds.warnWaiting) }}+ در انتظار، {{ n(d.thresholds.warnFailed) }}+ شکست یا تأخیر بیش از حد مجاز</span></template>
         </PanelCard>
-        <PanelCard title="اجرای اتوماسیون در ۲۴ ساعت" hint="ساعتی">
+        <PanelCard title="اجرای خودکارسازی در ۲۴ ساعت" hint="ساعتی">
           <div v-if="!d.hourly.length" class="note">این بخش هنوز از بک‌اند داده نمی‌گیرد.</div>
           <ColumnChart v-else :options="runsChart" />
           <div class="legend" style="margin-top: 8px"><span class="k"><i class="sw" style="background: var(--series-1)" />موفق</span><span class="k"><i class="sw" style="background: var(--critical)" />ناموفق</span></div>

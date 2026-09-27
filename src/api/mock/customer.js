@@ -45,7 +45,7 @@ function timeline(a) {
   if (m.activated !== undefined) add(at(m.activated), 'good', 'فعال‌سازی', 'به ' + fa(C.activation.records) + ' رکورد رسید · روز ' + fa(m.activated))
   if (m.team !== undefined) add(at(m.team), '', 'اولین همکار', fa(a.invitesAccepted) + ' دعوت پذیرفته از ' + fa(a.invitesSent))
   if (m.habit !== undefined) add(at(m.habit), 'good', 'عادت', 'در ۳ هفته از ۴ هفتهٔ اول فعال بود')
-  if (a.feat.automation) add(a.feat.automation.first, '', 'اولین اتوماسیون', fa(a.automations) + ' اتوماسیون فعال')
+  if (a.feat.automation) add(a.feat.automation.first, '', 'اولین خودکارسازی', fa(a.automations) + ' خودکارسازی فعال')
   if (m.pricing !== undefined && m.paid === undefined) add(at(m.pricing), '', 'بازدید صفحهٔ قیمت', 'هنوز خرید نکرده')
   a.planEvents.forEach((e) => add(e.t, peCls(e.kind), PE_TITLE[e.kind], e.kind === 'churn' ? a.churnReason : 'پلن ' + C.plans[e.plan].name + ' · ' + money(e.mrr) + ' در ماه'))
   if (a.decline) add(a.decline.start, 'warn', 'شروع افت فعالیت', 'فعالیت از این هفته پیوسته کم شده است')
@@ -58,7 +58,7 @@ function timeline(a) {
 const ACTIONS = {
   activity: 'تماس بگیرید و دلیل کاهش استفاده را بپرسید — معمولاً تغییر آدم‌ها یا فرایند کار در سمت مشتری است.',
   trend: 'فعالیت دو هفتهٔ اخیر افت کرده؛ بپرسید چه چیزی در تیم یا کارشان تغییر کرده.',
-  depth: 'فقط جدول‌ها را استفاده می‌کنند؛ یک جلسهٔ ۲۰ دقیقه‌ای برای اتوماسیون و فرم پیشنهاد دهید.',
+  depth: 'فقط جدول‌ها را استفاده می‌کنند؛ یک جلسهٔ ۲۰ دقیقه‌ای برای خودکارسازی و فرم پیشنهاد دهید.',
   team: 'بیشتر اعضا وارد نمی‌شوند؛ با مدیر حساب برای فعال کردن تیم هماهنگ کنید.',
   commercial: 'مشکل پرداخت، تیکت باز یا برخورد مکرر با سقف دارد؛ اول همین را حل کنید.',
 }
@@ -92,7 +92,7 @@ export function customer(id) {
     invitesAccepted: a.invitesAccepted,
     cycleDiscount: C.cycles[a.cycle].discount,
     members: a.members.map((m, i) => ({ id: i, ...m })),
-    bases: a.bases.map((b) => ({ id: b.id, name: b.name, slug: b.slug, tables: b.tables, records: b.records, automations: b.automations, pages: b.pages, shares: b.shares, collaborators: b.collaborators, lastActive: b.lastActive, created: b.created })),
+    bases: a.bases.map((b) => ({ id: b.id, name: b.name, slug: b.slug, tables: b.tables, records: b.records, automations: b.automations, portals: b.pages, collaborators: b.collaborators, lastActive: b.lastActive, created: b.created })),
     invoices: a.invoices.map((inv, i) => ({ id: i, ...inv })),
     planEvents: a.planEvents.map((e) => ({ ...e, title: { new: 'اولین خرید', expansion: 'افزایش', contraction: 'کاهش', churn: 'لغو اشتراک' }[e.kind], cls: peCls(e.kind) })),
     timeline: timeline(a),
@@ -102,4 +102,9 @@ export function customer(id) {
     featureList: C.features,
     profile: profileOf(a),
   })
+}
+
+/* GET /management/customers/:id/journey — the mock's whole journey already comes with customer(id).timeline */
+export function customerJourney() {
+  return ok({ steps: [], notYet: [], observedSince: null, fullyObserved: true, behaviorAvailable: true })
 }

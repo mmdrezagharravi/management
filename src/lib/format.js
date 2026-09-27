@@ -53,6 +53,8 @@ export function daysAgo(x) {
   const key = /^\d{4}-\d{2}-\d{2}$/.test(x) ? x : keyFmt.format(new Date(x))
   return Math.round((Date.parse(keyFmt.format(NOW)) - Date.parse(key)) / DAY)
 }
+/** Signup day of an account as "days ago": from signedUpAt (User.createdAt) when the server sent it, else from its age. */
+export const signupDaysAgo = (a) => (a.signedUpAt ? daysAgo(a.signedUpAt) : a.age)
 /** Jalali {y, m, d} for a day given as "days ago" (0 = today). */
 export function jalali(daysAgo) {
   const key = NOW + ':' + daysAgo

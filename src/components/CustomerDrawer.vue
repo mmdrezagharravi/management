@@ -33,7 +33,7 @@
             <div class="kv"><span class="k">اعضای فعال این هفته</span><span class="v">{{ n(a.activeMembers7) }} از {{ n(a.memberCount) }} <span v-if="a.collaboratorLimit != null" class="muted">(سقف {{ n(a.collaboratorLimit) }} همکار)</span></span></div>
             <div v-if="a.paying" class="kv"><span class="k">تمدید بعدی</span><span class="v">{{ date(-a.renewIn) }} · {{ inDays(a.renewIn) }} <span v-if="a.cycle" class="muted">({{ CYCLE_NAME[a.cycle] }})</span></span></div>
             <div v-if="a.churnedAt !== undefined" class="kv"><span class="k">لغو اشتراک</span><span class="v">{{ date(a.churnedAt) }} · {{ a.churnReason }}</span></div>
-            <div class="kv"><span class="k">عضو از</span><span class="v">{{ date(a.age) }} · {{ sourceName(a.source) }}</span></div>
+            <div class="kv"><span class="k">عضو از</span><span class="v">{{ date(signupDaysAgo(a), { year: true }) }} · {{ sourceName(a.source) }}</span></div>
           </div>
           <div class="sec"><h4>فعالیت ۳۰ روز اخیر <span class="faint" style="font-weight: 400">— ویرایش در روز</span></h4><SparkLine :values="a.last30" :w="460" :h="44" bars /></div>
           <div class="sec"><h4>مصرف پلن</h4><div class="stack" style="gap: 9px"><UsageMeter v-for="u in topUsage" :key="u.key" :label="u.label" :used="u.used" :limit="u.limit" /></div></div>
@@ -83,7 +83,7 @@ import SparkLine from './charts/SparkLine.vue'
 import { api } from 'src/api'
 import { useUiStore } from 'stores/ui'
 import { useDialogs } from 'src/composables/useDialogs'
-import { n, fa, money, date, dateTime, inDays, agoDays, clock, initials } from 'src/lib/format'
+import { n, fa, money, date, dateTime, inDays, agoDays, clock, initials, signupDaysAgo } from 'src/lib/format'
 import { CYCLE_NAME, HEALTH_COMPONENTS, TASK_TYPES, sourceName } from 'src/lib/refs'
 import { toast } from 'src/lib/ui'
 

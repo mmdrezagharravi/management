@@ -3,7 +3,7 @@
 import { get } from './client'
 
 export const FEATURE_LABEL = {
-  Record: 'رکورد', Cell: 'سلول', View: 'نما', Automation: 'اتوماسیون', Collaborator: 'افزودن همکار', Page: 'صفحه', Role: 'نقش',
+  Record: 'رکورد', Cell: 'سلول', View: 'نما', Automation: 'خودکارسازی', Collaborator: 'افزودن همکار', Page: 'صفحه', Role: 'نقش',
   AI: 'هوش مصنوعی', ExportTemplate: 'خروجی قالب', Form: 'فرم', Share: 'اشتراک', Other: 'سایر',
 }
 

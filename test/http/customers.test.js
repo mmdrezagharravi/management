@@ -11,7 +11,7 @@ vi.mock('src/api/http/client', () => {
 const { get, all } = await import('src/api/http/client')
 const { customers, customersPage, search, alerts, navBadges, freshness } = await import('src/api/http/customers')
 const { basesPage } = await import('src/api/http/bases')
-const { customer, quickView } = await import('src/api/http/customer')
+const { customer, quickView, customerJourney } = await import('src/api/http/customer')
 
 const iso = (d) => new Date(Date.now() - d * 864e5).toISOString()
 const day = (d) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tehran' }).format(Date.now() - d * 864e5) // server day keys are Tehran dates
@@ -25,7 +25,8 @@ const summary = (o = {}) => ({
 })
 const detail = () => ({
   ...summary(), email: 'x@y.z', referredBy: null, referrals: 0,
-  basesList: [{ id: 'b'.repeat(24), name: 'فروش', createdAt: iso(199), isTemplate: false, records: 1000, recordsLimit: 50000, usage: 0.02, atLimit: false, tables: 4, automations: 3, collaborators: 2, lastSeenDays: 1 }],
+  basesList: [{ id: 'b'.repeat(24), name: 'فروش', createdAt: iso(199), isTemplate: false, records: 1000, recordsLimit: 50000, usage: 0.02, atLimit: false, tables: 4, automations: 3, collaborators: 2, lastSeenDays: 1 },
+    { id: 'c'.repeat(24), name: 'مشترک', createdAt: iso(20), records: 5, tables: 1, automations: 0, collaborators: 3, lastSeenDays: 2, role: 'owner', creator: { id: 'd'.repeat(24), name: 'ابوالفضل', mobile: '0912' } }],
   members: [{ id: 'm2', name: null, mobile: '09351112233', lastSeenDays: 30 }],
   invoices: [
     { id: 'i3', type: 'PlanInvoice', status: 'Failed', amount: 6000000, createdAt: iso(2), paidAt: null, plan: 'team', cycle: '12m', seats: 5 },
@@ -99,16 +100,34 @@ describe('http customer adapter', () => {
     expect(d.paidTotal).toBe(9000000); expect(d.paidCount).toBe(2)
     expect(d.planEvents.map((e) => e.kind)).toEqual(['new', 'expansion'])
     expect(d.members.map((m) => m.role)).toEqual(['مالک', 'عضو'])
-    expect(d.bases[0]).toMatchObject({ slug: 'bbbbbbbb', tables: 4, lastActive: 1, created: 199 })
+    expect(d.bases[0]).toMatchObject({ slug: 'bbbbbbbb', tables: 4, lastActive: 1, created: 199, role: 'creator', creatorId: null })
+    expect(d.bases[1]).toMatchObject({ role: 'owner', creatorId: 'd'.repeat(24), creatorName: 'ابوالفضل' })
     expect(d.weakest).toBe('trend'); expect(d.nextStep).toBeTruthy()
     expect(d.log).toEqual([{ local: true, who: 'من', what: 'زنگ زدم', kind: 'تماس' }])
     expect(d.account.feat).toEqual({ Record: true, View: true })
     expect(d.featureList.some((f) => f.key === 'View')).toBe(true)
     expect(d.featureList).toContainEqual({ key: 'Collaborator', label: 'افزودن همکار' })
-    expect(d.timeline[d.timeline.length - 1].title).toBe('آخرین فعالیت')
-    expect(d.timeline.map((e) => e.title)).not.toContain('فعال‌سازی')
-    expect(d.timeline.map((e) => e.title)).toContain('پرداخت تمدید ناموفق')
-    expect(d.timeline.every((e, i, arr) => i === 0 || arr[i - 1].t >= e.t)).toBe(true)
+    expect(d.timeline.map((e) => e.title)).toEqual(['اولین پرداخت', 'ارتقا', 'پرداخت تمدید ناموفق'])
+    expect(d.timeline.every((e) => typeof e.at === 'string')).toBe(true)
+  })
+  it('customerJourney() labels every step, keeps the order and lists what is not done yet', async () => {
+    get.mockResolvedValue({
+      observedSince: '2026-08-30', fullyObserved: true, behaviorAvailable: true,
+      steps: [
+        { key: 'signup', at: '2026-09-01T08:00:00Z', precision: 'time', detail: { referrer: { name: 'رضا' } } },
+        { key: 'base', at: '2026-09-01T09:00:00Z', precision: 'time', detail: { name: 'فروش', afterDays: 0 } },
+        { key: 'record', at: '2026-09-01T10:00:00Z', precision: 'time', earliestSeen: false },
+        { key: 'activated', at: '2026-09-03T20:29:59Z', precision: 'day', detail: { records: 12, dayIndex: 2 } },
+        { key: 'unknownFutureStep', at: '2026-09-04T00:00:00Z', precision: 'time' },
+      ],
+    })
+    const j = await customerJourney('a1')
+    expect(get).toHaveBeenLastCalledWith('/customers/a1/journey')
+    expect(j.steps.map((s) => s.title)).toEqual(['ثبت‌نام', 'اولین بیس', 'اولین رکورد', 'فعال‌سازی'])
+    expect(j.steps[0].desc).toBe('با دعوت رضا')
+    expect(j.steps[1].desc).toBe('«فروش» · همان روز ثبت‌نام')
+    expect(j.steps[3]).toMatchObject({ cls: 'good', desc: 'در ۳ روز اول به ۱۲ ساخت یا ویرایش رکورد رسید' })
+    expect(j.notYet).toEqual(['ساخت جدول', 'نمای جدید', 'تنظیم نما', 'خودکارسازی', 'دعوت همکار', 'عادت'])
   })
   it('customer() rethrows the 404, quickView() returns null', async () => {
     get.mockRejectedValue(new Error('مشتری پیدا نشد.'))
