@@ -35,8 +35,6 @@ export function dataHealth() {
   const miss24 = E.filter((x) => x.h < 24).reduce((t, x) => t + x.expected - x.received, 0)
   const beh = src('behavior')
 
-  const owners = {}
-  ops.knownIssues.forEach((i) => { owners[i.owner] = (owners[i.owner] || 0) + 1 })
   return ok({
     sources: S,
     worst: { key: worst.key, name: worst.name, desc: worst.desc, lagMin: worst.lagMin },
@@ -46,8 +44,7 @@ export function dataHealth() {
     gap: brk.length ? { sinceHours: Math.max(...brk.map((x) => x.h)), cap: Math.max(...brk.map((x) => x.received)), miss24, dropped24: beh.dropped24, queued: Math.max(0, miss24 - beh.dropped24) } : null,
     fresh: FRESH,
     policyExamples: { good: src('main') && S.find((s) => s.status === 'good') || null, warn: S.find((s) => s.status === 'warn') || null, crit: S.find((s) => s.status === 'crit') || null },
-    issues: ops.knownIssues.map((i) => ({ id: i.id, title: i.title, impact: i.impact, owner: i.owner, status: i.status, level: ISSUE[i.status] || 'info' })),
-    owners: Object.entries(owners).map(([name, n]) => ({ name, n })),
+    issues: ops.knownIssues.map((i) => ({ id: i.id, title: i.title, impact: i.impact, status: i.status, level: ISSUE[i.status] || 'info' })),
     affected: AFFECTED.map((p) => { const s = src(p.src); return { ...p, desc: s.desc, lagMin: s.lagMin, status: s.status } }),
     unaffected: [src('wallet').desc, src('main').desc],
   })

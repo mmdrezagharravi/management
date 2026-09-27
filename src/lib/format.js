@@ -46,6 +46,13 @@ export const WEEKDAYS = ['یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چ�
 const jFmt = new Intl.DateTimeFormat('en-u-ca-persian-nu-latn', { year: 'numeric', month: 'numeric', day: 'numeric', timeZone: 'Asia/Tehran' })
 const jCache = new Map()
 export const dayDate = (daysAgo) => new Date(NOW - daysAgo * DAY)
+const keyFmt = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tehran' }) // YYYY-MM-DD
+/** Tehran calendar days from a timestamp or a server day key ("YYYY-MM-DD") to today; the inverse of date(). */
+export function daysAgo(x) {
+  if (!x) return null
+  const key = /^\d{4}-\d{2}-\d{2}$/.test(x) ? x : keyFmt.format(new Date(x))
+  return Math.round((Date.parse(keyFmt.format(NOW)) - Date.parse(key)) / DAY)
+}
 /** Jalali {y, m, d} for a day given as "days ago" (0 = today). */
 export function jalali(daysAgo) {
   const key = NOW + ':' + daysAgo
@@ -69,12 +76,24 @@ export const monthLabel = (mo, withYear) => MONTHS[mo.m - 1] + (withYear ? ' ' +
 export const weekdayName = (daysAgo = 0) => WEEKDAYS[dayDate(daysAgo).getUTCDay()]
 export const todayLabel = () => weekdayName(0) + ' ' + date(0, { year: true })
 
+/** Jalali date and Tehran time for an ISO timestamp. */
+export function dateTime(value) {
+  if (!value) return '—'
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return '—'
+  return new Intl.DateTimeFormat('fa-IR-u-ca-persian', {
+    year: 'numeric', month: 'long', day: 'numeric',
+    hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tehran',
+  }).format(d)
+}
+
 export function ago(minutes) {
   if (minutes == null) return '—'
   if (minutes < 2) return 'هم‌اکنون'
   if (minutes < 60) return fa(Math.round(minutes)) + ' دقیقه پیش'
   if (minutes < 1440) return fa(Math.round(minutes / 60)) + ' ساعت پیش'
   const d = Math.floor(minutes / 1440)
+  if (d >= 9999) return '—' // the http adapters' "no activity on record" (sorts last)
   if (d === 1) return 'دیروز'
   if (d < 31) return fa(d) + ' روز پیش'
   if (d < 365) return fa(Math.round(d / 30)) + ' ماه پیش'
@@ -91,4 +110,3 @@ export const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => 
 /** Search normalisation: Arabic/Persian letter variants, diacritics, Persian digits. */
 export const norm = (s) => String(s || '').toLowerCase().replace(/[يى]/g, 'ی').replace(/ك/g, 'ک').replace(/[‌‏ً-ٟ]/g, '').replace(/[۰-۹]/g, (d) => FA.indexOf(d)).trim()
 export const initials = (name) => { const p = String(name).split(' ').filter(Boolean); return (p[1] || p[0] || '?').slice(0, 1) }
-export const maskMobile = (m) => fa(m.slice(0, 4) + ' ••• ' + m.slice(-4))

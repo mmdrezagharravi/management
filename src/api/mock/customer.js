@@ -1,20 +1,34 @@
 /* Customer profile + quick view. */
 import { DB } from 'src/mock/engine'
 import { fa, money, ago } from 'src/lib/format'
-import { C, ok, enrich, ownerOf, taskState, notesOf, interactionsOf, accountById } from './shared'
+import { C, ok, enrich, taskState, notesOf, interactionsOf, accountById } from './shared'
 
 /** Everything the quick-view drawer shows for one account. */
 export function quickView(id) {
   const a = accountById(id)
   if (!a) return ok(null)
-  const owner = ownerOf(a)
-  const tasks = owner ? DB.tasksFor(owner).filter((t) => t.accountId === a.id && !(taskState(t.id) || {}).status) : []
+  const tasks = C.reps.flatMap((r) => DB.tasksFor(r.id)).filter((t) => t.accountId === a.id && !(taskState(t.id) || {}).status)
   return ok({
     account: enrich(a),
     tasks: tasks.map((t) => ({ id: t.id, type: t.type, due: t.due, why: t.why })),
     notes: notesOf(a.id).slice(0, 3),
     interactions: interactionsOf(a.id).slice(0, 4),
+    profile: profileOf(a),
   })
+}
+
+/** Contact and account block (GET /management/customers/:id → profile). */
+function profileOf(a) {
+  const c = a.contact
+  return {
+    name: c.first + ' ' + c.last, mobile: c.mobile, email: c.email, username: null,
+    signedUpAt: new Date(Date.now() - a.age * 864e5).toISOString(), planFrom: null,
+    planUntil: a.paying ? new Date(Date.now() + a.renewIn * 864e5).toISOString() : null,
+    blocked: false, baleConnected: false, referralCode: null, referredBy: null, referrals: 0,
+    credits: { aiTokens: 0, sms: 0, email: 0 }, wallet: null,
+    company: a.plan === 'enterprise' ? { name: a.name, nationalId: null, registrationNumber: null, phone: null, address: a.city || null } : null,
+    sessions: [], sessionCount: 0,
+  }
 }
 
 const PE_TITLE = { new: 'اولین پرداخت', expansion: 'ارتقا', contraction: 'کاهش پلن', churn: 'لغو اشتراک' }
@@ -42,7 +56,7 @@ function timeline(a) {
 
 /* next step by weakest health component */
 const ACTIONS = {
-  activity: 'تماس بگیرید و دلیل کاهش استفاده را بپرسید — معمولاً تغییر فرد مسئول یا فرایند است.',
+  activity: 'تماس بگیرید و دلیل کاهش استفاده را بپرسید — معمولاً تغییر آدم‌ها یا فرایند کار در سمت مشتری است.',
   trend: 'فعالیت دو هفتهٔ اخیر افت کرده؛ بپرسید چه چیزی در تیم یا کارشان تغییر کرده.',
   depth: 'فقط جدول‌ها را استفاده می‌کنند؛ یک جلسهٔ ۲۰ دقیقه‌ای برای اتوماسیون و فرم پیشنهاد دهید.',
   team: 'بیشتر اعضا وارد نمی‌شوند؛ با مدیر حساب برای فعال کردن تیم هماهنگ کنید.',
@@ -86,5 +100,6 @@ export function customer(id) {
     notes: notesOf(a.id),
     limits: C.plans[a.plan].limits,
     featureList: C.features,
+    profile: profileOf(a),
   })
 }

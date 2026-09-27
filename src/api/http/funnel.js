@@ -40,7 +40,7 @@ export async function funnel({ range: R = 30, source } = {}) {
   for (let w = 15; w >= 0; w--) {
     const from = 7 + 7 * w
     let n = 0, x = 0
-    for (const a of accounts) if (a.age >= from && a.age < from + 7 && mine(a)) { n++; if (a.activated === true) x++ }
+    for (const a of accounts) if (a.age >= from && a.age < from + 7 && mine(a) && a.activated != null) { n++; if (a.activated) x++ } // null = before dataSince
     weekly.push({ from, n, rate: n ? x / n : null })
   }
 

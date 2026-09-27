@@ -12,13 +12,12 @@ const DEFAULTS = {
   upHits: ruleNum(/limit_hits_30d\s*>=\s*(\d+)/, 2), upPricing: ruleNum(/pricing_visits_30d\s*>=\s*(\d+)/, 1), upSeen: ruleNum(/last_seen\s*<=\s*(\d+)/, 14),
 }
 
-const PERMS = ['دیدن همهٔ مشتریان', 'دیدن شماره/ایمیل', 'خروجی CSV', 'تغییر مسئول', 'تغییر آستانه‌ها', 'دیدن درآمد']
+const PERMS = ['دیدن همهٔ مشتریان', 'دیدن شماره/ایمیل', 'خروجی CSV', 'تغییر آستانه‌ها', 'دیدن درآمد']
 const ROLES = [
-  { key: 'manager', label: 'مدیر فروش', p: [1, 1, 1, 1, 1, 1] },
-  { key: 'rep', label: 'کارشناس فروش', p: [0, 1, 0, 0, 0, 1] },
-  { key: 'support', label: 'پشتیبانی', p: [1, 1, 0, 0, 0, 0] },
-  { key: 'product', label: 'محصول', p: [1, 0, 1, 0, 0, 0] },
-  { key: 'admin', label: 'مدیر سیستم', p: [1, 1, 1, 1, 1, 1] },
+  { key: 'manager', label: 'مدیر فروش', p: [1, 1, 1, 1, 1] },
+  { key: 'support', label: 'پشتیبانی', p: [1, 1, 0, 0, 0] },
+  { key: 'product', label: 'محصول', p: [1, 0, 1, 0, 0] },
+  { key: 'admin', label: 'مدیر سیستم', p: [1, 1, 1, 1, 1] },
 ]
 
 const tsOf = (e) => C.now + (e.min - C.nowMinutes) * 60000 - e.t * 864e5

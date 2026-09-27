@@ -6,7 +6,6 @@ export default [
     component: () => import('layouts/MainLayout.vue'),
     children: [
       page('overview', 'OverviewPage', { path: '' }),
-      page('today', 'TodayPage'),
       page('ai', 'AiPage'),
       page('customers', 'CustomersPage'),
       page('customer', 'CustomerPage', { path: '/customers/:id', nav: 'customers' }),
@@ -15,7 +14,6 @@ export default [
       page('onboarding', 'OnboardingPage'),
       page('revenue', 'RevenuePage'),
       page('sales', 'SalesPage'),
-      page('team', 'TeamPage'),
       page('funnel', 'FunnelPage'),
       page('retention', 'RetentionPage'),
       page('acquisition', 'AcquisitionPage'),

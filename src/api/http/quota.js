@@ -5,7 +5,7 @@ import { customersAll, notesOf } from './account'
 import { PLAN_NAME } from 'src/lib/ui'
 
 const RES_KEYS = ['records', 'runs']
-const low = (a) => a.plan === 'free' || a.plan === 'basic'
+const low = (a) => a.plan === 'basic'
 const usageOf = (a, k) => a.usage.find((u) => u.key === k)
 const ratioOf = (a, k) => { const u = usageOf(a, k); return u && u.limit ? u.ratio : 0 }
 const maxOf = (a) => RES_KEYS.map((k) => usageOf(a, k)).filter(Boolean).sort((p, q) => q.ratio - p.ratio)[0]
@@ -37,7 +37,7 @@ export async function quota() {
     rules: [
       { at: 'warn', atL: '۸۰٪', who: 'رایگان', what: 'نوار داخل بیس: «۸۰٪ سقف … پر شده» با دکمهٔ مقایسهٔ پلن‌ها', n: accounts.filter((a) => low(a) && r80(a) && seen14(a)).length },
       { at: 'crit', atL: '۱۰۰٪', who: 'رایگان', what: 'پنجرهٔ ارتقای یک‌کلیکی هنگام برخورد + ایمیل به مالک حساب', n: accounts.filter((a) => low(a) && r100(a) && seen14(a)).length },
-      { at: 'warn', atL: '۸۰٪', who: 'تیمی و بالاتر', what: 'اعلان به مدیر حساب + کار «افزایش سهمیه» برای کارشناس مسئول', n: accounts.filter((a) => !low(a) && r80(a) && seen14(a)).length },
+      { at: 'warn', atL: '۸۰٪', who: 'تیمی و بالاتر', what: 'اعلان به مدیر حساب + پیشنهاد افزایش سهمیه', n: accounts.filter((a) => !low(a) && r80(a) && seen14(a)).length },
       { at: 'crit', atL: '۱۰۰٪', who: 'تیمی و بالاتر', what: '۱۰٪ مازاد موقت تا تماس کارشناس — کار مشتری متوقف نمی‌شود', n: accounts.filter((a) => !low(a) && r100(a) && seen14(a)).length },
     ],
     upsellN: accounts.filter((a) => a.segments.includes('upsell')).length,

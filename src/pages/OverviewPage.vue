@@ -1,6 +1,13 @@
 <template>
   <PageShell title="نمای کلی" sub="خلاصهٔ وضعیت کسب‌وکار — هر عدد با بازهٔ هم‌طول قبلی مقایسه شده است" range v-model:range="range" :sources="['main', 'wallet']" :banner="false" :loading="loading" :error="error">
     <template v-if="d">
+      <PanelCard v-if="d.inventory" title="آمار دقیق سامانه" :hint="d.inventory.recordsSyncedAt ? 'شمارش رکورد: ' + dateTime(d.inventory.recordsSyncedAt) : 'شمارش رکورد هنوز همگام نشده'">
+        <div class="kpis inventory-kpis">
+          <KpiTile label="کل کاربران ثبت‌شده" :value="n(d.inventory.users)" unit="کاربر" info="شمارش مستقیم کالکشن User؛ شامل همه پلن‌ها" />
+          <KpiTile label="بیس‌های فعال" :value="n(d.inventory.bases.active)" unit="بیس" :cmp="n(d.inventory.bases.deleted) + ' حذف‌شده · ' + n(d.inventory.bases.total) + ' کل'" info="بیس فعال یعنی deletedBy ندارد" to="/bases" />
+          <KpiTile label="رکورد بیس‌های فعال" :value="n(d.inventory.records.active)" unit="رکورد" :cmp="n(d.inventory.records.deleted) + ' رکورد در بیس‌های حذف‌شده'" info="شمارش از موتور داده پس از dedup و حذف رکوردهای deleted" to="/bases" />
+        </div>
+      </PanelCard>
       <div class="kpis">
         <KpiTile label="درآمد ماهانهٔ تکرارشونده" :value="cp(k.mrr.now).num" :unit="cp(k.mrr.now).unit + ' ' + CURRENCY" to="/revenue" info="MRR: جمع اشتراک‌های فعال به ماه (سالانه‌ها تقسیم بر ۱۲)" :delta="{ cur: k.mrr.now, prev: k.mrr.prev }" :cmp="'قبل: ' + compact(k.mrr.prev)" :spark="{ values: k.mrr.spark, area: true }" />
         <KpiTile label="مشتری پرداخت‌کننده" :value="n(k.paying.now)" to="/customers" :delta="{ cur: k.paying.now, prev: k.paying.prev }" :cmp="'قبل: ' + n(k.paying.prev)" :spark="{ values: k.paying.spark }" />
@@ -30,7 +37,7 @@
           </PanelCard>
           <PanelCard title="بیشترین درآمد در خطر" hint="روی نام بزنید" flush>
             <div class="list" style="padding: 0 16px">
-              <div v-for="a in d.topRisk" :key="a.id" class="li"><span class="main"><AccountLink :id="a.id" :name="a.name" cls="t" /><span class="d">{{ a.pastDue ? 'پرداخت ناموفق · ' : '' }}تمدید {{ inDays(a.renewIn) }} · <RepName :id="a.owner" short /></span></span><span class="end"><HealthScore :score="a.health" /><div class="muted" style="font-size: 11.5px; margin-top: 2px">{{ compact(a.mrr) }}</div></span></div>
+              <div v-for="a in d.topRisk" :key="a.id" class="li"><span class="main"><AccountLink :id="a.id" :name="a.name" cls="t" /><span class="d">{{ a.pastDue ? 'پرداخت ناموفق · ' : '' }}تمدید {{ inDays(a.renewIn) }}</span></span><span class="end"><HealthScore :score="a.health" /><div class="muted" style="font-size: 11.5px; margin-top: 2px">{{ compact(a.mrr) }}</div></span></div>
             </div>
             <template #footer><span>{{ fa(k.riskMrr.count) }} مشتری در خطر</span><router-link to="/health">همه را ببینید</router-link></template>
           </PanelCard>
@@ -55,24 +62,13 @@
       <div class="grid g2">
         <PanelCard title="بزرگ‌ترین فرصت‌های ارتقا" hint="به سقف خورده‌اند و قیمت را دیده‌اند" flush>
           <div class="tbl-wrap"><table class="tbl compact">
-            <thead><tr><th>مشتری</th><th>سیگنال</th><th>مسئول</th><th class="num">ارزش ارتقا / ماه</th></tr></thead>
+            <thead><tr><th>مشتری</th><th>سیگنال</th><th class="num">ارزش ارتقا / ماه</th></tr></thead>
             <tbody><tr v-for="a in d.upsell.top" :key="a.id">
               <td><AccountCell :a="a"><template #sub>{{ PLAN_NAME[a.plan] }} · {{ a.maxUsage.label }} {{ pct(a.maxUsage.ratio) }}</template></AccountCell></td>
-              <td><SignalChips :a="a" /></td><td><RepName :id="a.owner" short /></td><td class="num"><b>+{{ compact(a.upgradeValue) }}</b></td>
+              <td><SignalChips :a="a" /></td><td class="num"><b>+{{ compact(a.upgradeValue) }}</b></td>
             </tr></tbody>
           </table></div>
           <template #footer><span>{{ fa(d.upsell.total) }} حساب آمادهٔ ارتقا</span><router-link to="/customers?view=upsell">فهرست کامل</router-link></template>
-        </PanelCard>
-        <PanelCard v-if="d.team.length" title="تیم فروش" :hint="fa(d.since) + ' روز اخیر'" flush>
-          <div class="tbl-wrap"><table class="tbl compact">
-            <thead><tr><th>کارشناس</th><th class="num">تماس و جلسه</th><th class="num">درآمد بسته‌شده</th><th class="num">ازدست‌رفته</th><th class="num">دفتر مشتریان</th><th class="num">در خطر</th></tr></thead>
-            <tbody><tr v-for="t in d.team" :key="t.id">
-              <td><span class="row"><span class="avatar">{{ initials(t.name) }}</span><b>{{ t.name }}</b></span></td>
-              <td class="num">{{ n(t.calls) }}</td><td class="num"><b>{{ compact(t.won) }}</b></td><td class="num">{{ n(t.lost) }}</td><td class="num">{{ compact(t.book) }}</td>
-              <td class="num"><span v-if="t.risk" class="sig due">{{ fa(t.risk) }}</span><template v-else>—</template></td>
-            </tr></tbody>
-          </table></div>
-          <template #footer><span>درآمد بسته‌شده = خرید اول + ارتقا + تمدید</span><router-link to="/team">عملکرد تیم</router-link></template>
         </PanelCard>
       </div>
     </template>
@@ -88,7 +84,6 @@ import AppIcon from 'components/AppIcon.vue'
 import AccountCell from 'components/AccountCell.vue'
 import AccountLink from 'components/AccountLink.vue'
 import HealthScore from 'components/HealthScore.vue'
-import RepName from 'components/RepName.vue'
 import SignalChips from 'components/SignalChips.vue'
 import LineChart from 'components/charts/LineChart.vue'
 import ColumnChart from 'components/charts/ColumnChart.vue'
@@ -97,7 +92,7 @@ import HBars from 'components/charts/HBars.vue'
 import { api } from 'src/api'
 import { useAsync } from 'src/composables/useAsync'
 import { useRange } from 'src/composables/useRange'
-import { n, fa, pct, compact, compactParts as cp, money, signed, signedPct, inDays, initials, date, monthLabel, CURRENCY } from 'src/lib/format'
+import { n, fa, pct, compact, compactParts as cp, money, signed, signedPct, inDays, initials, date, dateTime, monthLabel, CURRENCY } from 'src/lib/format'
 import { PLAN_NAME, STATUS_COLOR } from 'src/lib/ui'
 
 const range = useRange()
@@ -105,14 +100,15 @@ const { data: d, loading, error } = useAsync(() => api.overview({ range: range.v
 const k = computed(() => d.value.kpis)
 const net = computed(() => { const m = d.value.movements; return m.new + m.expansion + m.contraction + m.churn })
 const moveChips = computed(() => { const m = d.value.movements; return [
-  { label: 'مشتری جدید', v: m.new, count: m.newCount }, { label: 'افزایش پلن/صندلی', v: m.expansion, count: m.expCount },
+  { label: 'مشتری جدید', v: m.new, count: m.newCount }, { label: 'افزایش پلن/همکار', v: m.expansion, count: m.expCount },
   { label: 'کاهش', v: m.contraction, count: m.conCount }, { label: 'ریزش', v: m.churn, count: m.churnCount }] })
 const mrrChart = computed(() => ({
   labels: d.value.months.map((m) => monthLabel(m)), tipLabels: d.value.months.map((m) => monthLabel(m, true) + (m.end === 0 ? ' (تا امروز)' : '')),
   series: [{ name: 'MRR', values: d.value.months.map((m) => m.mrr) }], height: 230, yFormat: compact, endFormat: compact, tipFormat: money,
 }))
 const dauChart = computed(() => {
-  const labels = []; for (let i = 89; i >= 0; i--) labels.push(date(i))
+  const { daily, lastDay = 0 } = d.value.dailyActive
+  const labels = []; for (let i = daily.length - 1; i >= 0; i--) labels.push(date(i + lastDay))
   return { labels, xTicks: 4, series: [{ name: 'روزانه', values: d.value.dailyActive.daily, muted: true }, { name: 'میانگین ۷ روزه', values: d.value.dailyActive.ma, color: 'var(--series-1)' }], area: false, height: 200 }
 })
 const signupChart = computed(() => {
@@ -123,5 +119,7 @@ const signupChart = computed(() => {
 </script>
 
 <style scoped>
+.inventory-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .mvchip { flex: 1; min-width: 110px; border: 1px solid var(--border); border-radius: 9px; padding: 8px 11px; }
+@media (max-width: 800px) { .inventory-kpis { grid-template-columns: 1fr; } }
 </style>

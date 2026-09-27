@@ -53,15 +53,6 @@
             <button class="it" v-close-popup @click="logout"><AppIcon name="x" />خروج از پنل</button>
           </q-menu>
         </button>
-        <button v-else class="who">
-          <span class="avatar">{{ me.role === 'rep' ? initials(rep(me.rep).name) : 'م' }}</span><span class="nm">{{ me.role === 'rep' ? rep(me.rep).name : 'مدیر فروش' }}</span>
-          <q-menu anchor="bottom left" self="top left" :offset="[0, 6]" class="pop" style="min-width: 250px">
-            <div class="lbl">نمایش پنل به‌عنوان</div>
-            <button class="it" :class="{ act: me.role === 'manager' }" v-close-popup @click="setMe({ role: 'manager', rep: me.rep })"><span class="avatar">م</span>مدیر فروش<span class="chk">{{ me.role === 'manager' ? '✓' : '' }}</span></button>
-            <button v-for="r in REPS" :key="r.id" class="it" :class="{ act: me.role === 'rep' && me.rep === r.id }" v-close-popup @click="setMe({ role: 'rep', rep: r.id })"><span class="avatar">{{ initials(r.name) }}</span>{{ r.name }}<span class="chk">{{ me.role === 'rep' && me.rep === r.id ? '✓' : '' }}</span></button>
-            <div class="sep" /><div class="note" style="padding: 4px 9px">نقش، پیش‌فرض صفحه‌ها را عوض می‌کند: «کارهای امروز» و «مشتریان من».</div>
-          </q-menu>
-        </button>
       </header>
       <main class="content">
         <router-view v-slot="{ Component }">
@@ -85,7 +76,6 @@ import CustomerDrawer from 'components/CustomerDrawer.vue'
 import CommandPalette from 'components/CommandPalette.vue'
 import ShortcutsDialog from 'components/dialogs/ShortcutsDialog.vue'
 import { NAV } from 'src/lib/nav'
-import { REPS } from 'src/lib/refs'
 import { fa, money, clock, initials, todayLabel } from 'src/lib/format'
 import { STATUS_COLOR } from 'src/lib/ui'
 import { api } from 'src/api'
@@ -99,9 +89,7 @@ const session = useSessionStore(), ui = useUiStore(), route = useRoute()
 const navItems = (g) => g.items.filter((it) => !(api.UNAVAILABLE && api.UNAVAILABLE.has(it.id)))
 function logout() { window.location.assign('/home') }
 useHotkeys(ui)
-const me = computed(() => session.me)
 const dark = computed(() => Dark.isActive)
-const rep = (id) => REPS.find((r) => r.id === id) || REPS[0]
 const nowMinutes = api.NEEDS_AUTH ? new Date().getHours() * 60 + new Date().getMinutes() : 13 * 60 + 10
 const menuOpen = ref(false)
 const activeId = computed(() => route.meta.nav || route.name)
@@ -111,10 +99,9 @@ watch(activeId, (id) => { openGrp.value = groupOf(id) })
 function pickGroup(i) { openGrp.value = i; if (session.collapsed) session.setCollapsed(false) }
 const routeKey = computed(() => route.path)
 
-const { data: alerts } = useAsync(() => api.alerts(), [() => session.me])
-const { data: badges } = useAsync(() => api.navBadges(), [() => session.me])
+const { data: alerts } = useAsync(() => api.alerts(), [])
+const { data: badges } = useAsync(() => api.navBadges(), [])
 const groupWarn = (g) => g.items.some((it) => badges.value?.[it.id]?.n && badges.value[it.id].warn)
-function setMe(m) { session.setMe(m); ui.bump() }
 // a shareable quick-view link: /customers?open=123
 watch(() => route.query.open, (id) => { if (id) ui.openAccount(id) }, { immediate: true })
 </script>

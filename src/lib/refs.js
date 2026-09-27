@@ -1,13 +1,7 @@
 /* Reference lists that are stable enough to bundle with the UI (labels, order).
    They mirror src/mock/engine CONFIG; when the backend owns them, load once via api.config(). */
-export const REPS = [
-  { id: 'r1', name: 'نگار صالحی', short: 'نگار', callTarget: 12 },
-  { id: 'r2', name: 'امید رحیمی', short: 'امید', callTarget: 12 },
-  { id: 'r3', name: 'سینا کاظمی', short: 'سینا', callTarget: 10 },
-  { id: 'r4', name: 'مریم توکلی', short: 'مریم', callTarget: 10 },
-]
-export const PLAN_ORDER = ['free', 'basic', 'team', 'pro', 'business', 'ent', 'partner'] // mock: free/basic/pro/ent · Airsheet: free(basic)/team/business/ent(enterprise)/partner
-export const CYCLE_NAME = { monthly: 'ماهانه', quarterly: 'سه‌ماهه', yearly: 'سالانه' }
+export const PLAN_ORDER = ['basic', 'team', 'business', 'enterprise', 'partner']
+export const CYCLE_NAME = { monthly: 'ماهانه', quarterly: 'سه‌ماهه', semiannual: 'شش‌ماهه', yearly: 'سالانه' }
 export const SOURCES = [
   { key: 'google', name: 'گوگل (ارگانیک)' }, { key: 'invite', name: 'دعوت همکار' }, { key: 'direct', name: 'مستقیم' },
   { key: 'instagram', name: 'اینستاگرام' }, { key: 'ads', name: 'تبلیغات کلیکی' }, { key: 'telegram', name: 'تلگرام' }, { key: 'other', name: 'سایر' },
@@ -26,7 +20,7 @@ export const TASK_TYPES = {
   renew: { label: 'تمدید پیش رو', icon: 'repeat', prio: 2 },
   drop: { label: 'افت سلامت', icon: 'down', prio: 2 },
   upsell: { label: 'پیشنهاد ارتقا', icon: 'up', prio: 3 },
-  seats: { label: 'صندلی پر شده', icon: 'users', prio: 3 },
+  seats: { label: 'سقف همکار پر شده', icon: 'users', prio: 3 },
   welcome: { label: 'خوشامد مشتری جدید', icon: 'star', prio: 3 },
   followup: { label: 'پیگیری تماس قبلی', icon: 'phone', prio: 2 },
   ai: { label: 'پیشنهاد هوشمند', icon: 'sparkle', prio: 2 },

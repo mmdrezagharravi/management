@@ -20,16 +20,15 @@ const SEGMENT_RULES = {
   champions: ['paying AND tenure >= 180 AND health >= 80', 'بیش از ۶ ماه پرداخت پیاپی و سالم — مرجع معرفی'],
   dormant: ['last_seen > 30', 'یک ماه است هیچ فعالیتی نداشته‌اند'],
 }
-const PERMS = ['دیدن همهٔ مشتریان', 'دیدن شماره/ایمیل', 'خروجی CSV', 'تغییر مسئول', 'تغییر آستانه‌ها', 'دیدن درآمد']
+const PERMS = ['دیدن همهٔ مشتریان', 'دیدن شماره/ایمیل', 'خروجی CSV', 'تغییر آستانه‌ها', 'دیدن درآمد']
 const ROLES = [
-  { key: 'manager', label: 'مدیر فروش', p: [1, 1, 1, 1, 1, 1] },
-  { key: 'rep', label: 'کارشناس فروش', p: [0, 1, 0, 0, 0, 1] },
-  { key: 'support', label: 'پشتیبانی', p: [1, 1, 0, 0, 0, 0] },
-  { key: 'product', label: 'محصول', p: [1, 0, 1, 0, 0, 0] },
-  { key: 'admin', label: 'مدیر سیستم', p: [1, 1, 1, 1, 1, 1] },
+  { key: 'manager', label: 'مدیر فروش', p: [1, 1, 1, 1, 1] },
+  { key: 'support', label: 'پشتیبانی', p: [1, 1, 0, 0, 0] },
+  { key: 'product', label: 'محصول', p: [1, 0, 1, 0, 0] },
+  { key: 'admin', label: 'مدیر سیستم', p: [1, 1, 1, 1, 1] },
 ]
 const ACTIVE_WINDOW = 7
-const low = (a) => a.plan === 'free' || a.plan === 'basic'
+const low = (a) => a.plan === 'basic'
 
 async function defaultsOf() {
   const D = await definitions()
@@ -63,7 +62,7 @@ export async function settings() {
       cycles: [],
       components: HEALTH_COMPONENTS,
       bands: BANDS.map((b) => ({ ...b, min: DEFAULTS[b.key] ?? b.min, n: paying.filter((a) => a.band === b.key).length })),
-      plans: (D.plans || Object.keys(RECORD_LIMITS)).map((p) => ({ key: planKey(p), name: PLAN_NAME[planKey(p)] || p, price: null, seatsIncluded: null, seatPrice: null, limits: { records: RECORD_LIMITS[p] || 0, runs: RUN_LIMITS[p] || 0, seats: null, sms: 0, ai: 0, storage: 0 } })),
+      plans: (D.plans || Object.keys(RECORD_LIMITS)).map((p) => ({ key: planKey(p), name: PLAN_NAME[planKey(p)] || p, price: null, seatsIncluded: null, seatPrice: null, limits: { records: RECORD_LIMITS[p] || 0, runs: RUN_LIMITS[p] || 0, seats: planKey(p) === 'basic' ? 5 : null, sms: 0, ai: 0, storage: 0 } })),
       segments: (D.segments || Object.keys(SEGMENT_RULES)).map((key) => ({ key, label: SEGMENT_LABEL[key] || key, n: accounts.filter((a) => a.segments.includes(key)).length, rule: (SEGMENT_RULES[key] || [])[0] || '', desc: (SEGMENT_RULES[key] || [])[1] || '' })),
     },
     perms: PERMS, roles: ROLES,
@@ -77,7 +76,7 @@ export async function settingsPreview(v) {
   const paying = accounts.filter((a) => a.paying)
   const bandN = (k) => paying.filter((a) => (k === 'good' ? a.health >= v.good : k === 'warn' ? a.health >= v.warn && a.health < v.good : k === 'ser' ? a.health >= v.ser && a.health < v.warn : a.health < v.ser)).length
   return {
-    upsell: { n: accounts.filter((a) => low(a) && a.limitHits30 >= v.upHits && a.pricingVisits30 >= v.upPricing && a.lastSeenDays <= v.upSeen).length, today: accounts.filter((a) => a.segments.includes('upsell')).length },
+    upsell: { n: accounts.filter((a) => low(a) && a.atLimit && a.lastSeenDays <= 14).length, today: accounts.filter((a) => a.segments.includes('upsell')).length },
     bands: BANDS.map((b) => ({ key: b.key, label: b.label, n: bandN(b.key), today: paying.filter((a) => a.band === b.key).length })),
   }
 }

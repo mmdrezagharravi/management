@@ -84,12 +84,8 @@
               <span class="note">کمتر از آخرین عدد = {{ bandLabel('crit') }}</span>
             </div>
           </PanelCard>
-          <PanelCard title="آمادهٔ ارتقا" hint="پلن رایگان و پایه">
-            <div class="stack" style="gap: 12px">
-              <ThField k="upHits" label="برخورد با سقف در ۳۰ روز (حداقل)" :min="1" :max="40" />
-              <ThField k="upPricing" label="بازدید صفحهٔ قیمت در ۳۰ روز (حداقل)" :min="0" :max="20" />
-              <ThField k="upSeen" label="آخرین فعالیت (حداکثر روز)" :min="1" :max="90" />
-            </div>
+          <PanelCard title="آمادهٔ ارتقا" hint="قانون منبع‌محور">
+            <div class="note">حساب پلن پایه که اکنون دست‌کم یک بیس آن به سقف رکورد رسیده و در ۱۴ روز اخیر فعال بوده است. تاریخچهٔ برخورد یا بازدید قیمت در بک‌اند ثبت نمی‌شود.</div>
           </PanelCard>
         </div>
         <PanelCard title="اثر روی امروز" hint="با عددهای بالا — پیش از ذخیره">
@@ -122,7 +118,7 @@
               </tr>
             </tbody>
           </table></div>
-          <template #footer><span>کارشناس فروش فقط مشتریانی را می‌بیند که مسئولشان است</span><a href="/settings?tab=audit" @click.prevent="tab = 'audit'">گزارش ممیزی</a></template>
+          <template #footer><span></span><a href="/settings?tab=audit" @click.prevent="tab = 'audit'">گزارش ممیزی</a></template>
         </PanelCard>
         <div class="banner info"><AppIcon name="lock" /><div><b>شماره و ایمیل مشتری پیش‌فرض پوشیده است.</b> هر بار که کسی آن را باز می‌کند یا خروجی CSV می‌گیرد، با نام، زمان و حساب در «گزارش ممیزی» ثبت می‌شود.</div></div>
       </div>
@@ -140,7 +136,7 @@
             <template #col-src="{ row }"><span v-if="row.src === 'local'" class="tag">این مرورگر</span><span v-else class="muted">سرور</span></template>
           </DataTable>
         </PanelCard>
-        <div class="note">«این مرورگر» یعنی کارهایی که همین‌جا انجام داده‌اید (نمایش شماره، خروجی، تغییر مسئول، تغییر آستانه) — {{ n(d.audit.filter((r) => r.src === 'local').length) }} مورد. در نسخهٔ واقعی همه روی سرور ثبت می‌شوند.</div>
+        <div class="note">«این مرورگر» یعنی کارهایی که همین‌جا انجام داده‌اید (نمایش شماره، خروجی، تغییر آستانه) — {{ n(d.audit.filter((r) => r.src === 'local').length) }} مورد. در نسخهٔ واقعی همه روی سرور ثبت می‌شوند.</div>
       </div>
     </template>
   </PageShell>
@@ -175,17 +171,17 @@ const tab = computed({ get: () => (TABS.some((t) => t.key === tabParam.value) ? 
 
 const { data: d, loading, error } = useAsync(() => api.settings(), [])
 const D = computed(() => d.value.defs)
-const canEdit = computed(() => session.me.role === 'manager')
-const myRole = computed(() => d.value.roles.find((r) => r.key === (session.me.role === 'rep' ? 'rep' : 'manager')))
+const canEdit = computed(() => true)
+const myRole = computed(() => d.value.roles.find((r) => r.key === 'manager'))
 
 /* ---- definitions */
 const cyc = computed(() => D.value.cycles.map((c) => c.name + ' ' + pct(c.discount)).join('، '))
 const lim = (v, f) => (v == null ? { cls: 'muted', text: 'به تعداد خرید' } : v === 0 ? { cls: 'faint', text: '—' } : { cls: '', text: f ? f(v) : n(v) })
 const planRows = [
   { label: 'قیمت ماهانه', cell: (p) => (p.price == null ? { cls: 'faint', text: '—' } : { cls: '', text: p.price ? money(p.price) : 'رایگان' }) },
-  { label: 'صندلی در قیمت', cell: (p) => ({ cls: '', text: n(p.seatsIncluded) }) },
-  { label: 'هر صندلی اضافه', cell: (p) => (p.seatPrice ? { cls: '', text: money(p.seatPrice) } : { cls: 'faint', text: '—' }) },
-  { label: 'سقف صندلی', cell: (p) => lim(p.limits.seats) },
+  { label: 'همکار در قیمت', cell: (p) => ({ cls: '', text: n(p.seatsIncluded) }) },
+  { label: 'هر همکار اضافه', cell: (p) => (p.seatPrice ? { cls: '', text: money(p.seatPrice) } : { cls: 'faint', text: '—' }) },
+  { label: 'سقف همکار', cell: (p) => lim(p.limits.seats) },
   { label: 'رکورد (کل حساب)', cell: (p) => lim(p.limits.records) },
   { label: 'اجرای اتوماسیون در ماه', cell: (p) => lim(p.limits.runs) },
   { label: 'پیامک در ماه', cell: (p) => lim(p.limits.sms) },

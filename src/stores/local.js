@@ -5,10 +5,9 @@ const get = (k, def) => { const v = LocalStorage.getItem('as.' + k); return v ==
 const set = (k, v) => LocalStorage.set('as.' + k, v)
 
 /** Edits made in this browser until the backend persists them:
- *  owner overrides, task state, notes, thresholds, audit trail, cron runs. */
+ *  task state, notes, thresholds, audit trail, cron runs. */
 export const useLocalStore = defineStore('local', {
   state: () => ({
-    owners: get('owners', {}),        // accountId -> repId | null
     tasks: get('tasks', {}),          // taskId -> { status, snoozeDays, outcome, at, ... }
     notes: get('notes', {}),          // accountId -> [{ at, who, kind, text, outcome, next }]
     audit: get('audit', []),          // [{ at, who, action }]
@@ -17,7 +16,6 @@ export const useLocalStore = defineStore('local', {
     aiFeedback: get('aiFeedback', {}),
   }),
   actions: {
-    setOwners(ids, rep) { ids.forEach((id) => { this.owners[id] = rep }); set('owners', this.owners) },
     setTask(id, patch) {
       if (patch === null) delete this.tasks[id]
       else this.tasks[id] = Object.assign({}, this.tasks[id] || {}, patch, { at: Date.now() })

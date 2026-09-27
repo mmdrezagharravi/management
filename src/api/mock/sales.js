@@ -1,7 +1,7 @@
 /* GET /management/sales — the sales desk: KPIs, 13-week renewal calendar, this week's risky renewals
    and the five work lists (renew, upsell, winback, pastdue, champions). */
 import { DB } from 'src/mock/engine'
-import { ok, C, enrich, ownerOf } from './shared'
+import { ok, C, enrich } from './shared'
 import { pastDueRow, churnRow, lostMrr } from './revenue'
 
 const RISK = 60 // renewal is "at risk" below this health score
@@ -22,7 +22,6 @@ export function sales() {
   }
   const r30 = paying.filter((a) => a.renewIn <= 30), r30risk = r30.filter((a) => a.health < RISK)
   const renewRisk = raw.renew.filter((a) => a.health < RISK)
-  const upNone = raw.upsell.filter((a) => !ownerOf(a))
 
   // renewal calendar (13 weeks) — every due date counts, so monthly plans appear each month
   const W = 13, okW = new Array(W).fill(0), riskW = new Array(W).fill(0), nRisk = new Array(W).fill(0)
@@ -40,7 +39,7 @@ export function sales() {
     kpis: {
       r30: { n: r30.length, mrr: sum(r30, (a) => a.mrr) },
       r30risk: { n: r30risk.length, mrr: sum(r30risk, (a) => a.mrr), share: r30.length ? r30risk.length / r30.length : 0 },
-      upsell: { n: raw.upsell.length, value: sum(raw.upsell, DB.upgradeValue), none: upNone.length },
+      upsell: { n: raw.upsell.length, value: sum(raw.upsell, DB.upgradeValue) },
       winback: { n: raw.winback.length, lostMrr: sum(raw.winback, lostMrr) },
       pastdue: { n: raw.pastdue.length, mrr: sum(raw.pastdue, (a) => a.mrr) },
     },
@@ -56,7 +55,7 @@ export function sales() {
     // numbers the tab notes quote
     stats: {
       renew: { n: raw.renew.length, risk: renewRisk.length, riskMrr: sum(renewRisk, (a) => a.mrr) },
-      upsell: { n: raw.upsell.length, value: sum(raw.upsell, DB.upgradeValue), none: upNone.length },
+      upsell: { n: raw.upsell.length, value: sum(raw.upsell, DB.upgradeValue) },
       winback: { n: raw.winback.length, lostMrr: sum(raw.winback, lostMrr) },
       pastdue: { n: raw.pastdue.length, mrr: sum(raw.pastdue, (a) => a.mrr) },
       champions: { n: raw.champions.length, monthly: raw.champions.filter((a) => a.cycle === 'monthly').length },

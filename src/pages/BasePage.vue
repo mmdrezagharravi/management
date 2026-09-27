@@ -17,7 +17,7 @@
         </KpiTile>
         <KpiTile label="جدول" :value="n(b.tables)" :cmp="'میانگین ' + n(b.records / Math.max(1, b.tables)) + ' رکورد در هر جدول'" />
         <KpiTile label="اتوماسیون" :value="n(b.automations)" :info="d.exact ? 'اجراهای ۳۰ روز اخیر اتوماسیون‌های این بیس' : 'اجراها سهم این بیس از اجرای ۳۰ روز حساب است (به نسبت تعداد اتوماسیون)'" :cmp="autoCmp" />
-        <KpiTile label="همکار" :value="n(b.collaborators)" :unit="'از ' + n(d.seatLim) + ' صندلی'" :cmp="n(a.activeMembers7) + ' عضو حساب این هفته فعال بوده‌اند'" />
+        <KpiTile label="همکار" :value="n(b.collaborators)" :unit="d.seatLim == null ? 'بدون سقف' : 'از ' + n(d.seatLim) + ' همکار'" :cmp="n(a.activeMembers7) + ' عضو حساب این هفته فعال بوده‌اند'" />
         <KpiTile label="آخرین فعالیت" :value="agoDays(b.lastActive)">
           <template #cmp><span v-if="b.lastActive === 0 && a.online" class="live"><i />هم‌اکنون آنلاین</span><template v-else>{{ date(b.lastActive) }}</template></template>
         </KpiTile>
@@ -65,12 +65,11 @@
               </div>
             </div>
             <div class="kv"><span class="k">امتیاز سلامت</span><span class="v"><HealthScore :score="a.health" /></span></div>
-            <div class="kv"><span class="k">مسئول</span><span class="v"><RepName :id="a.owner" /></span></div>
             <div class="kv"><span class="k">بیس‌ها</span><span class="v">{{ n(a.bases) }} بیس · {{ n(a.memberCount) }} عضو</span></div>
             <div v-if="a.paying" class="kv"><span class="k">تمدید بعدی</span><span class="v">{{ date(-a.renewIn) }} · {{ inDays(a.renewIn) }}</span></div>
             <div v-if="up" style="margin-top: 10px"><UsageMeter :label="mu.label" :used="mu.used" :limit="mu.limit" /></div>
             <template #footer>
-              <template v-if="up"><span>{{ pct(mu.ratio) }} سقف {{ mu.label }} پر شده</span><router-link :to="'/quota?view=' + mu.key">{{ a.plan === 'free' || a.plan === 'basic' ? 'پیشنهاد ارتقا' : 'افزایش سهمیه' }}</router-link></template>
+              <template v-if="up"><span>{{ pct(mu.ratio) }} سقف {{ mu.label }} پر شده</span><router-link :to="'/quota?view=' + mu.key">{{ a.plan === 'basic' ? 'پیشنهاد ارتقا' : 'افزایش سهمیه' }}</router-link></template>
               <template v-else><span>{{ a.contact.first + ' ' + a.contact.last }} · مالک حساب</span><router-link :to="'/customers/' + a.id">پروفایل کامل</router-link></template>
             </template>
           </PanelCard>
@@ -99,7 +98,6 @@ import PlanBadge from 'components/PlanBadge.vue'
 import HealthScore from 'components/HealthScore.vue'
 import StatusBadge from 'components/StatusBadge.vue'
 import UsageMeter from 'components/UsageMeter.vue'
-import RepName from 'components/RepName.vue'
 import ColumnChart from 'components/charts/ColumnChart.vue'
 import { api } from 'src/api'
 import { useAsync } from 'src/composables/useAsync'
@@ -122,7 +120,7 @@ const actChart = computed(() => {
 const cells = computed(() => [
   { label: 'جدول', value: n(b.value.tables), sub: n(b.value.records / Math.max(1, b.value.tables)) + ' رکورد در هر جدول' },
   { label: 'رکورد', value: n(b.value.records), sub: (d.value.recordsUsed != null ? 'سقف هر بیس: ' : 'سقف حساب: ') + compact(L.value.records) },
-  { label: 'صفحهٔ درگاه', value: b.value.pages ? n(b.value.pages) : null, sub: b.value.pages ? 'درگاه منتشرشده' : PLAN_ORDER.indexOf(a.value.plan) < 2 ? 'درگاه از پلن پرو' : 'هنوز درگاهی نساخته' },
+  { label: 'صفحهٔ درگاه', value: b.value.pages ? n(b.value.pages) : null, sub: b.value.pages ? 'درگاه منتشرشده' : PLAN_ORDER.indexOf(a.value.plan) < 2 ? 'درگاه از پلن کسب و کار' : 'هنوز درگاهی نساخته' },
   { label: 'نمای اشتراکی', value: b.value.shares ? n(b.value.shares) : null, sub: b.value.shares ? 'لینک عمومی یا مهمان' : b.value.shares == null ? 'هنوز از بک‌اند نمی‌آید' : 'اشتراکی نساخته' },
   { label: 'اتوماسیون', value: b.value.automations ? n(b.value.automations) : null, sub: L.value.runs ? 'سقف حساب: ' + compact(L.value.runs) + ' اجرا در ماه' : 'در پلن رایگان اجرا نمی‌شود' },
 ])

@@ -25,7 +25,7 @@
       </div>
 
       <PanelCard flush>
-        <DataTable :key="route.query.view + '|' + route.query.sort" :rows="d.rows" :columns="columns" :views="views" :filters="filters" :search="search" :sort="{ key: 'records', dir: 'desc' }" url export-name="bases" unit="بیس" :on-row="(r) => router.push('/bases/' + r.id)">
+        <DataTable :key="route.query.view + '|' + route.query.sort" :remote="api.basesPage" :columns="columns" :views="views" :filters="filters" :search="search" :sort="{ key: 'records', dir: 'desc' }" url export-name="bases" unit="بیس" :on-row="(r) => router.push('/bases/' + r.id)">
           <template #col-name="{ row }"><router-link class="nm" :to="'/bases/' + row.id">{{ row.name }}</router-link><span class="s"><span class="mono">/{{ row.slug }}</span></span></template>
           <template #col-acc="{ row }"><AccountLink v-if="row.accountId" :id="row.accountId" :name="row.accountName" style="font-weight: 600" /><span v-else class="faint">{{ row.accountName }}</span></template>
           <template #col-plan="{ row }"><PlanBadge :plan="row.plan" /></template>
@@ -78,22 +78,22 @@ const stateStack = computed(() => ({
 }))
 
 const views = [
-  { key: 'all', label: 'همه', test: null },
-  { key: 'active', label: 'فعال ۷ روز', test: (r) => r.la <= 6 },
-  { key: 'idle', label: 'بدون فعالیت ۳۰ روز', test: (r) => r.la > 30 },
-  { key: 'auto', label: 'با اتوماسیون', test: (r) => r.automations > 0 },
+  { key: 'all', label: 'همه' },
+  { key: 'active', label: 'فعال ۷ روز' },
+  { key: 'idle', label: 'بدون فعالیت ۳۰ روز' },
+  { key: 'auto', label: 'با اتوماسیون' },
 ]
-const filters = [{ key: 'plan', label: 'پلن', options: PLAN_ORDER.map((k) => ({ v: k, l: PLAN_NAME[k] })), test: (r, v) => r.plan === v }]
-const search = { placeholder: 'نام بیس، نشانی یا نام حساب…', text: (r) => r.name + ' ' + r.slug + ' ' + r.accountName }
+const filters = [{ key: 'plan', label: 'پلن', options: PLAN_ORDER.map((k) => ({ v: k, l: PLAN_NAME[k] })) }]
+const search = { placeholder: 'نام بیس یا نام حساب…' }
 const columns = [
-  { key: 'name', label: 'بیس', csv: (r) => r.name + ' /' + r.slug },
-  { key: 'acc', label: 'حساب', sort: (r) => r.accountName, csv: (r) => r.accountName },
-  { key: 'plan', label: 'پلن', sort: (r) => PLAN_ORDER.indexOf(r.plan), desc: true, csv: (r) => PLAN_NAME[r.plan] },
-  { key: 'tables', label: 'جدول', num: true },
-  { key: 'records', label: 'رکورد', num: true },
-  { key: 'automations', label: 'اتوماسیون', num: true },
-  { key: 'collaborators', label: 'همکار', num: true },
-  { key: 'created', label: 'ساخته‌شده', sort: (r) => -r.created, desc: true, csv: (r) => r.created },
-  { key: 'la', label: 'آخرین فعالیت', sort: (r) => -r.la, desc: true, csv: (r) => r.la },
+  { key: 'name', sortKey: 'name', label: 'بیس', csv: (r) => r.name + ' /' + r.slug },
+  { key: 'acc', sortKey: 'creatorName', label: 'حساب', sort: (r) => r.accountName, csv: (r) => r.accountName },
+  { key: 'plan', sortKey: 'planRank', label: 'پلن', sort: (r) => PLAN_ORDER.indexOf(r.plan), desc: true, csv: (r) => PLAN_NAME[r.plan] },
+  { key: 'tables', sortKey: 'tables', label: 'جدول', num: true },
+  { key: 'records', sortKey: 'records', label: 'رکورد', num: true },
+  { key: 'automations', sortKey: 'automations', label: 'اتوماسیون', num: true },
+  { key: 'collaborators', sortKey: 'collaborators', label: 'همکار', num: true },
+  { key: 'created', sortKey: 'createdAt', label: 'ساخته‌شده', sort: (r) => -r.created, desc: true, csv: (r) => r.created },
+  { key: 'la', sortKey: 'recent', label: 'آخرین فعالیت', sort: (r) => -r.la, desc: true, csv: (r) => r.la },
 ]
 </script>

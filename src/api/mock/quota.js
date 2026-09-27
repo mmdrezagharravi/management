@@ -42,7 +42,7 @@ export function quota() {
     rules: [
       { at: 'warn', atL: '۸۰٪', who: 'رایگان و پایه', what: 'نوار داخل بیس: «۸۰٪ سقف … پر شده» با دکمهٔ مقایسهٔ پلن‌ها', n: accounts.filter((a) => low(a) && r80(a) && seen14(a)).length },
       { at: 'crit', atL: '۱۰۰٪', who: 'رایگان و پایه', what: 'پنجرهٔ ارتقای یک‌کلیکی هنگام برخورد + ایمیل به مالک حساب', n: accounts.filter((a) => low(a) && r100(a) && seen14(a)).length },
-      { at: 'warn', atL: '۸۰٪', who: 'پرو و سازمانی', what: 'اعلان به مدیر حساب + کار «افزایش سهمیه» برای کارشناس مسئول', n: accounts.filter((a) => !low(a) && r80(a) && seen14(a)).length },
+      { at: 'warn', atL: '۸۰٪', who: 'پرو و سازمانی', what: 'اعلان به مدیر حساب + پیشنهاد افزایش سهمیه', n: accounts.filter((a) => !low(a) && r80(a) && seen14(a)).length },
       { at: 'crit', atL: '۱۰۰٪', who: 'پرو و سازمانی', what: '۱۰٪ مازاد موقت تا تماس کارشناس — کار مشتری متوقف نمی‌شود', n: accounts.filter((a) => !low(a) && r100(a) && seen14(a)).length },
     ],
     upsellN: accounts.filter((a) => a.segments.includes('upsell')).length,

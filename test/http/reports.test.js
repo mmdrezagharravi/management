@@ -15,7 +15,7 @@ const cust = (i, o = {}) => ({
 const customers = [
   cust(1), cust(2, { referredBy: 'x', age: 5, firstBaseDays: null, activated: null, paying: false, plan: 'basic', mrr: 0, cycle: null }),
   cust(3, { age: 10, activated: false, paying: false, plan: 'basic', mrr: 0 }), cust(4, { age: 20, activated: true, automations: 0 }),
-  cust(5, { paying: false, renewIn: -20, mrr: 0, payingDays: 40 }),
+  cust(5, { paying: false, renewIn: -20, mrr: 0, payingDays: null }), // the server sends payingDays only while paying
 ]
 const SERVER = {
   '/funnel': { range: 30, matureDays: 30, dataSince: '2026-05-01', cohort: { from: '', to: '', size: 100 }, steps: stepsOf(100), paidAny: 5, biggestDrop: 'paid', bySource: { referral: stepsOf(20), direct: stepsOf(80) } },
@@ -82,7 +82,7 @@ describe('retention', () => {
     expect(d.kpis.rev90.nrr).toBe(1.02)
     hasKeys(d.revMonths[0], ['y', 'm', 'end', 'S', 'exp', 'lost', 'nrr', 'grr']); expect(d.revMonths[0].S).toBe(900)
     hasKeys(d.churn, ['total', 'lostMrr', 'early', 'medianTenure', 'reasons', 'reasonList', 'rows'])
-    expect(d.churn.total).toBe(1); expect(d.churn.rows[0]).toMatchObject({ churnedAt: 20, tenure: 40, lastMrr: null })
+    expect(d.churn.total).toBe(1); expect(d.churn.rows[0]).toMatchObject({ churnedAt: 20, tenure: 71, lastMrr: null })
     expect(d.kpis.logo).toEqual({ n: 1, base: 3, r: 1 / 3 })
   })
 })

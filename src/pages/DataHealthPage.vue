@@ -59,11 +59,10 @@
           <div v-else class="list" style="padding: 0 16px">
             <div v-for="i in d.issues" :key="i.id" class="li" style="align-items: flex-start">
               <span class="tag mono">{{ i.id }}</span>
-              <span class="main"><span class="t" style="white-space: normal">{{ i.title }}</span><span class="d" style="white-space: normal">{{ i.impact }}</span><span class="d">مسئول: {{ i.owner }}</span></span>
+              <span class="main"><span class="t" style="white-space: normal">{{ i.title }}</span><span class="d" style="white-space: normal">{{ i.impact }}</span></span>
               <span class="end"><StatusBadge :status="i.level" :label="ISSUE_LABEL[i.status] || i.status" /></span>
             </div>
           </div>
-          <template v-if="d.owners.length" #footer><span>{{ d.owners.map((o) => o.name + ' ' + n(o.n)).join(' · ') }}</span></template>
         </PanelCard>
         <PanelCard title="کدام صفحه‌ها تحت تأثیرند" hint="تا رفع تأخیر با احتیاط بخوانید" flush>
           <div class="list" style="padding: 0 16px">

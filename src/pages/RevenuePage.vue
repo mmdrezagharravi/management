@@ -77,7 +77,6 @@
           <template #col-mrr="{ row }"><b>{{ compact(row.mrr) }}</b></template>
           <template #col-retries="{ row }">{{ row.retries ? fa(row.retries) + ' بار' : '—' }}</template>
           <template #col-inv="{ row }"><template v-if="row.invT != null"><span class="nowrap">{{ date(row.invT) }}</span><span class="s">{{ agoDays(row.invT) }} · {{ money(row.invAmount) }}</span></template><span v-else class="faint">—</span></template>
-          <template #col-owner="{ row }"><RepName :id="row.owner" short /></template>
           <template #col-follow="{ row }"><span v-if="row.lastNote" class="s" style="max-width: 220px; white-space: normal">{{ row.lastNote }}</span><span v-else class="faint">ثبت نشده</span></template>
           <template #col-act="{ row }"><button class="btn sm" @click="logFollow(row)"><AppIcon name="phone" />ثبت پیگیری</button></template>
         </DataTable>
@@ -91,7 +90,6 @@
           <template #col-lost="{ row }"><b>{{ compact(row.lostMrr) }}</b></template>
           <template #col-reason="{ row }"><span class="tag">{{ row.churnReason }}</span></template>
           <template #col-tenure="{ row }">{{ row.tenure == null ? '—' : duration(row.tenure) }}</template>
-          <template #col-owner="{ row }"><RepName :id="row.owner" short /></template>
         </DataTable>
         <template #footer><span>{{ d.topReason ? 'بیشترین دلیل: «' + d.topReason.reason + '» (' + fa(d.topReason.n) + ' مشتری)' : 'در این بازه ریزشی نبوده' }}</span><router-link class="nowrap" to="/sales?tab=winback">فهرست بازگرداندنی‌ها</router-link></template>
       </PanelCard>
@@ -109,7 +107,6 @@ import DataTable from 'components/DataTable.vue'
 import AppIcon from 'components/AppIcon.vue'
 import AccountCell from 'components/AccountCell.vue'
 import PlanBadge from 'components/PlanBadge.vue'
-import RepName from 'components/RepName.vue'
 import LineChart from 'components/charts/LineChart.vue'
 import ColumnChart from 'components/charts/ColumnChart.vue'
 import Stack100 from 'components/charts/Stack100.vue'
@@ -119,7 +116,7 @@ import { useRange } from 'src/composables/useRange'
 import { useDialogs } from 'src/composables/useDialogs'
 import { useUiStore } from 'stores/ui'
 import { n, fa, pct, compact, compactParts as cp, money, signed, signedPct, date, agoDays, duration, monthLabel, CURRENCY } from 'src/lib/format'
-import { REPS, CYCLE_NAME } from 'src/lib/refs'
+import { CYCLE_NAME } from 'src/lib/refs'
 import { PLAN_NAME } from 'src/lib/ui'
 
 const ui = useUiStore(), route = useRoute(), dialogs = useDialogs()
@@ -127,7 +124,7 @@ const range = useRange()
 const { data: d, loading, error } = useAsync(() => api.revenue({ range: range.value }), [range])
 const k = computed(() => d.value.kpis)
 const sum = (list, f) => list.reduce((t, a) => t + f(a), 0)
-const cycColor = (c) => 'var(--series-' + (['monthly', 'quarterly', 'yearly'].indexOf(c) + 1) + ')'
+const cycColor = (c) => 'var(--series-' + (Object.keys(CYCLE_NAME).indexOf(c) + 1) + ')'
 const cyc = (c) => d.value.cycMix.rows.find((r) => r.k === c)
 const topPlan = computed(() => d.value.planMix.rows.slice().sort((p, q) => q.mrr - p.mrr)[0])
 const lastCash = computed(() => d.value.cash[d.value.cash.length - 1])
@@ -157,13 +154,11 @@ const cashChart = computed(() => ({
   series: [{ name: 'دریافتی', values: d.value.cash.map((m) => m.amount), color: 'var(--series-1)' }],
 }))
 
-const repName = (id) => (REPS.find((r) => r.id === id) || {}).name || ''
 const pdColumns = [
   { key: 'name', label: 'مشتری', csv: (a) => a.name },
   { key: 'mrr', label: 'درآمد ماهانه', num: true, csv: (a) => a.mrr },
   { key: 'retries', label: 'تلاش ناموفق', num: true, csv: (a) => a.retries },
   { key: 'inv', label: 'آخرین صورتحساب', sort: (a) => -a.invT, csv: (a) => (a.invT == null ? '' : date(a.invT)) },
-  { key: 'owner', label: 'مسئول', sort: (a) => a.owner || 'zz', csv: (a) => repName(a.owner) },
   { key: 'follow', label: 'آخرین پیگیری', sort: false, csv: (a) => a.lastNote || '' },
   { key: 'act', label: '', sort: false, csv: false },
 ]
@@ -173,7 +168,6 @@ const chColumns = [
   { key: 'lost', label: 'درآمد ازدست‌رفته', num: true, sort: (a) => a.lostMrr, csv: (a) => a.lostMrr },
   { key: 'reason', label: 'دلیل', sort: (a) => a.churnReason, csv: (a) => a.churnReason },
   { key: 'tenure', label: 'مدت اشتراک', num: true, csv: (a) => a.tenure },
-  { key: 'owner', label: 'مسئول', sort: (a) => a.owner || 'zz', csv: (a) => repName(a.owner) },
 ]
 async function logFollow(a) { if (await dialogs.logCall(a, 'pastdue:' + a.id)) ui.bump() }
 

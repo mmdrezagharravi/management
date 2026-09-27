@@ -1,15 +1,8 @@
 <template>
-  <a :class="cls" :href="'/customers/' + id" @click.prevent="open"><slot>{{ name }}</slot></a>
+  <router-link :class="cls" :to="'/customers/' + id"><slot>{{ name }}</slot></router-link>
 </template>
 
 <script setup>
-import { useRouter } from 'vue-router'
-import { useUiStore } from 'stores/ui'
-/** Inline customer name that opens the quick view; modified click opens the full profile. */
-const props = defineProps({ id: [Number, String], name: String, cls: [String, Array, Object] })
-const ui = useUiStore(), router = useRouter()
-function open(ev) {
-  if (ev.ctrlKey || ev.metaKey || ev.shiftKey) return router.push('/customers/' + props.id)
-  ui.openAccount(props.id)
-}
+/** Inline customer name links directly to the complete profile. */
+defineProps({ id: [Number, String], name: String, cls: [String, Array, Object] })
 </script>

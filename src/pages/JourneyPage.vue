@@ -25,7 +25,6 @@
               </tr>
               <tr><td class="rh"><b>نقطهٔ درد</b><span class="tag">دستی · بازبینی فصلی</span></td><td v-for="s in d.stages" :key="s.key">{{ s.pain }}</td></tr>
               <tr><td class="rh"><b>فرصت بهبود</b><span class="tag">دستی · بازبینی فصلی</span></td><td v-for="s in d.stages" :key="s.key">{{ s.fix }}</td></tr>
-              <tr><td class="rh"><b>مسئول</b><span class="tag">دستی · بازبینی فصلی</span></td><td v-for="s in d.stages" :key="s.key"><b style="color: var(--ink)">{{ s.owner }}</b></td></tr>
               <tr><td class="rh"><b>منبع داده</b></td><td v-for="s in d.stages" :key="s.key"><span class="faint">{{ s.src }}</span></td></tr>
             </tbody>
           </table>
@@ -41,7 +40,7 @@
               <span class="main" style="white-space: normal">
                 <span class="t">«{{ x.from }}» ← «{{ x.to }}»</span>
                 <span class="d" style="white-space: normal">{{ stage(x.key).pain }}</span>
-                <span class="d" style="white-space: normal; color: var(--ink-2)"><b>اقدام:</b> {{ stage(x.key).fix }} · <span class="muted">{{ stage(x.key).owner }}</span></span>
+                <span class="d" style="white-space: normal; color: var(--ink-2)"><b>اقدام:</b> {{ stage(x.key).fix }}</span>
               </span>
               <span class="end"><b style="font-size: 15px">{{ n(x.lost) }}</b><div class="muted" style="font-size: 11.5px">حساب · {{ pct(x.rate) }} ریزش</div></span>
             </div>
@@ -57,7 +56,7 @@
             <div v-for="a in d.assisted.top" :key="a.id" class="li"><span class="main"><AccountLink :id="a.id" :name="a.name" cls="t" /><span class="d">{{ [a.industryName, sourceName(a.source)].filter(Boolean).join(' · ') }}</span></span><span class="end muted">{{ agoDays(a.age) }}</span></div>
           </div>
           <div class="note" style="margin-top: 8px">برای اینکه این مرحله ستون خودش را در نقشه بگیرد، بیسی که کارشناس می‌سازد باید برچسب «ساخت همراه» بخورد تا نرخ فعال‌سازی این مسیر با مسیر معمولی مقایسه شود.</div>
-          <template #footer><span>مسئول پیشنهادی: موفقیت مشتری</span><router-link to="/onboarding">فهرست کامل در «ثبت‌نام‌های تازه»</router-link></template>
+          <template #footer><span></span><router-link to="/onboarding">فهرست کامل در «ثبت‌نام‌های تازه»</router-link></template>
         </PanelCard>
       </div>
     </template>

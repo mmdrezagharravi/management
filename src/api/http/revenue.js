@@ -4,7 +4,7 @@ import { customersAll, notesOf, planKey, CYCLE_MAP } from './account'
 import { jalali } from 'src/lib/format'
 import { PLAN_ORDER } from 'src/lib/refs'
 
-export const CYCLE_DAYS = { monthly: 30, quarterly: 91, yearly: 365 }
+export const CYCLE_DAYS = { monthly: 30, quarterly: 91, semiannual: 182, yearly: 365 }
 const sum = (list, f) => list.reduce((t, a) => t + (f(a) || 0), 0)
 const neg = (x) => -Math.abs(x || 0) // lost MRR is drawn below zero whichever sign the server uses
 
@@ -53,7 +53,7 @@ export async function revenue({ range: R = 30 } = {}) {
     return { rows, tm: sum(rows, (r) => r.mrr), tn: sum(rows, (r) => r.n) }
   }
   const planMix = mix(rev.byPlan, (p) => (p === 'unknown' ? null : planKey(p)))
-  const cycMix = mix(rev.byCycle, (c) => CYCLE_MAP[c] || null, ['monthly', 'quarterly', 'yearly'])
+  const cycMix = mix(rev.byCycle, (c) => CYCLE_MAP[c] || null, Object.keys(CYCLE_DAYS))
 
   const paidByKey = new Map((rev.months || []).map((m) => [m.month, m]))
   const cash = lastMonths(12).map((mo) => { const m = paidByKey.get(mo.key); return { y: mo.y, m: mo.m, end: mo.end, amount: m ? m.total : 0, n: m ? m.count : 0 } })

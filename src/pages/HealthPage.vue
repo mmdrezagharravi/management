@@ -51,7 +51,6 @@
           <template #col-weak="{ row }"><b>{{ row.weak.label }}</b><span class="s">{{ fa(row.weak.value) }} از ۲۰</span></template>
           <template #col-action="{ row }"><span style="display: block; min-width: 170px; max-width: 240px; font-size: 12px; line-height: 1.6">{{ row.action }}</span></template>
           <template #col-renew="{ row }"><span class="nowrap">{{ inDays(row.renewIn) }}</span><span class="s">{{ date(-row.renewIn) }}</span></template>
-          <template #col-owner="{ row }"><RepName :id="row.owner" short /></template>
         </DataTable>
         <template #footer><span>اقدام پیشنهادی از ضعیف‌ترین مؤلفهٔ هر مشتری می‌آید</span><router-link class="nowrap" to="/sales">تمدیدها در میز فروش</router-link></template>
       </PanelCard>
@@ -59,14 +58,14 @@
       <div class="grid g2" id="movers" style="scroll-margin-top: 70px">
         <PanelCard title="بیشترین افت" hint="دو هفتهٔ اخیر" flush>
           <div v-if="d.down.length" class="list" style="padding: 0 16px">
-            <div v-for="x in d.down" :key="x.id" class="li"><span class="main"><AccountLink :id="x.id" :name="x.name" cls="t" /><span class="d">{{ n(x.health2wAgo) }} ← {{ n(x.health) }} · {{ PLAN_NAME[x.plan] }} · {{ compact(x.mrr) }} · <RepName :id="x.owner" short /></span></span><span class="end"><DeltaChip :cur="x.health" :prev="x.health2wAgo" abs /><div class="muted" style="font-size: 11px">ضعیف: {{ x.weakLabel }}</div></span></div>
+            <div v-for="x in d.down" :key="x.id" class="li"><span class="main"><AccountLink :id="x.id" :name="x.name" cls="t" /><span class="d">{{ n(x.health2wAgo) }} ← {{ n(x.health) }} · {{ PLAN_NAME[x.plan] }} · {{ compact(x.mrr) }}</span></span><span class="end"><DeltaChip :cur="x.health" :prev="x.health2wAgo" abs /><div class="muted" style="font-size: 11px">ضعیف: {{ x.weakLabel }}</div></span></div>
           </div>
           <div v-else class="empty"><b>موردی نیست</b></div>
           <template #footer><span>{{ fa(k.dropsCount) }} مشتری ۱۵ امتیاز یا بیشتر افت کرده‌اند — پیش از رسیدن به زیر ۵۰ تماس بگیرید</span></template>
         </PanelCard>
         <PanelCard title="بیشترین بهبود" hint="دو هفتهٔ اخیر" flush>
           <div v-if="d.up.length" class="list" style="padding: 0 16px">
-            <div v-for="x in d.up" :key="x.id" class="li"><span class="main"><AccountLink :id="x.id" :name="x.name" cls="t" /><span class="d">{{ n(x.health2wAgo) }} ← {{ n(x.health) }} · {{ PLAN_NAME[x.plan] }} · {{ compact(x.mrr) }} · <RepName :id="x.owner" short /></span></span><span class="end"><DeltaChip :cur="x.health" :prev="x.health2wAgo" abs /><div class="muted" style="font-size: 11px">{{ x.bandLabel }}</div></span></div>
+            <div v-for="x in d.up" :key="x.id" class="li"><span class="main"><AccountLink :id="x.id" :name="x.name" cls="t" /><span class="d">{{ n(x.health2wAgo) }} ← {{ n(x.health) }} · {{ PLAN_NAME[x.plan] }} · {{ compact(x.mrr) }}</span></span><span class="end"><DeltaChip :cur="x.health" :prev="x.health2wAgo" abs /><div class="muted" style="font-size: 11px">{{ x.bandLabel }}</div></span></div>
           </div>
           <div v-else class="empty"><b>موردی نیست</b></div>
           <template #footer><span>بپرسید چه چیزی کمک کرد؛ همان را به مشتریان مشابه پیشنهاد دهید</span></template>
@@ -89,14 +88,13 @@ import PlanBadge from 'components/PlanBadge.vue'
 import StatusBadge from 'components/StatusBadge.vue'
 import HealthScore from 'components/HealthScore.vue'
 import DeltaChip from 'components/DeltaChip.vue'
-import RepName from 'components/RepName.vue'
 import LineChart from 'components/charts/LineChart.vue'
 import Stack100 from 'components/charts/Stack100.vue'
 import { api } from 'src/api'
 import { useAsync } from 'src/composables/useAsync'
 import { useUiStore } from 'stores/ui'
 import { n, fa, pct, compact, compactParts as cp, money, date, inDays, CURRENCY } from 'src/lib/format'
-import { REPS, PLAN_ORDER } from 'src/lib/refs'
+import { PLAN_ORDER } from 'src/lib/refs'
 import { PLAN_NAME, BAND_COLOR } from 'src/lib/ui'
 
 const ui = useUiStore(), route = useRoute()
@@ -119,8 +117,7 @@ const views = [
   { key: 'renew30', label: 'تمدید ≤۳۰ روز', test: (a) => a.renewIn <= 30 },
 ]
 const search = { placeholder: 'نام مشتری…', text: (a) => a.name + ' ' + a.contact.first + ' ' + a.contact.last }
-const filters = [{ key: 'owner', label: 'مسئول', options: [{ v: 'none', l: 'بدون مسئول' }].concat(REPS.map((r) => ({ v: r.id, l: r.name }))), test: (a, v) => (v === 'none' ? !a.owner : a.owner === v) }]
-const repName = (id) => (REPS.find((r) => r.id === id) || {}).name || ''
+const filters = []
 const columns = [
   { key: 'name', label: 'مشتری', csv: (a) => a.name },
   { key: 'plan', label: 'پلن', sort: (a) => PLAN_ORDER.indexOf(a.plan) * 1e9 + a.mrr, desc: true, csv: (a) => PLAN_NAME[a.plan] },
@@ -129,7 +126,6 @@ const columns = [
   { key: 'weak', label: 'ضعیف‌ترین مؤلفه', sort: (a) => a.weak.value, csv: (a) => a.weak.label },
   { key: 'action', label: 'اقدام پیشنهادی', sort: false, csv: (a) => a.action },
   { key: 'renew', label: 'تمدید', num: true, sort: (a) => a.renewIn, csv: (a) => a.renewIn },
-  { key: 'owner', label: 'مسئول', sort: (a) => a.owner || 'zz', csv: (a) => repName(a.owner) },
 ]
 
 

@@ -25,7 +25,7 @@ export async function health() {
   const totalMrr = sum(paying, (a) => a.mrr)
   const atRisk = paying.filter((a) => a.health < 50 || a.pastDue)
   const had2w = paying.filter((a) => a.health2wAgo != null) // needs backend: health2wAgo on /customers
-  const movers = h.movers || [] // drops ≥ 15 in two weeks, biggest first
+  const movers = (h.movers || []).filter((m) => m.customer.paying) // drops ≥ 15 in two weeks, biggest first; the server lists free accounts too
 
   const bands = BANDS.map((b, i) => {
     const list = paying.filter((a) => a.band === b.key)

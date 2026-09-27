@@ -2,7 +2,7 @@ import { ref, watch, onUnmounted } from 'vue'
 import { useUiStore } from 'stores/ui'
 
 /** Run an async loader, re-run when any of `deps` (getter fns) change, expose {data, loading, error, reload}.
- *  Also re-runs after local edits (drawer note/owner/task) so lists stay in sync. */
+ *  Also re-runs after local edits (drawer note/task) so lists stay in sync. */
 export function useAsync(loader, deps = [], opts = {}) {
   const data = ref(opts.initial ?? null)
   const loading = ref(true)

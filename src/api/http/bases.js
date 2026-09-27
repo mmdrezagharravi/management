@@ -1,5 +1,6 @@
 /* GET /management/bases → the list page: rows + aggregates, same formulas as the mock. */
 import { basesAll, planKey } from './account'
+import { get } from './client'
 import { PLAN_ORDER } from 'src/lib/refs'
 
 const EDGES = [0, 1, 10, 100, 1000, 10000, 100000]
@@ -39,4 +40,10 @@ export async function bases() {
     byState: { active7: active7.length, mid: rows.filter((r) => r.la > 6 && r.la <= 30).length, idle: rows.filter((r) => r.la > 30).length },
     small: rows.filter((r) => r.records < 100).length, big: rows.filter((r) => r.records >= 10000).length,
   }
+}
+
+/** One page of the base list: the server applies view, filters, search and sort (GET /management/bases). */
+export async function basesPage(params) {
+  const r = await get('/bases', params)
+  return { rows: r.items.map(toBaseRow), total: r.total, counts: r.counts || {} }
 }

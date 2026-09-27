@@ -4,7 +4,7 @@
       <div class="kpis">
         <KpiTile label="نزدیک سقف پلن" :value="n(k.near)" unit="حساب" info="حسابی که دست‌کم در یک منبع ۸۰٪ سقف پلن یا بیشتر را مصرف کرده" :cmp="n(k.seen30) + ' حساب در ۳۰ روز اخیر فعال بوده‌اند'" />
         <KpiTile label="در سقف (۱۰۰٪)" :value="n(k.full)" unit="حساب" info="دیگر نمی‌توانند در آن منبع چیزی اضافه کنند" to="/quota?sort=usage" :cmp="k.fullTop.map((x) => x.label + ' ' + n(x.n)).join(' · ')" />
-        <KpiTile :label="k.hitsKind === 'bases' ? 'بیس در سقف رکورد' : 'برخورد با سقف در ۳۰ روز'" :value="n(k.hits)" :unit="k.hitsKind === 'bases' ? 'بیس' : 'بار'" :cmp="'در ' + n(k.hitAccounts) + ' حساب'" />
+        <KpiTile label="بیس در سقف رکورد" :value="n(k.hits)" unit="بیس" :cmp="'در ' + n(k.hitAccounts) + ' حساب'" />
         <KpiTile v-if="d.budgets" label="پیامک این ماه از بودجهٔ ما" :value="pct(k.sms / d.budgets.sms)" info="بستهٔ پیامکی که Airsheet از اپراتور خریده — نه سقف پلن مشتری">
           <template #cmp><UsageMeter label="" :used="k.sms" :limit="d.budgets.sms" :fmt="compact" /></template>
         </KpiTile>
@@ -41,9 +41,7 @@
             <span v-else-if="resOf(row).forecast === 'na' || resOf(row).forecast === 'flat'" class="faint">—<q-tooltip>{{ resOf(row).forecast === 'flat' ? 'در ۳۰ روز اخیر رکوردی اضافه نشده' : 'فقط برای رکورد پیش‌بینی می‌شود' }}</q-tooltip></span>
             <b v-else>{{ inDays(resOf(row).forecast) }}</b>
           </template>
-          <template #col-hits="{ row }"><span v-if="row.limitHits30" class="sig limit">{{ fa(row.limitHits30) }}×</span><span v-else class="faint">—</span></template>
-          <template #col-pv="{ row }"><span v-if="row.pricingVisits30" class="sig price">{{ fa(row.pricingVisits30) }}×</span><span v-else class="faint">—</span></template>
-          <template #col-owner="{ row }"><RepName :id="row.owner" short /></template>
+          <template #col-hits="{ row }"><span v-if="row.atLimit" class="sig limit">سقف پر شده</span><span v-else class="sig price">نزدیک سقف</span></template>
           <template #col-act="{ row }">
             <span v-if="row.action" class="badge st-good"><i class="dot" />{{ row.action.kind === 'upgrade' ? 'پیشنهاد ثبت شد' : 'درخواست ثبت شد' }}</span>
             <button v-else-if="row.low" class="btn sm primary" @click.stop="offer(row)"><AppIcon name="up" />پیشنهاد ارتقا</button>
@@ -65,7 +63,6 @@ import UsageMeter from 'components/UsageMeter.vue'
 import StatusBadge from 'components/StatusBadge.vue'
 import AccountCell from 'components/AccountCell.vue'
 import PlanBadge from 'components/PlanBadge.vue'
-import RepName from 'components/RepName.vue'
 import AppIcon from 'components/AppIcon.vue'
 import HBars from 'components/charts/HBars.vue'
 import { api } from 'src/api'
@@ -73,7 +70,7 @@ import { useAsync } from 'src/composables/useAsync'
 import { useQueryParam } from 'src/composables/useUrlState'
 import { useUiStore } from 'stores/ui'
 import { n, fa, pct, compact, money, inDays } from 'src/lib/format'
-import { REPS, PLAN_ORDER } from 'src/lib/refs'
+import { PLAN_ORDER } from 'src/lib/refs'
 import { PLAN_NAME, toast } from 'src/lib/ui'
 
 const ui = useUiStore()
@@ -94,19 +91,15 @@ const views = computed(() => [{ key: 'all', label: 'همه', test: null }].conca
 const filters = [
   { key: 'plan', label: 'پلن', options: PLAN_ORDER.map((p) => ({ v: p, l: PLAN_NAME[p] })), test: (a, v) => a.plan === v },
   { key: 'seen', label: 'فعالیت', options: [{ v: '14', l: 'فعال در ۱۴ روز' }, { v: '30', l: 'فعال در ۳۰ روز' }], test: (a, v) => a.lastSeenDays <= +v },
-  { key: 'owner', label: 'مسئول', options: [{ v: 'none', l: 'بدون مسئول' }].concat(REPS.map((r) => ({ v: r.id, l: r.name }))), test: (a, v) => (v === 'none' ? !a.owner : a.owner === v) },
 ]
 const search = { placeholder: 'نام حساب یا شخص…', text: (a) => a.name + ' ' + a.contact.first + ' ' + a.contact.last + ' ' + a.slug }
-const repName = (id) => (REPS.find((r) => r.id === id) || {}).name || ''
 const columns = [
   { key: 'name', label: 'حساب', csv: (a) => a.name },
   { key: 'plan', label: 'پلن', sort: (a) => PLAN_ORDER.indexOf(a.plan), desc: true, csv: (a) => PLAN_NAME[a.plan] },
   { key: 'res', label: 'منبع', sort: (a) => resOf(a).label, csv: (a) => resOf(a).label },
   { key: 'usage', label: 'مصرف', num: true, sort: (a) => resOf(a).ratio, csv: (a) => Math.round(resOf(a).ratio * 100) + '%' },
   { key: 'fc', label: 'رسیدن به ۱۰۰٪', num: true, title: 'با سرعت ۳۰ روز اخیر — فقط برای رکورد قابل پیش‌بینی است', desc: false, sort: fcSort, csv: fcCsv },
-  { key: 'hits', label: 'برخورد با سقف', num: true, title: 'تعداد برخورد با سقف در ۳۰ روز', sort: (a) => a.limitHits30 * 100 + a.pricingVisits30, csv: (a) => a.limitHits30 },
-  { key: 'pv', label: 'بازدید قیمت', num: true, title: 'بازدید صفحهٔ قیمت در ۳۰ روز', sort: (a) => a.pricingVisits30, csv: (a) => a.pricingVisits30 },
-  { key: 'owner', label: 'مسئول', sort: (a) => a.owner || 'zz', csv: (a) => repName(a.owner) },
+  { key: 'hits', label: 'وضعیت سقف', title: 'وضعیت فعلی سهمیهٔ رکورد در پرمصرف‌ترین بیس', sort: (a) => a.atLimit ? 2 : a.nearLimit ? 1 : 0, desc: true, csv: (a) => a.atLimit ? 'سقف پر شده' : 'نزدیک سقف' },
   { key: 'act', label: 'اقدام', sort: false, csv: false },
 ]
 

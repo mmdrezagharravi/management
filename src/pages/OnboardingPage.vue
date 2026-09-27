@@ -45,15 +45,9 @@
             <span :style="{ fontWeight: row.next.key === 'wait' ? 400 : 600, color: row.next.key === 'wait' ? 'var(--muted)' : undefined, textDecoration: row.done ? 'line-through' : undefined }">{{ row.next.text }}</span>
             <span v-if="row.highPot" class="s">پرپتانسیل</span>
           </template>
-          <template #col-owner="{ row }"><RepName :id="row.owner" short /></template>
           <template #col-done="{ row }">
             <button v-if="row.done" class="btn sm ghost good" title="برگرداندن به کارهای باز" @click="setDone(row, false)"><AppIcon name="check" />انجام شد</button>
             <button v-else-if="row.next.key !== 'wait'" class="btn sm" @click="setDone(row, true)"><AppIcon name="check" />انجام شد</button>
-          </template>
-          <template #bulk="{ rows, done }">
-            <select class="select" style="height: 27px; font-size: 12px" @change="assign(rows, $event.target.value, done); $event.target.value = ''">
-              <option value="">تعیین مسئول…</option><option v-for="r in REPS" :key="r.id" :value="r.id">{{ r.name }}</option><option value="__none">بدون مسئول</option>
-            </select>
           </template>
         </DataTable>
       </PanelCard>
@@ -73,7 +67,6 @@ import AppIcon from 'components/AppIcon.vue'
 import AccountCell from 'components/AccountCell.vue'
 import StatusBadge from 'components/StatusBadge.vue'
 import LastSeen from 'components/LastSeen.vue'
-import RepName from 'components/RepName.vue'
 import ColumnChart from 'components/charts/ColumnChart.vue'
 import HBars from 'components/charts/HBars.vue'
 import { api } from 'src/api'
@@ -82,7 +75,7 @@ import { useRange } from 'src/composables/useRange'
 import { useQueryParam } from 'src/composables/useUrlState'
 import { useUiStore } from 'stores/ui'
 import { n, fa, pct, date, agoDays, weekdayName } from 'src/lib/format'
-import { REPS, SOURCES } from 'src/lib/refs'
+import { SOURCES } from 'src/lib/refs'
 import { toast } from 'src/lib/ui'
 
 const ui = useUiStore(), route = useRoute()
@@ -117,7 +110,6 @@ watch([viewQ, nxQ, () => route.hash], ([v, nx, hash]) => {
 
 const doneCount = (a) => a.checklist.filter((x) => x.s === 'done').length
 const tip = (a) => a.checklist.map((x) => (x.s === 'done' ? '✓ ' : x.s === 'wait' ? '… ' : x.s === 'na' ? '? ' : '○ ') + x.l + ' — ' + x.d).join('\n')
-const repName = (id) => (REPS.find((r) => r.id === id) || {}).name || ''
 
 const views = [
   { key: 'all', label: 'همه', test: null },
@@ -138,7 +130,6 @@ const columns = [
   { key: 'status', label: 'وضعیت', sort: (a) => ST[a.status].o, csv: (a) => ST[a.status].label },
   { key: 'lastSeen', label: 'آخرین فعالیت', sort: (a) => -a.lastSeenMin, desc: true, csv: (a) => a.lastSeenDays },
   { key: 'next', label: 'قدم بعدی پیشنهادی', sort: (a) => a.next.key, csv: (a) => a.next.text },
-  { key: 'owner', label: 'مسئول', sort: (a) => a.owner || 'zz', csv: (a) => repName(a.owner) },
   { key: 'done', label: '', sort: false, csv: false },
 ]
 
@@ -147,11 +138,6 @@ async function setDone(a, on) {
   ui.bump()
   if (on) toast('«' + a.next.text + '» برای ' + a.name + ' انجام شد', async () => { await api.setTask('onb:' + a.id, { status: null }); ui.bump() })
   else toast('دوباره در کارهای باز: ' + a.name)
-}
-async function assign(rows, v, done) {
-  if (!v) return
-  await api.setOwner(rows.map((a) => a.id), v === '__none' ? null : v)
-  ui.bump(); toast(fa(rows.length) + ' حساب به ' + (v === '__none' ? 'بدون مسئول' : repName(v)) + ' داده شد'); done()
 }
 </script>
 

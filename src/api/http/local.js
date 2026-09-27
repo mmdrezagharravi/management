@@ -1,9 +1,8 @@
-/* Writes the backend has no endpoint for yet: owner, notes, tasks, thresholds, AI feedback, audit.
+/* Writes the backend has no endpoint for yet: notes, tasks, thresholds, AI feedback, audit.
    They live in this browser (stores/local) exactly as in mock mode, so pages behave the same. */
 import { useLocalStore } from 'stores/local'
 import { useSessionStore } from 'stores/session'
 import { fa } from 'src/lib/format'
-import { REPS } from 'src/lib/refs'
 import { post } from './client'
 import { clearCaches } from './account'
 
@@ -11,12 +10,6 @@ const local = () => useLocalStore()
 const whoName = () => (useSessionStore().user && useSessionStore().user.name) || 'مدیر'
 const ok = (v) => Promise.resolve(v)
 
-export function setOwner(ids, repId) {
-  local().setOwners(ids, repId || null)
-  local().logAudit(whoName(), 'تغییر مسئول ' + fa(ids.length) + ' حساب به ' + (repId ? (REPS.find((r) => r.id === repId) || {}).short : 'بدون مسئول'))
-  clearCaches()
-  return ok(true)
-}
 export function addNote(accountId, note) { local().addNote(accountId, Object.assign({ who: whoName() }, note)); return ok(true) }
 export function removeNote(accountId, text) { local().removeNote(accountId, text); return ok(true) }
 export function setTask(id, patch) { local().setTask(id, patch); return ok(true) }

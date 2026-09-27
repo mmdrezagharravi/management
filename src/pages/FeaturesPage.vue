@@ -32,7 +32,7 @@
           <template v-if="opp.length">
             <div class="section-title" style="margin: 16px 0 2px">پرو و سازمانیِ فعالی که هنوز سراغش نرفته‌اند — آموزش دهید</div>
             <div class="list">
-              <router-link v-for="g in d.gaps" :key="g.key" class="li" to="/customers?view=paying&plan=pro"><span class="main"><span class="t">{{ g.label }}</span><span class="d">کاربرانش {{ n(g.lift, 1) }} برابر بیشتر می‌مانند</span></span><span class="end"><b>{{ n(g.n) }}</b> <span class="muted">از {{ n(d.top2) }}</span></span></router-link>
+              <router-link v-for="g in d.gaps" :key="g.key" class="li" to="/customers?view=paying&plan=business"><span class="main"><span class="t">{{ g.label }}</span><span class="d">کاربرانش {{ n(g.lift, 1) }} برابر بیشتر می‌مانند</span></span><span class="end"><b>{{ n(g.n) }}</b> <span class="muted">از {{ n(d.top2) }}</span></span></router-link>
             </div>
           </template>
           <template #footer><span>خانهٔ کم‌رنگ در پلن پولی = فرصت آموزش</span><router-link to="/customers">همهٔ مشتریان</router-link></template>

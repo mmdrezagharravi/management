@@ -24,7 +24,7 @@
             </div>
           </div>
           <div class="card-f">
-            <span><span v-if="s.unassigned" class="sig due">{{ fa(s.unassigned) }} بدون مسئول</span><template v-else>{{ fa(s.active) }} عضو فعال در ۷ روز</template></span>
+            <span>{{ fa(s.active) }} عضو فعال در ۷ روز</span>
             <button class="btn sm" :class="{ primary: s.key === cur }" @click="pick(s.key, true)"><AppIcon name="users" />فهرست اعضا</button>
           </div>
         </section>
@@ -42,12 +42,6 @@
           <template #col-health="{ row }"><HealthScore :score="row.health" /></template>
           <template #col-lastSeen="{ row }"><LastSeen :a="row" /></template>
           <template #col-signal="{ row }"><SignalChips :a="row" /></template>
-          <template #col-owner="{ row }"><RepName :id="row.owner" short /></template>
-          <template #bulk="{ rows, done }">
-            <select class="select" style="height: 27px; font-size: 12px" @change="assign(rows, $event.target.value, done); $event.target.value = ''">
-              <option value="">تعیین مسئول…</option><option v-for="r in REPS" :key="r.id" :value="r.id">{{ r.name }}</option><option value="__none">بدون مسئول</option>
-            </select>
-          </template>
         </DataTable>
       </PanelCard>
 
@@ -82,7 +76,6 @@ import PlanBadge from 'components/PlanBadge.vue'
 import HealthScore from 'components/HealthScore.vue'
 import LastSeen from 'components/LastSeen.vue'
 import SignalChips from 'components/SignalChips.vue'
-import RepName from 'components/RepName.vue'
 import HeatMap from 'components/charts/HeatMap.vue'
 import HBars from 'components/charts/HBars.vue'
 import { api } from 'src/api'
@@ -90,7 +83,7 @@ import { useAsync } from 'src/composables/useAsync'
 import { useQueryParam } from 'src/composables/useUrlState'
 import { useUiStore } from 'stores/ui'
 import { n, fa, pct, compact, compactParts as cp, money } from 'src/lib/format'
-import { REPS, PLAN_ORDER } from 'src/lib/refs'
+import { PLAN_ORDER } from 'src/lib/refs'
 import { PLAN_NAME, BAND_COLOR, band, toast } from 'src/lib/ui'
 
 // the default sort of the member list follows what a rep does with that group
@@ -118,23 +111,15 @@ async function pick(k, scroll) {
 const search = { placeholder: 'نام، شخص یا شماره…', text: (a) => a.name + ' ' + a.contact.first + ' ' + a.contact.last + ' ' + a.contact.mobile + ' ' + a.slug }
 const filters = [
   { key: 'plan', label: 'پلن', options: PLAN_ORDER.map((k) => ({ v: k, l: PLAN_NAME[k] })), test: (a, v) => a.plan === v },
-  { key: 'owner', label: 'مسئول', options: [{ v: 'none', l: 'بدون مسئول' }].concat(REPS.map((r) => ({ v: r.id, l: r.name }))), test: (a, v) => (v === 'none' ? !a.owner : a.owner === v) },
 ]
-const repName = (id) => (REPS.find((r) => r.id === id) || {}).name || ''
 const columns = [
   { key: 'name', label: 'حساب', cls: 'nmcol', csv: (a) => a.name },
   { key: 'plan', label: 'پلن', sort: (a) => PLAN_ORDER.indexOf(a.plan) * 1e9 + a.mrr, desc: true, csv: (a) => PLAN_NAME[a.plan] },
   { key: 'mrr', label: 'درآمد ماهانه', num: true, csv: (a) => a.mrr },
   { key: 'health', label: 'سلامت', num: true, csv: (a) => a.health },
   { key: 'lastSeen', label: 'آخرین فعالیت', sort: (a) => -a.lastSeenMin, desc: true, csv: (a) => a.lastSeenDays },
-  { key: 'signal', label: 'سیگنال', sort: (a) => (a.pastDue ? 100 : 0) + a.limitHits30 + a.pricingVisits30 * 2, desc: true, csv: (a) => (a.pastDue ? 'پرداخت ناموفق ' : '') + a.limitHits30 + ' سقف / ' + a.pricingVisits30 + ' قیمت' },
-  { key: 'owner', label: 'مسئول', sort: (a) => a.owner || 'zz', csv: (a) => repName(a.owner) },
+  { key: 'signal', label: 'سیگنال', sort: (a) => (a.pastDue ? 4 : 0) + (a.atLimit ? 2 : 0) + (a.nearLimit ? 1 : 0), desc: true, csv: (a) => [a.pastDue && 'پرداخت ناموفق', a.atLimit ? 'سقف پر شده' : a.nearLimit ? 'نزدیک سقف' : ''].filter(Boolean).join('، ') },
 ]
-async function assign(rows, v, done) {
-  if (!v) return
-  await api.setOwner(rows.map((a) => a.id), v === '__none' ? null : v)
-  ui.bump(); toast(fa(rows.length) + ' حساب به ' + (v === '__none' ? 'بدون مسئول' : repName(v)) + ' داده شد'); done()
-}
 
 const overlap = computed(() => {
   const segs = d.value.segs, cells = d.value.cells

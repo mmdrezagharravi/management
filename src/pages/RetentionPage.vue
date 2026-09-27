@@ -65,7 +65,6 @@
             <template #col-lost="{ row }"><b>{{ compact(row.lastMrr) }}</b></template>
             <template #col-reason="{ row }">{{ row.churnReason }}</template>
             <template #col-tenure="{ row }">{{ months(row.tenure) }}</template>
-            <template #col-owner="{ row }"><RepName :id="row.owner" short /></template>
           </DataTable>
         </PanelCard>
         <PanelCard title="دلیل لغو اشتراک" :hint="n(ch.total) + ' مشتری در ۱۸۰ روز'">
@@ -91,7 +90,6 @@ import KpiTile from 'components/KpiTile.vue'
 import AppIcon from 'components/AppIcon.vue'
 import DataTable from 'components/DataTable.vue'
 import AccountCell from 'components/AccountCell.vue'
-import RepName from 'components/RepName.vue'
 import HeatMap from 'components/charts/HeatMap.vue'
 import LineChart from 'components/charts/LineChart.vue'
 import HBars from 'components/charts/HBars.vue'
@@ -100,7 +98,7 @@ import { useAsync } from 'src/composables/useAsync'
 import { useQueryParam } from 'src/composables/useUrlState'
 import { useUiStore } from 'stores/ui'
 import { n, fa, pct, compact, money, date, agoDays, monthLabel } from 'src/lib/format'
-import { SOURCES, REPS } from 'src/lib/refs'
+import { SOURCES } from 'src/lib/refs'
 
 const ui = useUiStore()
 const coh = useQueryParam('coh')
@@ -129,7 +127,6 @@ const curveChart = computed(() => {
     series: [{ name: 'با اتوماسیون', values: cv.value.automation.values }, { name: 'بدون اتوماسیون', values: cv.value.noAutomation.values }, { name: 'تیمی', values: cv.value.team.values }] }
 })
 
-const repName = (id) => (REPS.find((r) => r.id === id) || {}).name || ''
 const filters = computed(() => !ch.value.reasonList.length ? [] : [{ key: 'reason', label: 'دلیل', options: ch.value.reasonList.map((r) => ({ v: r, l: r })), test: (a, v) => a.churnReason === v }])
 const columns = [
   { key: 'name', label: 'مشتری', csv: (a) => a.name },
@@ -137,7 +134,6 @@ const columns = [
   { key: 'lost', label: 'MRR ازدست‌رفته', num: true, sort: (a) => a.lastMrr, csv: (a) => a.lastMrr },
   { key: 'reason', label: 'دلیل', sort: (a) => a.churnReason, csv: (a) => a.churnReason },
   { key: 'tenure', label: 'مدت اشتراک', num: true, sort: (a) => a.tenure, csv: (a) => a.tenure },
-  { key: 'owner', label: 'مسئول', sort: (a) => a.owner || 'zz', csv: (a) => repName(a.owner) },
 ]
 </script>
 

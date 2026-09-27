@@ -64,6 +64,7 @@
                   <span class="row" style="gap: 8px; flex-wrap: nowrap">
                     <StatusBadge v-if="c.queued" status="info" label="در صف اجرا" />
                     <StatusBadge v-else-if="c.status === 'fail'" status="crit" label="ناموفق" />
+                    <span v-else-if="c.lastT == null" class="faint">—</span>
                     <StatusBadge v-else status="good" label="موفق" />
                     <button v-if="c.queued" class="btn sm ghost" @click="cancel(c)">لغو</button>
                     <button v-else-if="c.canRun !== false" class="btn sm" :class="{ primary: c.status === 'fail' }" @click="rerun(c)"><AppIcon name="refresh" />اجرای دوباره</button>

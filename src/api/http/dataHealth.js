@@ -1,11 +1,10 @@
 /* GET /management/data-health → one source (the nightly behavioural sync), daily expected vs received events. */
 import { get } from './client'
-import { clock } from 'src/lib/format'
+import { clock, daysAgo } from 'src/lib/format'
 
 // Freshness policy in minutes of lag: the sync runs once a day, so "good" is up to one day behind.
 const FRESH = { good: 2 * 1440, warn: 4 * 1440 }
 const byLag = (m) => (m == null ? 'crit' : m < FRESH.good ? 'good' : m < FRESH.warn ? 'warn' : 'crit')
-const daysAgo = (x) => (x ? Math.round((Date.now() - new Date(x)) / 864e5) : null)
 const tehranMin = (x) => { const [h, m] = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: 'Asia/Tehran' }).format(new Date(x)).split(':'); return +h * 60 + +m }
 
 const AFFECTED = [
@@ -39,7 +38,7 @@ export async function dataHealth() {
     gap: missing.length || lowVol.length ? { missing: missing.length, low: lowVol.length, lastMissing: missing.length ? daysAgo(missing[missing.length - 1]) : null } : null,
     fresh: FRESH,
     policyExamples: { good: src.status === 'good' ? src : null, warn: src.status === 'warn' ? src : null, crit: src.status === 'crit' ? src : null },
-    issues: [], owners: [],
+    issues: [],
     affected: AFFECTED.map((p) => ({ ...p, desc: src.desc, lagMin: src.lagMin, status: src.status })),
     unaffected: ['فاکتورها و قراردادها (Mongo)'],
     dataSince: d.dataSince || null,

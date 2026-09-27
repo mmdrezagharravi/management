@@ -3,8 +3,8 @@
 import { get } from './client'
 
 export const FEATURE_LABEL = {
-  Record: 'رکورد', Cell: 'سلول', View: 'نما', Automation: 'اتوماسیون', Page: 'صفحه', Side: 'پنل کناری', Role: 'نقش', Webhook: 'وب‌هوک',
-  AI: 'هوش مصنوعی', ExportTemplate: 'خروجی قالب', ExpandTemplate: 'قالب', Form: 'فرم', Share: 'اشتراک', Other: 'سایر',
+  Record: 'رکورد', Cell: 'سلول', View: 'نما', Automation: 'اتوماسیون', Collaborator: 'افزودن همکار', Page: 'صفحه', Role: 'نقش',
+  AI: 'هوش مصنوعی', ExportTemplate: 'خروجی قالب', Form: 'فرم', Share: 'اشتراک', Other: 'سایر',
 }
 
 export async function features({ range: R = 30 } = {}) {

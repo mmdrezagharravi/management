@@ -44,7 +44,7 @@ describe('http revenue adapter', () => {
     expect(d.months).toHaveLength(12); expect(d.months[11]).toMatchObject({ end: 0, mrr: 1000000, churn: -100000, churnCount: 1 }); expect(d.months[10].contraction).toBe(-50000)
     expect(d.tot12).toEqual({ n: 100000, e: 200000, c: -50000, ch: -100000 })
     expect(d.planMix.rows).toEqual([{ k: 'team', n: 2, mrr: 1000000, arpa: 500000 }]); expect(d.planMix.tm).toBe(1000000)
-    expect(d.cycMix.rows.map((r) => r.k)).toEqual(['monthly', 'quarterly', 'yearly']); expect(d.cycMix.tn).toBe(2)
+    expect(d.cycMix.rows.map((r) => r.k)).toEqual(['monthly', 'quarterly', 'semiannual', 'yearly']); expect(d.cycMix.tn).toBe(2)
     expect(d.cash).toHaveLength(12); expect(d.cash[11]).toMatchObject({ end: 0, amount: 900000, n: 2 }); expect(d.cash[0].amount).toBe(0)
     // a1: monthly, renews in 5 days, health 25 → due at 5, 35, 65 all at risk
     expect(d.buckets.map((b) => b.nRisk)).toEqual([1, 1, 1]); expect(d.riskDue).toBe(1500000)
@@ -60,7 +60,7 @@ describe('http sales adapter', () => {
     for (const k of ['risk', 'yearlyDiscount', 'kpis', 'calendar', 'week', 'lists', 'stats']) expect(d).toHaveProperty(k)
     for (const k of ['renew', 'upsell', 'winback', 'pastdue', 'champions']) { expect(d.lists).toHaveProperty(k); expect(d.stats).toHaveProperty(k) }
     expect(d.kpis.r30).toEqual({ n: 1, mrr: 500000 }); expect(d.kpis.r30risk.share).toBe(1)
-    expect(d.kpis.upsell).toEqual({ n: 1, value: null, none: 1 }); expect(d.kpis.winback).toEqual({ n: 1, lostMrr: null })
+    expect(d.kpis.upsell).toEqual({ n: 1, value: null }); expect(d.kpis.winback).toEqual({ n: 1, lostMrr: null })
     expect(d.calendar.ok).toHaveLength(13); expect(d.calendar.nRisk.slice(0, 5)).toEqual([1, 0, 0, 0, 1]); expect(d.calendar.riskTotal).toBe(1500000)
     expect(d.week.rows[0].weakest).toEqual({ key: 'trend', label: 'روند', value: 3 })
     expect(d.lists.winback[0]).toMatchObject({ id: 'a2', lostPlan: 'team', churnReason: 'تمدید نشد' })

@@ -1,7 +1,6 @@
 /* Navigation tree: groups on the rail, items in the sub-menu. `id` = route name. */
 export const NAV = [
   { grp: 'کار روزانه', short: 'روزانه', icon: 'inbox', items: [
-    { id: 'today', to: '/today', label: 'کارهای امروز', icon: 'inbox' },
     { id: 'overview', to: '/', label: 'نمای کلی', icon: 'grid' },
     { id: 'ai', to: '/ai', label: 'تحلیل هوشمند', icon: 'sparkle' },
   ] },
@@ -14,7 +13,6 @@ export const NAV = [
   { grp: 'فروش و درآمد', short: 'فروش', icon: 'coins', items: [
     { id: 'revenue', to: '/revenue', label: 'درآمد', icon: 'coins' },
     { id: 'sales', to: '/sales', label: 'میز فروش', icon: 'handshake' },
-    { id: 'team', to: '/team', label: 'عملکرد تیم فروش', icon: 'trophy' },
   ] },
   { grp: 'رشد محصول', short: 'رشد', icon: 'funnel', items: [
     { id: 'funnel', to: '/funnel', label: 'قیف تبدیل', icon: 'funnel' },

@@ -1,8 +1,6 @@
 /* GET /management/segments?seg=upsell — behavioural groups, their overlap, and the members of one group. */
 import { DB } from 'src/mock/engine'
-import { C, ok, enrich, ownerOf } from './shared'
-
-const OWNED = ['upsell', 'risk', 'champions'] // groups where an owner is expected
+import { C, ok, enrich } from './shared'
 
 export function segments({ seg } = {}) {
   const { accounts, agg } = DB
@@ -37,7 +35,6 @@ export function segments({ seg } = {}) {
       return {
         key: s.key, label: s.label, rule: s.rule, desc: s.desc, n: s.n, mrr: s.mrr,
         active: list.filter(isActive).length,
-        unassigned: OWNED.includes(s.key) ? list.filter((a) => !ownerOf(a)).length : 0,
         dist: agg.healthDist(list).map((d) => ({ key: d.key, label: d.label, n: d.n })),
         avgHealth: list.length ? Math.round(list.reduce((x, a) => x + a.health, 0) / list.length) : 0,
       }

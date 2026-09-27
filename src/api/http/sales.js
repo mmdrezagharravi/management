@@ -22,9 +22,8 @@ export async function sales() {
   }
   const r30 = paying.filter((a) => a.renewIn <= 30), r30risk = r30.filter((a) => a.health < RISK)
   const renewRisk = raw.renew.filter((a) => a.health < RISK)
-  const upNone = raw.upsell.filter((a) => !a.owner)
   // the server has no pricing table, so an upsell's value and a lapsed account's lost MRR are unknown
-  const upsell = { n: raw.upsell.length, value: null, none: upNone.length }
+  const upsell = { n: raw.upsell.length, value: null }
   const winback = { n: raw.winback.length, lostMrr: null }
 
   // renewal calendar (13 weeks) — every due date counts, so monthly plans appear each month

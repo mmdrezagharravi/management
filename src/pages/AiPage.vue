@@ -37,7 +37,6 @@
               <div class="why">{{ x.why }}</div>
               <div class="meta">
                 <span><span v-if="x.risk" class="sig due">در خطر {{ compact(x.value) }} در ماه</span><span v-else class="sig price">فرصت +{{ compact(x.value) }} در ماه</span></span>
-                <span>مسئول: <b style="color: var(--ink-2)">{{ x.ownerName }}</b></span>
               </div>
             </div>
             <div class="acts">
@@ -109,9 +108,9 @@ async function feedback(f, v) {
   toast(on ? 'بازخورد ثبت شد — ممنون' : 'بازخورد برداشته شد')
 }
 async function toggleToday(x) {
-  await api.setTask(x.taskId, x.inToday ? { status: null } : { status: 'open', due: 0, accountId: x.accountId, owner: x.ownerId, value: x.value, why: x.why })
+  await api.setTask(x.taskId, x.inToday ? { status: null } : { status: 'open', due: 0, accountId: x.accountId, value: x.value, why: x.why })
   ui.bump()
-  toast(x.inToday ? 'از کارهای امروز برداشته شد' : 'در کارهای امروز ' + x.ownerShort + ' ثبت شد')
+  toast(x.inToday ? 'از کارهای امروز برداشته شد' : 'در کارهای امروز ثبت شد')
 }
 function copyBrief() {
   const txt = 'وضعیت امروز — ' + date(0) + '\n\n' + (briefEl.value ? briefEl.value.innerText : '')

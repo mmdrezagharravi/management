@@ -14,7 +14,7 @@ const { dataHealth } = await import('src/api/http/dataHealth')
 const { settings, settingsPreview } = await import('src/api/http/settings')
 
 const iso = (d) => new Date(Date.now() - d * 864e5).toISOString()
-const day = (d) => iso(d).slice(0, 10)
+const day = (d) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tehran' }).format(Date.now() - d * 864e5) // server day keys are Tehran dates
 const B1 = 'b'.repeat(24), B2 = 'c'.repeat(24)
 const customer = (o = {}) => ({
   id: 'a1', name: 'شرکت نمونه', mobile: '09121234567', plan: 'basic', seats: 1, cycle: null, paying: false, everPaid: false, mrr: 0, until: null, renewIn: null, pastDue: false,
@@ -28,7 +28,7 @@ const routes = {
   '/customers': () => [customer(), paying],
   '/bases': () => [baseRow(), baseRow({ id: B2, name: 'انبار', records: 5, usage: 0.005, atLimit: false, lastSeenDays: null, events30: 0 })],
   ['/bases/' + B1]: () => ({ ...baseRow(), slug: 'sales', cloneCount: 0, counts: { fields: 12, views: 4, pages: 1, roles: 0, recordRoles: 0, webhooks: 0, plugins: 0, automationsActive: 1, runs30: 40, failedRuns30: 2 }, members: [{ id: 'a1', name: 'علی', mobile: '0912', type: 'owner' }, { id: 'm2', name: null, mobile: '09351112233', type: 'collaborator' }], activity: Array.from({ length: 90 }, (_, i) => ({ day: day(89 - i), events: i % 3 })), features: { Record: 40 } }),
-  '/customers/a1': () => ({ ...customer(), email: null, referredBy: null, referrals: 0, basesList: [], members: [{ id: 'a1', name: 'علی', mobile: '0912', lastSeenDays: 0 }, { id: 'm2', name: null, mobile: '0935', lastSeenDays: 30 }], invoices: [], contract: null, activity: [], features: {}, healthHistory: [] }),
+  '/customers/a1': () => ({ ...customer(), email: null, referredBy: null, referrals: 0, basesList: [], members: [{ id: 'm2', name: null, mobile: '0935', lastSeenDays: 30 }], invoices: [], contract: null, activity: [], features: {}, healthHistory: [] }),
   '/quota': () => ({ nearRatio: 0.8, bases: [baseRow()], automation: [{ ...customer(), runsUsage: 0.9 }] }),
   '/jobs': () => ({
     queues: [{ name: 'Automation', counts: { waiting: 350, active: 2, completed: 9000, failed: 12, delayed: 0 }, error: null }, { name: 'autopilot', counts: null, error: 'ECONNREFUSED' }],
@@ -53,7 +53,7 @@ describe('bases()', () => {
     expectKeys(d.kpis, ['total', 'withBases', 'active7', 'new30', 'new30prev', 'avgRec', 'medRec', 'nearBases', 'nearAcc'])
     expectKeys(d.rows[0], ['id', 'name', 'slug', 'tables', 'automations', 'collaborators', 'created', 'records', 'la', 'est30', 'accountId', 'accountName', 'plan', 'nearCap'])
     expect(d.kpis).toMatchObject({ total: 2, withBases: 1, active7: 1, nearBases: 1, nearAcc: 1 })
-    expect(d.rows[0].plan).toBe('free')
+    expect(d.rows[0].plan).toBe('basic')
     expect(d.rows[1].la).toBe(9999)
     expect(d.byState).toEqual({ active7: 1, mid: 0, idle: 1 })
     expect(d.hist.counts.reduce((t, x) => t + x, 0)).toBe(2)
@@ -73,7 +73,7 @@ describe('base(id)', () => {
     expect(d.activity).toHaveLength(90)
     expect(d.activity[89].daysAgo).toBe(0)
     expect(d.siblings.map((s) => s.id)).toEqual([B2])
-    expect(d.people[0].lastSeen).toBe(0)
+    expect(d.people[0]).toMatchObject({ role: 'مالک', lastSeen: 1 }) // owner's own lastSeenDays; /customers/:id members are the others only
     expect(d.people[1].lastSeen).toBe(30)
   })
   it('lets a 404 propagate', async () => {
@@ -120,7 +120,7 @@ describe('jobs()', () => {
 describe('dataHealth()', () => {
   it('has one daily source and a trailing-median expectation', async () => {
     const d = await dataHealth()
-    expectKeys(d, ['sources', 'worst', 'dropped', 'dropSources', 'issuesOpen', 'issuesInProgress', 'events', 'gap', 'fresh', 'policyExamples', 'issues', 'owners', 'affected', 'unaffected'])
+    expectKeys(d, ['sources', 'worst', 'dropped', 'dropSources', 'issuesOpen', 'issuesInProgress', 'events', 'gap', 'fresh', 'policyExamples', 'issues', 'affected', 'unaffected'])
     expect(d.sources).toHaveLength(1)
     expect(d.sources[0]).toMatchObject({ key: 'behavior', status: 'good', lagMin: 0 })
     expect(d.policyExamples.good).toBe(d.sources[0])
@@ -142,7 +142,7 @@ describe('settings()', () => {
     expect(d.saved).toBe(true)
     expect(d.defs).toMatchObject({ mrrNow: 500000, payNow: 1, payPrev: 2, churnCount: 1, churnRate: 0.125 })
     expect(d.defs.nrr).toBeCloseTo((400000 + 100000 - 50000) / 400000)
-    expect(d.defs.plans.map((p) => p.key)).toEqual(['free', 'team', 'business', 'ent', 'partner'])
+    expect(d.defs.plans.map((p) => p.key)).toEqual(['basic', 'team', 'business', 'enterprise', 'partner'])
     expect(d.defs.plans[0].limits).toMatchObject({ records: 1000, runs: 100 })
     expect(d.defs.segments.find((s) => s.key === 'upsell').n).toBe(1)
     expect(d.defs.bands.find((b) => b.key === 'good').n).toBe(1)

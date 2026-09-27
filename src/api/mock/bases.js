@@ -1,6 +1,6 @@
 /* GET /management/bases — every base with its account context, plus the list-page aggregates. */
 import { DB } from 'src/mock/engine'
-import { C, ok } from './shared'
+import { C, ok, pageOf } from './shared'
 
 // A base cannot have been last active before it existed.
 const lastAct = (b) => Math.min(b.lastActive, b.created)
@@ -48,4 +48,16 @@ export function bases() {
     byState: { active7: active7.length, mid: rows.filter((r) => r.la > 6 && r.la <= 30).length, idle: rows.filter((r) => r.la > 30).length },
     small: rows.filter((r) => r.records < 100).length, big: rows.filter((r) => r.records >= 10000).length,
   })
+}
+
+const BASE_VIEWS = { all: () => true, active: (r) => r.la <= 6, idle: (r) => r.la > 30, auto: (r) => r.automations > 0 }
+const BASE_SORTS = {
+  name: (r) => r.name, creatorName: (r) => r.accountName, planRank: (r) => DB.CONFIG.planOrder.indexOf(r.plan), tables: (r) => r.tables,
+  records: (r) => r.records, automations: (r) => r.automations, collaborators: (r) => r.collaborators, createdAt: (r) => -r.created, recent: (r) => -r.la,
+}
+
+/** GET /management/bases?view&q&plan&sort&dir&page&size — one page, per-view counts. */
+export async function basesPage(p = {}) {
+  const { rows } = await bases()
+  return pageOf(rows, p, { views: BASE_VIEWS, sorts: BASE_SORTS, filters: { plan: (r, v) => r.plan === v }, text: (r) => r.name + ' ' + r.slug + ' ' + r.accountName })
 }

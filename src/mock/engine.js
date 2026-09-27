@@ -508,8 +508,8 @@ function maxUsage(a) {
     { key: 'ai', label: 'توکن هوش مصنوعی', used: a.ai30, limit: L.ai },
     { key: 'storage', label: 'فضای ذخیره (گیگ)', used: a.storage, limit: L.storage },
   ];
-  if (L.seats) u.push({ key: 'seats', label: 'صندلی', used: a.memberCount, limit: L.seats });
-  else u.push({ key: 'seats', label: 'صندلی', used: a.memberCount, limit: a.seats });
+  if (L.seats) u.push({ key: 'seats', label: 'همکار', used: a.memberCount, limit: L.seats });
+  else u.push({ key: 'seats', label: 'همکار', used: a.memberCount, limit: a.seats });
   u.forEach(x => { x.ratio = x.limit ? x.used / x.limit : 0; });
   a.usage = u;
   return u.filter(x => x.limit).sort((p, q) => q.ratio - p.ratio)[0];
@@ -601,7 +601,7 @@ const TASK_TYPES = {
   renew:     { label: 'تمدید پیش رو',          icon: 'repeat',  prio: 2 },
   drop:      { label: 'افت سلامت',            icon: 'down',    prio: 2 },
   upsell:    { label: 'پیشنهاد ارتقا',         icon: 'up',      prio: 3 },
-  seats:     { label: 'صندلی پر شده',          icon: 'users',   prio: 3 },
+  seats:     { label: 'سقف همکار پر شده',          icon: 'users',   prio: 3 },
   welcome:   { label: 'خوشامد مشتری جدید',     icon: 'star',    prio: 3 },
   followup:  { label: 'پیگیری تماس قبلی',      icon: 'phone',   prio: 2 },
 };
@@ -628,7 +628,7 @@ function tasksFor(repId) {
     }
     if (a.paying && a.plan !== 'basic' && a.memberCount >= a.seats && a.activeMembers7 >= a.seats) {
       out.push({ id: 'seats:' + a.id, type: 'seats', accountId: a.id, due: 2, value: plans[a.plan].seatPrice * 2,
-        why: fa(a.memberCount) + ' عضو روی ' + fa(a.seats) + ' صندلی · هر ' + fa(a.activeMembers7) + ' نفر این هفته فعال بوده‌اند' });
+        why: fa(a.memberCount) + ' عضو از سقف ' + fa(a.seats) + ' همکار · هر ' + fa(a.activeMembers7) + ' نفر این هفته فعال بوده‌اند' });
     }
     if (a.paying && a.tenureDays <= 7) {
       out.push({ id: 'welcome:' + a.id, type: 'welcome', accountId: a.id, due: 0, value: a.mrr,

@@ -57,7 +57,8 @@ export async function onboarding({ range: R = 30 } = {}) {
   const rate = (list, f) => (list.length ? list.filter(f).length / list.length : null)
 
   const fbN = cohort.filter(hasBase).length
-  const mature = cohort.filter((a) => a.age >= ACT.days), prevMature = prev.filter((a) => a.age >= ACT.days)
+  const known = (a) => a.age >= ACT.days && a.activated != null // null = signed up before dataSince
+  const mature = cohort.filter(known), prevMature = prev.filter(known)
   const fbDays = cohort.filter(hasBase).map((a) => a.firstBaseDays)
   const stuckL = cohort.filter(stuck)
   const hp = cohort.filter(highPot)

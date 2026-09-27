@@ -16,10 +16,8 @@ export const ok = (v) => Promise.resolve(v)
 export const local = () => useLocalStore()
 export const session = () => useSessionStore()
 
-export const ownerOf = (a) => { const o = local().owners; return o[a.id] !== undefined ? o[a.id] : a.owner }
 export const rep = (id) => DB.rep(id)
-export const repName = (id) => { const r = id && DB.rep(id); return r ? r.name : null }
-export const whoName = () => { const m = session().me; return m.role === 'rep' ? DB.rep(m.rep).name : 'مدیر فروش' }
+export const whoName = () => 'مدیر فروش'
 export const taskState = (id) => local().tasks[id] || null
 export const notesOf = (id) => local().notes[id] || []
 
@@ -42,12 +40,13 @@ export function enrich(a) {
     age: a.age, contact: a.contact, plan: a.plan, cycle: a.cycle, seats: a.seats, mrr: a.mrr, paying: a.paying, everPaid: a.everPaid,
     health: a.health, band: a.band.key, components: a.components, health2wAgo: a.health2wAgo, healthHistory: a.healthHistory,
     lastSeenDays: a.lastSeenDays, lastSeenMin: a.lastSeenMin, online: a.online,
-    memberCount: a.memberCount, activeMembers7: a.activeMembers7, activeDays28: a.activeDays28, activeDays7: a.activeDays7,
+    memberCount: a.memberCount, collaborators: a.memberCount, collaboratorLimit: (a.usage.find((u) => u.key === 'seats') || {}).limit ?? null, activeMembers7: a.activeMembers7, activeDays28: a.activeDays28, activeDays7: a.activeDays7,
     events30: a.events30, records30: a.records30, records: a.records, trendPct: a.trendPct,
     renewIn: a.renewIn, churnedAt: a.churnedAt, churnReason: a.churnReason, pastDue: !!a.pastDue, tenureDays: a.tenureDays,
     limitHits30: a.limitHits30, pricingVisits30: a.pricingVisits30, tickets: a.tickets, nps: a.nps,
+    atLimit: a.maxUsage.ratio >= 1, nearLimit: a.maxUsage.ratio >= 0.8,
     segments: a.segments, maxUsage: a.maxUsage, usage: a.usage, bases: a.bases.length, automations: a.automations,
-    upgradeValue: DB.upgradeValue(a), owner: ownerOf(a), last30, milestones: a.milestones, feat: a.feat,
+    upgradeValue: DB.upgradeValue(a), last30, milestones: a.milestones, feat: a.feat,
     invitesSent: a.invitesSent, wk: Array.from(a.wk), decline: a.decline || null,
   }
 }
@@ -63,18 +62,12 @@ export function alerts() {
   const crit = DB.accounts.filter((a) => a.paying && a.health < 30 && (a.plan === 'pro' || a.plan === 'ent'))
   if (crit.length) out.push({ lvl: 'crit', t: fa(crit.length) + ' مشتری پرو/سازمانی بحرانی شده', d: 'مجموع درآمد ماهانه', mrr: crit.reduce((t, a) => t + a.mrr, 0), to: '/health' })
   DB.ops.queues.filter((q) => q.waiting > 1000).forEach((q) => out.push({ lvl: 'warn', t: 'صف ' + q.name + ' عقب افتاده', d: fa(q.waiting) + ' کار در انتظار · ' + fa(q.failed24) + ' ناموفق در ۲۴ ساعت', to: '/jobs' }))
-  const un = DB.accounts.filter((a) => a.segments.includes('upsell') && !ownerOf(a))
-  if (un.length) out.push({ lvl: 'info', t: fa(un.length) + ' سرنخ ارتقا بدون مسئول', d: 'به یکی از اعضای تیم فروش بدهید', to: '/customers?view=unassigned' })
   return ok(out)
 }
 
 /* ------------------------------------------------------------- nav badges */
 export function navBadges() {
-  const m = session().me
-  const repId = m.role === 'rep' ? m.rep : null
-  const todayN = repId ? DB.tasksFor(repId).filter((t) => t.due <= 0 && !(taskState(t.id) || {}).status).length : 0
   return ok({
-    today: todayN ? { n: todayN } : null,
     health: { n: DB.accounts.filter((a) => a.paying && a.health < 30).length, warn: true },
     jobs: { n: DB.ops.crons.filter((c) => c.status === 'fail').length, warn: true },
     'data-health': { n: DB.ops.ingestion.filter((s) => s.status === 'crit').length, warn: true },
@@ -109,11 +102,6 @@ export function search(q) {
 }
 
 /* -------------------------------------------------------------- mutations */
-export function setOwner(ids, repId) {
-  local().setOwners(ids, repId || null)
-  local().logAudit(whoName(), 'تغییر مسئول ' + fa(ids.length) + ' حساب به ' + (repId ? DB.rep(repId).short : 'بدون مسئول'))
-  return ok(true)
-}
 export function addNote(accountId, note) { local().addNote(accountId, Object.assign({ who: whoName() }, note)); return ok(true) }
 export function removeNote(accountId, text) { local().removeNote(accountId, text); return ok(true) }
 export function setTask(id, patch) { local().setTask(id, patch); return ok(true) }
@@ -131,5 +119,21 @@ export function setAiFeedback(k, v) { local().setAiFeedback(k, v); return ok(tru
 
 /** Interactions (calls, deals) for one account, newest first, plus notes made here. */
 export function interactionsOf(id) {
-  return DB.activities.filter((x) => x.accountId === id).map((x) => ({ ...x, repName: DB.rep(x.rep).short, label: DB.OUTCOME_LABEL[x.outcome] || x.outcome }))
+  return DB.activities.filter((x) => x.accountId === id).map((x) => ({ ...x, label: DB.OUTCOME_LABEL[x.outcome] || x.outcome }))
 }
+
+/** Server-style list paging over an in-memory list: view, filters, search, sort, page, per-view counts. */
+export function pageOf(all, p, { views, sorts, filters = {}, text }) {
+  const q = p.q ? norm(p.q) : ''
+  const matching = all.filter((r) => Object.entries(filters).every(([k, test]) => !p[k] || test(r, p[k])) && (!q || norm(text(r)).includes(q)))
+  const counts = Object.fromEntries(Object.entries(views).map(([k, test]) => [k, matching.filter(test).length]))
+  let rows = matching.filter(views[p.view || 'all'] || views.all)
+  const read = sorts[p.sort]
+  if (read) {
+    const dir = p.dir === 'asc' ? 1 : -1
+    rows = rows.slice().sort((a, b) => { const x = read(a), y = read(b); if (x == null) return 1; if (y == null) return -1; return (x > y ? 1 : x < y ? -1 : 0) * dir })
+  }
+  const size = p.size ?? 25, page = p.page ?? 0
+  return ok({ rows: size === 0 ? rows : rows.slice(page * size, page * size + size), total: rows.length, counts })
+}
+

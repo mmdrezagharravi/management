@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { fa, n, compact, compactParts, pct, signedPct, date, ago, inDays, clock, norm, maskMobile, setNow, jalali } from '../src/lib/format.js'
+import { fa, n, compact, compactParts, pct, signedPct, date, ago, inDays, clock, norm, setNow, jalali } from '../src/lib/format.js'
 import { delta, band } from '../src/lib/ui.js'
 
 // the mock world's fixed "today": 31 Shahrivar 1405
@@ -43,9 +43,6 @@ describe('dates', () => {
 describe('text', () => {
   it('normalises Arabic variants and Persian digits for search', () => {
     expect(norm('كتاب ۱۲')).toBe('کتاب 12')
-  })
-  it('masks a mobile number', () => {
-    expect(maskMobile('09121234567')).toBe('۰۹۱۲ ••• ۴۵۶۷')
   })
 })
 

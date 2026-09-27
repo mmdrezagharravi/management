@@ -3,7 +3,7 @@
    Rich text is a list of parts: a plain string, { b: text }, { cls, t } (highlight),
    { acc: id, name, cls? } (customer link) or { to, t } (page link). No HTML. */
 import { DB } from 'src/mock/engine'
-import { ok, ownerOf, taskState, local } from './shared'
+import { ok, taskState, local } from './shared'
 import { fa, n, compact, money, pct, signedPct, date, inDays, lagText } from 'src/lib/format'
 
 const { accounts, agg, CONFIG: C } = DB
@@ -19,7 +19,6 @@ const cm = (x) => sgn(x) + compact(Math.abs(x))
 const times = (x) => n(x, 1)
 // The model only ever sees account IDs. Names are joined back here.
 const acc = (a, cls) => ({ acc: a.id, name: a.name, cls: cls === undefined ? 'ai-link' : cls })
-const ownerTxt = (a) => { const o = ownerOf(a); return o ? DB.rep(o).name : 'بدون مسئول' }
 // "at risk" = below the lowest band that is not a risk band (same line the health page and the risk segment use)
 const RISK = C.health.bands.find((b) => b.key === 'warn').min
 const dayKey = () => { const j = DB.jalali(0); return j.y + '-' + j.m + '-' + j.d }
@@ -56,7 +55,7 @@ export function aiBrief() {
     'خالص درآمد جدید این ۳۰ روز ', { b: cm(net) }, ' بود: ' + fa(mv.newCount) + ' مشتری جدید (' + cm(mv.new) + ') و ' + fa(mv.expCount) + ' ارتقا (' + cm(mv.expansion) + ')، ' +
     'منهای ' + fa(mv.churnCount) + ' ریزش (' + cm(mv.churn) + ')' + (mv.conCount ? ' و ' + fa(mv.conCount) + ' کاهش پلن (' + cm(mv.contraction) + ')' : '') + '.'])
   if (riskTop) p.push([{ b: 'بزرگ‌ترین ریسک:' }, ' ', acc(riskTop, ''), ' با ' + money(riskTop.mrr) + ' در ماه و سلامت ', { cls: 'hl-bad', t: n(riskTop.health) },
-    (riskTop.pastDue ? '؛ پرداخت تمدیدش هم ناموفق مانده' : '') + '. تمدید بعدی ' + date(-riskTop.renewIn) + ' (' + inDays(riskTop.renewIn) + ') · مسئول: ' + ownerTxt(riskTop) + '.'])
+    (riskTop.pastDue ? '؛ پرداخت تمدیدش هم ناموفق مانده' : '') + '. تمدید بعدی ' + date(-riskTop.renewIn) + ' (' + inDays(riskTop.renewIn) + ')' + '.'])
   if (oppTop) p.push([{ b: 'بزرگ‌ترین فرصت:' }, ' ', acc(oppTop, ''), ' — ' + fa(oppTop.limitHits30) + ' بار به سقف ' + oppTop.maxUsage.label + ' خورده و ' + fa(oppTop.pricingVisits30) + ' بار صفحهٔ قیمت را دیده؛ ارتقا یعنی ',
     { cls: 'hl-good', t: '+' + money(DB.upgradeValue(oppTop)) }, ' در ماه.'])
   if (best) p.push([{ b: 'بهترین کانال جذب:' }, ' ' + best.name + ' — ' + pct(best.paidRate) + ' از ثبت‌نام‌های ۳۰ تا ۱۲۰ روز پیشش پرداخت کرده‌اند (' + fa(best.paid) + ' از ' + fa(best.signups) + ')، ' + times(avgPaid ? best.paidRate / avgPaid : 0) + ' برابر میانگین ' + pct(avgPaid) + '.'])
@@ -72,9 +71,8 @@ export function aiBrief() {
   // risk: renewals in the next 30 days with a failing score
   const ren = paying.filter((a) => a.renewIn <= 30 && a.health < RISK).sort((x, y) => y.mrr - x.mrr)
   const renMrr = sum(ren, (a) => a.mrr)
-  // opportunity: upgrade-ready accounts, and how many have nobody on them
+  // opportunity: upgrade-ready accounts
   const upVal = sum(ups, (a) => DB.upgradeValue(a))
-  const upFree = ups.filter((a) => !ownerOf(a))
 
   const renTop = []
   ren.slice(0, 2).forEach((a, i) => { if (i) renTop.push(' و '); renTop.push(acc(a), ' (' + inDays(a.renewIn) + ')') })
@@ -90,10 +88,10 @@ export function aiBrief() {
       text: ['مجموع ' + money(renMrr) + ' در ماه با سلامت زیر ' + fa(RISK) + ' به تمدید می‌رسد', ...(ren.length ? ['؛ بزرگ‌ترین‌ها ', ...renTop] : []), '. پیش از تاریخ تمدید تماس بگیرید، نه بعد از آن.'],
       ev: [{ b: fa(ren.length) }, ' حساب · ', { b: compact(renMrr) }, ' در ماه · ', { b: pct(mrrNow ? renMrr / mrrNow : 0, 1) }, ' از کل درآمد ماهانه · میانگین سلامت ', { b: n(ren.length ? sum(ren, (a) => a.health) / ren.length : 0) }, ' · پرداخت ناموفق ', { b: fa(ren.filter((a) => a.pastDue).length) }],
       link: { to: '/health', label: 'سلامت و ریسک' } },
-    { key: 'upsell-unassigned', kind: 'فرصت', cls: 'good',
-      title: fa(ups.length) + ' حساب آمادهٔ ارتقا؛ ' + fa(upFree.length) + ' تا بی‌مسئول',
-      text: ['به سقف پلن خورده‌اند و صفحهٔ قیمت را دیده‌اند. ارتقای همه‌شان ' + money(upVal) + ' به درآمد ماهانه اضافه می‌کند', ...(oppTop ? ['؛ قوی‌ترین سیگنال از ', acc(oppTop), ' است'] : []), '. سرنخ‌های بی‌مسئول را امروز تقسیم کنید.'],
-      ev: [{ b: fa(ups.length) }, ' حساب · ارزش ', { b: '+' + compact(upVal) }, ' در ماه (' + pct(mrrNow ? upVal / mrrNow : 0, 1) + ' از درآمد ماهانه) · بدون مسئول ', { b: fa(upFree.length) }],
+    { key: 'upsell', kind: 'فرصت', cls: 'good',
+      title: fa(ups.length) + ' حساب آمادهٔ ارتقا',
+      text: ['به سقف پلن خورده‌اند و صفحهٔ قیمت را دیده‌اند. ارتقای همه‌شان ' + money(upVal) + ' به درآمد ماهانه اضافه می‌کند', ...(oppTop ? ['؛ قوی‌ترین سیگنال از ', acc(oppTop), ' است'] : []), '.'],
+      ev: [{ b: fa(ups.length) }, ' حساب · ارزش ', { b: '+' + compact(upVal) }, ' در ماه (' + pct(mrrNow ? upVal / mrrNow : 0, 1) + ' از درآمد ماهانه)'],
       link: { to: '/segments?seg=upsell', label: 'فهرست آمادهٔ ارتقا' } },
   ].map((f) => ({ ...f, taskId: 'ai:' + f.key, taskOpen: (taskState('ai:' + f.key) || {}).status === 'open', fbKey: dk + ':' + f.key, feedback: fb[dk + ':' + f.key] || null }))
 
@@ -110,20 +108,16 @@ export function aiBrief() {
   upsSorted.slice(0, 5).forEach((a) => cand.push({ key: 'upsell:' + a.id, a, risk: false, value: DB.upgradeValue(a),
     title: [acc(a), ' — پیشنهاد ارتقا'], why: fa(a.limitHits30) + ' بار سقف ' + a.maxUsage.label + ' · ' + fa(a.pricingVisits30) + ' بار صفحهٔ قیمت · پلن ' + C.plans[a.plan].name }))
   paying.filter((a) => a.plan !== 'basic' && a.memberCount >= a.seats && a.activeMembers7 >= a.seats).forEach((a) => cand.push({ key: 'seats:' + a.id, a, risk: false, value: C.plans[a.plan].seatPrice * 2,
-    title: [acc(a), ' — پیشنهاد صندلی بیشتر'], why: fa(a.memberCount) + ' عضو روی ' + fa(a.seats) + ' صندلی، همه این هفته فعال' }))
+    title: [acc(a), ' — پیشنهاد همکار بیشتر'], why: fa(a.memberCount) + ' عضو از سقف ' + fa(a.seats) + ' همکار، همه این هفته فعال' }))
   // one line per customer: keep its biggest reason
   const byAcc = new Map()
   cand.forEach((c) => { const o = byAcc.get(c.a.id); if (!o || c.value > o.value) byAcc.set(c.a.id, c) })
   const actions = [...byAcc.values()]
-  if (upFree.length) actions.push({ key: 'seg:upsell-unassigned', seg: true, risk: false, value: sum(upFree, (a) => DB.upgradeValue(a)),
-    title: [{ to: '/segments?seg=upsell&owner=none', t: fa(upFree.length) + ' سرنخ ارتقای بی‌مسئول' }, ' — بین کارشناس‌ها تقسیم کنید'], why: 'دستهٔ «آمادهٔ ارتقا» · مجموع ارزش ارتقای این سرنخ‌ها' })
   actions.sort((x, y) => y.value - x.value)
   const top = actions.slice(0, 9).map((x) => {
-    const ownerId = x.seg ? null : ownerOf(x.a)
     return {
       key: x.key, taskId: 'ai:today:' + x.key, risk: x.risk, value: x.value, seg: !!x.seg, accountId: x.a ? x.a.id : null,
       title: x.title, why: x.why,
-      ownerId, ownerName: x.seg ? 'مدیر فروش' : ownerTxt(x.a), ownerShort: ownerId ? DB.rep(ownerId).short : 'مدیر فروش',
       inToday: (taskState('ai:today:' + x.key) || {}).status === 'open',
     }
   })

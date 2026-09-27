@@ -26,30 +26,25 @@
               <div v-for="c in HEALTH_COMPONENTS" :key="c.key" class="comp"><span>{{ c.label }}</span><span class="tr"><i :style="{ width: (a.components[c.key] / 20) * 100 + '%' }" /></span><b>{{ n(a.components[c.key]) }}</b><q-tooltip>{{ c.desc }}</q-tooltip></div>
             </div>
           </div>
-          <SignalChips v-if="a.pastDue || a.limitHits30 || a.pricingVisits30 || a.tickets" :a="a" tickets />
+          <SignalChips v-if="a.pastDue || a.atLimit || a.nearLimit || a.tickets" :a="a" tickets />
           <div class="sec">
             <h4>وضعیت</h4>
             <div class="kv"><span class="k">آخرین فعالیت</span><span class="v"><LastSeen :a="a" /></span></div>
-            <div class="kv"><span class="k">اعضای فعال این هفته</span><span class="v">{{ n(a.activeMembers7) }} از {{ n(a.memberCount) }} <span v-if="a.paying && a.plan !== 'basic'" class="muted">({{ n(a.seats) }} صندلی)</span></span></div>
-            <div v-if="a.paying" class="kv"><span class="k">تمدید بعدی</span><span class="v">{{ date(-a.renewIn) }} · {{ inDays(a.renewIn) }} <span class="muted">({{ CYCLE_NAME[a.cycle] }})</span></span></div>
+            <div class="kv"><span class="k">اعضای فعال این هفته</span><span class="v">{{ n(a.activeMembers7) }} از {{ n(a.memberCount) }} <span v-if="a.collaboratorLimit != null" class="muted">(سقف {{ n(a.collaboratorLimit) }} همکار)</span></span></div>
+            <div v-if="a.paying" class="kv"><span class="k">تمدید بعدی</span><span class="v">{{ date(-a.renewIn) }} · {{ inDays(a.renewIn) }} <span v-if="a.cycle" class="muted">({{ CYCLE_NAME[a.cycle] }})</span></span></div>
             <div v-if="a.churnedAt !== undefined" class="kv"><span class="k">لغو اشتراک</span><span class="v">{{ date(a.churnedAt) }} · {{ a.churnReason }}</span></div>
             <div class="kv"><span class="k">عضو از</span><span class="v">{{ date(a.age) }} · {{ sourceName(a.source) }}</span></div>
-            <div class="kv"><span class="k">مسئول</span><span class="v">
-              <select class="select" style="height: 28px; font-size: 12px" :value="a.owner || ''" @change="changeOwner($event.target.value)">
-                <option value="">بدون مسئول</option><option v-for="r in REPS" :key="r.id" :value="r.id">{{ r.name }}</option>
-              </select></span></div>
           </div>
           <div class="sec"><h4>فعالیت ۳۰ روز اخیر <span class="faint" style="font-weight: 400">— ویرایش در روز</span></h4><SparkLine :values="a.last30" :w="460" :h="44" bars /></div>
           <div class="sec"><h4>مصرف پلن</h4><div class="stack" style="gap: 9px"><UsageMeter v-for="u in topUsage" :key="u.key" :label="u.label" :used="u.used" :limit="u.limit" /></div></div>
           <div class="sec">
             <h4>تماس</h4>
-            <div class="kv"><span class="k">{{ a.contact.first }} {{ a.contact.last }} <span class="faint">(مالک)</span></span><span class="v">
-              <a v-if="revealed.mobile" class="ltr" :href="'tel:' + a.contact.mobile" style="font-weight: 700">{{ fa(a.contact.mobile) }}</a>
-              <button v-else class="btn sm ghost" @click="reveal('mobile')"><AppIcon name="eye" /><span class="ltr">{{ maskMobile(a.contact.mobile) }}</span></button></span></div>
+            <div class="kv"><span class="k">{{ q.profile?.name || a.contact.first }}</span><span class="v">
+              <a v-if="a.contact.mobile" class="ltr" :href="'tel:' + a.contact.mobile" style="font-weight: 700">{{ fa(a.contact.mobile) }}</a><span v-else class="faint">—</span></span></div>
             <div class="kv"><span class="k">ایمیل</span><span class="v">
-              <a v-if="revealed.email" class="ltr" :href="'mailto:' + a.contact.email">{{ a.contact.email }}</a>
-              <button v-else class="btn sm ghost" @click="reveal('email')"><AppIcon name="eye" />نمایش</button></span></div>
-            <div class="note">نمایش اطلاعات تماس در گزارش ممیزی ثبت می‌شود.</div>
+              <a v-if="a.contact.email" class="ltr" :href="'mailto:' + a.contact.email">{{ a.contact.email }}</a><span v-else class="faint">ثبت نشده</span></span></div>
+            <div v-if="q.profile?.company?.phone" class="kv"><span class="k">تلفن شرکت</span><span class="v"><a class="ltr" :href="'tel:' + q.profile.company.phone">{{ fa(q.profile.company.phone) }}</a></span></div>
+            <div v-if="q.profile?.sessions?.length" class="kv"><span class="k">آخرین ورود</span><span class="v">{{ dateTime(q.profile.sessions[0].lastUse) }} <span class="faint">· {{ q.profile.sessions[0].device }}</span></span></div>
           </div>
           <div v-if="q.tasks.length" class="sec">
             <h4>کارهای باز</h4>
@@ -59,7 +54,7 @@
             <h4>آخرین تعامل‌ها</h4>
             <template v-if="q.notes.length || q.interactions.length">
               <div v-for="(x, i) in q.notes" :key="'n' + i" class="li"><span class="main"><span class="t" style="font-weight: 600">{{ x.text }}</span><span class="d">{{ x.who }} · همین مرورگر</span></span></div>
-              <div v-for="(x, i) in q.interactions" :key="'a' + i" class="li"><span class="main"><span class="t" style="font-weight: 600">{{ x.label }}<template v-if="x.mrr"> · {{ money(x.mrr) }}</template></span><span class="d">{{ x.repName }} · {{ agoDays(x.t) }} {{ clock(x.min) }}</span></span></div>
+              <div v-for="(x, i) in q.interactions" :key="'a' + i" class="li"><span class="main"><span class="t" style="font-weight: 600">{{ x.label }}<template v-if="x.mrr"> · {{ money(x.mrr) }}</template></span><span class="d">{{ agoDays(x.t) }} {{ clock(x.min) }}</span></span></div>
             </template>
             <div v-else class="note">هنوز تماسی ثبت نشده.</div>
           </div>
@@ -76,7 +71,7 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import AppIcon from './AppIcon.vue'
 import PlanBadge from './PlanBadge.vue'
 import HealthBadge from './HealthBadge.vue'
@@ -88,20 +83,17 @@ import SparkLine from './charts/SparkLine.vue'
 import { api } from 'src/api'
 import { useUiStore } from 'stores/ui'
 import { useDialogs } from 'src/composables/useDialogs'
-import { n, fa, money, date, inDays, agoDays, clock, initials, maskMobile } from 'src/lib/format'
-import { REPS, CYCLE_NAME, HEALTH_COMPONENTS, TASK_TYPES, sourceName } from 'src/lib/refs'
+import { n, fa, money, date, dateTime, inDays, agoDays, clock, initials } from 'src/lib/format'
+import { CYCLE_NAME, HEALTH_COMPONENTS, TASK_TYPES, sourceName } from 'src/lib/refs'
 import { toast } from 'src/lib/ui'
 
 /** Customer quick view. Opened from anywhere via ui.openAccount(id). */
 const ui = useUiStore(), dialogs = useDialogs()
 const open = computed({ get: () => ui.drawerId != null, set: (v) => { if (!v) ui.closeAccount() } })
 const q = ref(null)
-const revealed = reactive({ mobile: false, email: false })
 const a = computed(() => q.value && q.value.account)
 const topUsage = computed(() => a.value.usage.filter((u) => u.limit).slice().sort((p, r) => r.ratio - p.ratio).slice(0, 3))
 async function reload() { if (ui.drawerId != null) q.value = await api.quickView(ui.drawerId) }
-watch(() => ui.drawerId, (id) => { q.value = null; revealed.mobile = revealed.email = false; if (id != null) reload() })
+watch(() => ui.drawerId, (id) => { q.value = null; if (id != null) reload() })
 watch(() => ui.refreshTick, () => reload())
-async function changeOwner(v) { await api.setOwner([a.value.id], v || null); ui.bump(); toast('مسئول «' + a.value.name + '» تغییر کرد') }
-function reveal(field) { api.logAudit('نمایش ' + (field === 'mobile' ? 'شمارهٔ موبایل' : 'ایمیل') + ' — ' + a.value.name); revealed[field] = true }
 </script>

@@ -1,6 +1,6 @@
 /* GET /management/overview?range=30 */
 import { DB } from 'src/mock/engine'
-import { C, ok, enrich, ownerOf } from './shared'
+import { C, ok, enrich } from './shared'
 import { alerts } from './shared'
 
 export async function overview({ range: R = 30 } = {}) {
@@ -20,18 +20,6 @@ export async function overview({ range: R = 30 } = {}) {
   const ma = []; for (let i = 6; i < daily.length; i++) { let s = 0; for (let k = i - 6; k <= i; k++) s += daily[k]; ma.push(Math.round(s / 7)) }
   const signupWeeks = []
   for (let w = 11; w >= 0; w--) { const c = cohort(w * 7, 7); const x = c.filter((a) => a.milestones.activated !== undefined).length; signupWeeks.push({ daysAgo: w * 7 + 6, activated: x, pending: c.length - x }) }
-  const since = Math.min(R, 44)
-  const team = C.reps.map((r) => {
-    const acts = DB.activities.filter((x) => x.rep === r.id && x.t < since)
-    const book = accounts.filter((a) => ownerOf(a) === r.id && a.paying)
-    return {
-      id: r.id, name: r.name,
-      calls: acts.filter((x) => x.type === 'call' || x.type === 'meeting').length,
-      won: acts.filter((x) => ['won_new', 'won_expansion', 'renewed'].includes(x.outcome)).reduce((t, x) => t + (x.mrr || 0), 0),
-      lost: acts.filter((x) => x.outcome === 'lost').length,
-      book: book.reduce((t, a) => t + a.mrr, 0), risk: book.filter((a) => a.health < 50).length,
-    }
-  })
   const upsAll = accounts.filter((a) => a.segments.includes('upsell'))
   return {
     range: R,
@@ -52,6 +40,5 @@ export async function overview({ range: R = 30 } = {}) {
     signupWeeks,
     funnel: agg.funnel(30, 60).slice(1).map((s) => ({ key: s.key, label: s.label, n: s.n, fromStart: s.fromStart })),
     upsell: { total: upsAll.length, top: upsAll.slice().sort((p, q) => q.limitHits30 * DB.upgradeValue(q) - p.limitHits30 * DB.upgradeValue(p)).slice(0, 6).map(enrich) },
-    team, since,
   }
 }

@@ -8,7 +8,7 @@ export const useUiStore = defineStore('ui', {
     closeAccount() { this.drawerId = null },
     openPalette() { this.paletteOpen = true },
     setListNav(nav) { this.listNav = nav },
-    /** Local edits (owner, notes, tasks) changed — pages that show them re-fetch. */
+    /** Local edits (notes, tasks) changed — pages that show them re-fetch. */
     bump() { this.refreshTick++ },
   },
 })

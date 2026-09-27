@@ -11,7 +11,7 @@ export const BANDS = [
 export const band = (score) => BANDS.find((b) => score >= b.min)
 export const BAND_COLOR = { good: 'var(--good)', warn: 'var(--warning)', ser: 'var(--serious)', crit: 'var(--critical)' }
 export const STATUS_COLOR = { ...BAND_COLOR, info: 'var(--accent)' }
-export const PLAN_NAME = { free: 'رایگان', basic: 'پایه', pro: 'پرو', ent: 'سازمانی', team: 'تیمی', business: 'کسب‌وکار', partner: 'همکار' }
+export const PLAN_NAME = { basic: 'پایه', team: 'تیم', business: 'کسب و کار', enterprise: 'سازمانی', partner: 'شریک توسعه' }
 
 /** Compare cur vs prev → { cls: 'good'|'bad'|'flat', arrow, text } or null. */
 export function delta(cur, prev, o = {}) {

@@ -3,6 +3,7 @@
    Gaps: no cohort filter (cohortFilters: false), no churn reasons, no per-customer MRR after churn. */
 import { get } from './client'
 import { customersAll, toAccount } from './account'
+import { churnRow } from './revenue'
 
 const WEEKS = 12
 const CHURN_DAYS = 180
@@ -50,8 +51,9 @@ export async function retention() {
   // revenue retention — needs backend: /revenue nrr {now, prev} and mrrMonths
   const nrr = rev.nrr || {}
   const revMonths = (rev.mrrMonths || []).map((m) => {
-    const S = m.mrr - (m.new || 0) - (m.expansion || 0) + (m.contraction || 0) + (m.churn || 0)
-    const exp = m.expansion || 0, lost = (m.contraction || 0) + (m.churn || 0)
+    // the server sends contraction and churn as negative MRR; lost is their magnitude
+    const exp = m.expansion || 0, lost = Math.abs(m.contraction || 0) + Math.abs(m.churn || 0)
+    const S = m.mrr - (m.new || 0) - exp + lost
     return { y: m.y, m: m.m, end: m.end, S, exp, lost, nrr: S ? (S + exp - lost) / S : null, grr: S ? (S - lost) / S : null }
   })
   const rev90 = (v) => ({ n: null, S: null, E: null, exp: null, lost: null, nrr: v ?? null, grr: null })
@@ -61,7 +63,8 @@ export async function retention() {
   const active30 = accounts.filter((a) => a.lastSeenDays < 30)
   const lA = last(cA.values), lN = last(cN.values)
 
-  const rows = lapsed.map((a) => ({ ...a, lastMrr: null, tenure: a.tenureDays }))
+  const rows = lapsed.map((a) => ({ ...churnRow(a), lastMrr: null }))
+  const tenures = rows.map((a) => a.tenure).filter((t) => t != null)
   return {
     kpis: { m1: weekK(3), m3: weekK(WEEKS - 1), logo, logoPrev: { n: null, base: null, r: null }, rev90: rev90(nrr.now), rev90Prev: rev90(nrr.prev) },
     cohortMode: 'all', cohortFilters: false, weeks: r.weeks || WEEKS, dataSince: r.dataSince || null,
@@ -73,6 +76,6 @@ export async function retention() {
       payNoAuto: paying.filter((a) => a.automations === 0).length,
     },
     revMonths,
-    churn: { total: rows.length, lostMrr: null, early: rows.filter((a) => a.tenure < 92).length, medianTenure: median(rows.map((a) => a.tenure)), reasons: [], reasonList: [], rows },
+    churn: { total: rows.length, lostMrr: null, early: tenures.filter((t) => t < 92).length, medianTenure: median(tenures), reasons: [], reasonList: [], rows },
   }
 }

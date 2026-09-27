@@ -5,7 +5,6 @@ import { SEGMENT_LABEL } from 'src/lib/refs'
 import { BANDS } from 'src/lib/ui'
 
 const ACTIVE_WINDOW = 7
-const OWNED = ['upsell', 'risk', 'champions'] // groups where an owner is expected
 // rules as cloud-back/src/api/management/metrics.ts SEGMENTS defines them
 const META = {
   new: { rule: 'signup_age <= 14', desc: 'در دو هفتهٔ اخیر ثبت‌نام کرده‌اند' },
@@ -13,7 +12,7 @@ const META = {
   builders: { rule: 'bases >= 2 AND last_seen <= 30', desc: 'بیش از یک بیس فعال ساخته‌اند' },
   automators: { rule: 'automations >= 1 AND last_seen <= 30', desc: 'اتوماسیون فعال دارند — چسبنده‌ترین گروه' },
   teams: { rule: 'active_members_7d >= 2', desc: 'بیش از یک نفر در هفتهٔ اخیر کار کرده' },
-  upsell: { rule: 'plan = free AND at_limit AND last_seen <= 14', desc: 'در پلن رایگان به سقف خورده‌اند و همین دو هفته فعال بوده‌اند' },
+  upsell: { rule: 'plan = basic AND at_limit AND last_seen <= 14', desc: 'در پلن پایه به سقف خورده‌اند و همین دو هفته فعال بوده‌اند' },
   risk: { rule: 'paying AND health < 50', desc: 'پرداخت‌کننده با امتیاز سلامت زیر ۵۰' },
   champions: { rule: 'paying AND tenure >= 180 AND health >= 80', desc: 'بیش از ۶ ماه پرداخت پیاپی و سالم — مرجع معرفی' },
   dormant: { rule: 'last_seen > 30', desc: 'یک ماه است هیچ فعالیتی نداشته‌اند' },
@@ -49,7 +48,6 @@ export async function segments({ seg } = {}) {
       return {
         ...s,
         active: list.filter(isActive).length,
-        unassigned: OWNED.includes(s.key) ? list.filter((a) => !a.owner).length : 0,
         dist: BANDS.map((b) => ({ key: b.key, label: b.label, n: list.filter((a) => a.band === b.key).length })),
         avgHealth: list.length ? Math.round(list.reduce((x, a) => x + a.health, 0) / list.length) : 0,
       }

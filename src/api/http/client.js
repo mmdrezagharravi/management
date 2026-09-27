@@ -54,7 +54,7 @@ export async function all(path, params = {}) {
   return out
 }
 
-/** Small in-memory cache so pages that share a list (customers, bases) fetch it once per minute. */
+/** Shares one in-flight request between callers; ttl > 0 also keeps the result that long (0 = ask the server every time). */
 export function memo(fn, ttl = 60_000) {
   let at = 0, value = null, pending = null
   const f = () => {

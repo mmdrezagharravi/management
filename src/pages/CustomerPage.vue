@@ -3,9 +3,6 @@
     <template #crumbs><router-link to="/customers">مشتریان</router-link> › <span v-if="d && d.fallback" class="faint">نمونه: بیشترین درآمد در خطر</span></template>
     <template v-if="d" #sub><PlanBadge :plan="a.plan" /><template v-if="a.industryName"> · {{ a.industryName }}</template><template v-if="a.city"> · {{ a.city }}</template> · عضو از {{ date(a.age, { year: true }) }} ({{ sourceName(a.source) }})</template>
     <template v-if="d" #actions>
-      <select class="select" aria-label="مسئول" :value="a.owner || ''" @change="changeOwner($event.target.value)">
-        <option value="">بدون مسئول</option><option v-for="r in REPS" :key="r.id" :value="r.id">مسئول: {{ r.name }}</option>
-      </select>
       <button class="btn" @click="dialogs.addNote(a)"><AppIcon name="note" />یادداشت</button>
       <button class="btn primary" @click="dialogs.logCall(a)"><AppIcon name="phone" />ثبت تماس</button>
     </template>
@@ -15,15 +12,16 @@
       <div v-if="a.churnedAt != null" class="banner"><AppIcon name="alert" /><div><b>این مشتری {{ agoDays(a.churnedAt) }} اشتراکش را لغو کرد</b> ({{ a.churnReason }}). اگر کمتر از ۱۲۰ روز گذشته، در فهرست «بازگرداندنی» میز فروش است.</div></div>
 
       <div class="kpis">
-        <KpiTile label="درآمد ماهانه" :value="a.mrr ? cp(a.mrr).num : '—'" :unit="a.mrr ? cp(a.mrr).unit + ' ' + CURRENCY : ''" :cmp="a.paying ? 'پلن ' + PLAN_NAME[a.plan] + ' · ' + CYCLE_NAME[a.cycle] + (a.plan !== 'basic' ? ' · ' + fa(a.seats) + ' صندلی' : '') : 'پلن رایگان'" />
+        <KpiTile label="درآمد ماهانه" :value="a.mrr ? cp(a.mrr).num : '—'" :unit="a.mrr ? cp(a.mrr).unit + ' ' + CURRENCY : ''" :cmp="a.paying ? 'پلن ' + PLAN_NAME[a.plan] + (a.cycle ? ' · ' + CYCLE_NAME[a.cycle] : '') + (a.seats ? ' · ' + fa(a.seats) + ' همکار خریداری‌شده' : '') : 'پلن رایگان'" />
         <KpiTile label="امتیاز سلامت" :value="n(a.health)" :unit="bandLabel" :delta="a.health2wAgo != null ? { cur: a.health, prev: a.health2wAgo, abs: true } : null" cmp="نسبت به دو هفته پیش" :spark="{ values: a.healthHistory.filter((x) => x != null), color: 'var(--ink-2)' }" />
         <KpiTile label="آخرین فعالیت" :cmp="fa(a.activeDays28) + ' روز فعال از ۲۸ روز'">
           <template #value><span v-if="a.online" class="live" style="font-size: 20px"><i />آنلاین</span><template v-else>{{ ago(a.lastSeenMin) }}</template></template>
         </KpiTile>
         <KpiTile label="اعضای فعال این هفته" :value="n(a.activeMembers7)" :unit="'از ' + n(a.memberCount)">
           <template #cmp>
-            <template v-if="a.paying && a.plan !== 'basic'"><b v-if="a.memberCount >= a.seats" style="color: var(--warn-ink)">همهٔ {{ fa(a.seats) }} صندلی پر است</b><template v-else>{{ fa(a.seats - a.memberCount) }} صندلی خالی</template></template>
-            <template v-else>سقف پلن: {{ fa(d.limits.seats) }} نفر</template>
+            <template v-if="a.collaboratorLimit == null">{{ fa(a.collaborators) }} همکار · بدون سقف</template>
+            <b v-else-if="a.collaborators >= a.collaboratorLimit" style="color: var(--warn-ink)">سقف {{ fa(a.collaboratorLimit) }} همکار پر است</b>
+            <template v-else>{{ fa(a.collaborators) }} از {{ fa(a.collaboratorLimit) }} همکار · جای {{ fa(a.collaboratorLimit - a.collaborators) }} نفر دیگر</template>
           </template>
         </KpiTile>
         <KpiTile v-if="a.paying" label="تمدید بعدی" :value="inDays(a.renewIn)">
@@ -55,13 +53,41 @@
           </PanelCard>
         </div>
         <div class="stack">
+          <PanelCard v-if="p" title="اطلاعات تماس و حساب">
+            <div class="kv"><span class="k">نام</span><span class="v"><b>{{ p.name || '—' }}</b></span></div>
+            <div class="kv"><span class="k">موبایل</span><span class="v"><template v-if="p.mobile"><a class="ltr" :href="'tel:' + p.mobile" style="font-weight: 700">{{ fa(p.mobile) }}</a><button class="btn sm ghost icon" title="کپی شماره" aria-label="کپی شماره" @click="copy(p.mobile)"><AppIcon name="copy" /></button></template><span v-else class="faint">—</span></span></div>
+            <div class="kv"><span class="k">ایمیل</span><span class="v"><template v-if="p.email"><a class="ltr" :href="'mailto:' + p.email">{{ p.email }}</a><button class="btn sm ghost icon" title="کپی ایمیل" aria-label="کپی ایمیل" @click="copy(p.email)"><AppIcon name="copy" /></button></template><span v-else class="faint">ثبت نشده</span></span></div>
+            <div v-if="p.username" class="kv"><span class="k">نام کاربری</span><span class="v ltr">{{ p.username }}</span></div>
+
+            <template v-if="p.company">
+              <div class="sub-h">شرکت (قرارداد سازمانی)</div>
+              <div class="kv"><span class="k">نام شرکت</span><span class="v">{{ p.company.name || '—' }}</span></div>
+              <div v-if="p.company.phone" class="kv"><span class="k">تلفن شرکت</span><span class="v"><a class="ltr" :href="'tel:' + p.company.phone">{{ fa(p.company.phone) }}</a></span></div>
+              <div v-if="p.company.nationalId" class="kv"><span class="k">شناسهٔ ملی</span><span class="v ltr">{{ fa(p.company.nationalId) }}</span></div>
+              <div v-if="p.company.registrationNumber" class="kv"><span class="k">شمارهٔ ثبت</span><span class="v ltr">{{ fa(p.company.registrationNumber) }}</span></div>
+              <div v-if="p.company.address" class="kv"><span class="k">نشانی</span><span class="v" style="white-space: normal; text-align: start">{{ p.company.address }}</span></div>
+            </template>
+
+            <div class="sub-h">حساب</div>
+            <div class="kv"><span class="k">وضعیت</span><span class="v"><StatusBadge v-if="p.blocked" status="crit" label="مسدود" /><StatusBadge v-else status="good" label="فعال" /></span></div>
+            <div class="kv"><span class="k">عضو از</span><span class="v">{{ dateTime(p.signedUpAt) }}</span></div>
+            <div v-if="p.planUntil" class="kv"><span class="k">اعتبار پلن</span><span class="v">{{ p.planFrom ? dateTime(p.planFrom) + ' تا ' : 'تا ' }}{{ dateTime(p.planUntil) }}</span></div>
+            <div class="kv"><span class="k">معرف</span><span class="v"><router-link v-if="p.referredBy" :to="'/customers/' + p.referredBy.id">{{ p.referredBy.name || fa(p.referredBy.mobile || '') }}</router-link><span v-else class="faint">مستقیم</span></span></div>
+            <div class="kv"><span class="k">معرفی کرده</span><span class="v">{{ p.referrals ? fa(p.referrals) + ' نفر' : '—' }}<span v-if="p.referralCode" class="faint ltr"> · کد {{ p.referralCode }}</span></span></div>
+            <div class="kv"><span class="k">موجودی کیف پول</span><span class="v"><template v-if="p.wallet != null">{{ money(p.wallet) }}</template><span v-else class="faint">در دسترس نیست</span></span></div>
+            <div class="kv"><span class="k">اعتبار باقی‌مانده</span><span class="v">{{ n(p.credits.aiTokens) }} توکن هوش مصنوعی · {{ n(p.credits.sms) }} پیامک · {{ n(p.credits.email) }} ایمیل</span></div>
+            <div class="kv"><span class="k">اتصال به بله</span><span class="v">{{ p.baleConnected ? 'وصل است' : 'وصل نیست' }}</span></div>
+
+            <div class="sub-h">ورود و دستگاه‌ها <span class="faint" style="font-weight: 400">· {{ p.sessionCount ? fa(p.sessionCount) + ' نشست باز' : 'نشست بازی ندارد' }}</span></div>
+            <div v-for="(x, i) in p.sessions" :key="i" class="kv"><span class="k">{{ x.device || 'دستگاه نامشخص' }}<span v-if="x.ip" class="faint ltr"> · {{ x.ip }}</span></span><span class="v">{{ dateTime(x.lastUse) }}</span></div>
+          </PanelCard>
           <PanelCard :title="'چرا امتیاز سلامت ' + fa(a.health) + ' است؟'" :hint="bandLabel">
             <div v-for="c in HEALTH_COMPONENTS" :key="c.key" class="comp"><span>{{ c.label }}</span><span class="tr"><i :style="{ width: (a.components[c.key] / 20) * 100 + '%', background: c.key === d.weakest ? 'var(--serious)' : undefined }" /></span><b>{{ n(a.components[c.key]) }}</b><q-tooltip>{{ c.desc }}</q-tooltip></div>
             <div class="banner info" style="margin-top: 12px"><AppIcon name="target" /><div><b>قدم بعدی:</b> {{ d.nextStep }}</div></div>
           </PanelCard>
           <PanelCard title="سیگنال‌ها">
-            <div class="kv"><span class="k">برخورد با سقف پلن (۳۰ روز)</span><span class="v"><span v-if="a.limitHits30" class="sig limit">{{ fa(a.limitHits30) }} بار · {{ a.maxUsage.label }}</span><template v-else>—</template></span></div>
-            <div class="kv"><span class="k">بازدید صفحهٔ قیمت (۳۰ روز)</span><span class="v"><span v-if="a.pricingVisits30" class="sig price">{{ fa(a.pricingVisits30) }} بار</span><template v-else>—</template></span></div>
+            <div class="kv"><span class="k">وضعیت سقف رکورد</span><span class="v"><span v-if="a.atLimit" class="sig limit">سقف پر شده · {{ a.maxUsage.label }}</span><span v-else-if="a.nearLimit" class="sig price">نزدیک سقف · {{ pct(a.maxUsage.ratio) }}</span><span v-else class="faint">عادی</span></span></div>
+            <div class="kv"><span class="k">وضعیت پرداخت</span><span class="v"><span v-if="a.pastDue" class="sig due">پرداخت ناموفق</span><span v-else class="faint">بدون خطا</span></span></div>
             <div class="kv"><span class="k">تیکت پشتیبانی باز</span><span class="v"><span v-if="a.tickets" class="sig due">{{ fa(a.tickets) }}</span><template v-else>—</template></span></div>
             <div class="kv"><span class="k">آخرین نظرسنجی NPS</span><span class="v"><template v-if="a.nps != null">{{ fa(a.nps) }} از ۱۰ <StatusBadge v-if="a.nps >= 9" status="good" label="مروج" /><StatusBadge v-else-if="a.nps >= 7" status="warn" label="خنثی" /><StatusBadge v-else status="crit" label="منتقد" /></template><span v-else class="faint">پاسخ نداده</span></span></div>
             <div class="kv"><span class="k">دسته‌ها</span><span class="v"><template v-if="a.segments.length"><router-link v-for="k in a.segments" :key="k" class="tag" :to="'/segments?seg=' + k" style="margin-inline-start: 4px">{{ SEGMENT_LABEL[k] }}</router-link></template><template v-else>—</template></span></div>
@@ -69,8 +95,8 @@
           <PanelCard title="مصرف پلن" :hint="'پلن ' + PLAN_NAME[a.plan]">
             <div class="stack" style="gap: 10px"><UsageMeter v-for="u in a.usage.filter((x) => x.limit)" :key="u.key" :label="u.label" :used="u.used" :limit="u.limit" :fmt="u.key === 'storage' ? (v) => n(v, 1) : undefined" /></div>
           </PanelCard>
-          <PanelCard title="قابلیت‌ها" :hint="fa(Object.keys(a.feat).length) + ' از ' + fa(d.featureList.length)">
-            <div v-for="f in d.featureList" :key="f.key" class="kv"><span class="k" :style="{ color: a.feat[f.key] ? 'var(--ink)' : 'var(--faint)' }">{{ f.label }}</span><span class="v"><span v-if="a.feat[f.key]" class="muted" style="font-weight: 400">{{ a.feat[f.key].last != null ? 'آخرین بار ' + agoDays(a.feat[f.key].last) : fa(a.feat[f.key].count) + ' بار در ۹۰ روز' }}</span><span v-else class="faint" style="font-weight: 400">استفاده نکرده</span></span></div>
+          <PanelCard title="قابلیت‌ها" hint="وضعیت استفاده در ۹۰ روز اخیر">
+            <div v-for="f in d.featureList" :key="f.key" class="kv"><span class="k" :style="{ color: a.feat[f.key] ? 'var(--ink)' : 'var(--faint)' }">{{ f.label }}</span><span class="v"><StatusBadge v-if="a.feat[f.key]" status="good" label="استفاده شده" /><span v-else class="badge">استفاده نشده</span></span></div>
           </PanelCard>
         </div>
       </div>
@@ -92,13 +118,14 @@
         <PanelCard flush>
           <DataTable :rows="d.members" :columns="memberCols" :page-size="25" unit="عضو" :export-name="'members-' + a.slug" :sort="{ key: 'lastSeen', dir: 'asc' }">
             <template #col-name="{ row }"><span class="row"><span class="avatar">{{ initials(row.name) }}</span><b>{{ row.name }}</b></span></template>
+            <template #col-mobile="{ row }"><a v-if="row.mobile" class="ltr" :href="'tel:' + row.mobile">{{ fa(row.mobile) }}</a><span v-else class="faint">—</span></template>
             <template #col-role="{ row }"><span v-if="row.role === 'مالک'" class="badge st-info">{{ row.role }}</span><template v-else>{{ row.role }}</template></template>
             <template #col-joined="{ row }"><template v-if="row.joined != null">{{ date(row.joined, { year: true }) }}</template><span v-else class="faint">—</span></template>
-            <template #col-lastSeen="{ row }">{{ agoDays(row.lastSeen) }}</template>
-            <template #col-active="{ row }"><StatusBadge v-if="row.lastSeen <= 6" status="good" label="فعال" /><span v-else class="faint">غیرفعال</span></template>
+            <template #col-lastSeen="{ row }"><LastSeen :a="row" /></template>
+            <template #col-active="{ row }"><StatusBadge v-if="row.online" status="good" label="آنلاین" /><StatusBadge v-else-if="row.lastSeen <= 6" status="good" label="فعال" /><span v-else class="faint">غیرفعال</span></template>
           </DataTable>
         </PanelCard>
-        <div class="note">سقف پلن و صندلی‌های خریداری‌شده در کارت «اعضای فعال» بالای صفحه آمده است. شمارهٔ تماس اعضا فقط برای نقش‌های مجاز نمایش داده می‌شود.</div>
+        <div class="note">سقف پلن و تعداد همکار خریداری‌شده در کارت «اعضای فعال» بالای صفحه آمده است.</div>
       </template>
 
       <!-- bases -->
@@ -120,17 +147,17 @@
         <PanelCard flush>
           <DataTable :rows="d.invoices.slice().reverse()" :columns="invoiceCols" unit="فاکتور" :export-name="'invoices-' + a.slug" :sort="{ key: 't', dir: 'asc' }" empty-title="فاکتوری نیست" empty="این مشتری هنوز خریدی نداشته است.">
             <template #col-t="{ row }">{{ date(row.t, { year: true }) }}</template>
-            <template #col-plan="{ row }"><PlanBadge :plan="row.plan" /></template>
+            <template #col-plan="{ row }"><PlanBadge v-if="row.plan" :plan="row.plan" /><span v-else class="faint">بسته/خدمات</span></template>
             <template #col-amount="{ row }">{{ n(row.amount) }}</template>
-            <template #col-status="{ row }"><StatusBadge v-if="row.status === 'paid'" status="good" label="پرداخت شد" /><StatusBadge v-else status="crit" :label="'ناموفق · ' + fa(row.retries) + ' تلاش'" /></template>
+            <template #col-status="{ row }"><StatusBadge v-if="row.status === 'paid'" status="good" label="پرداخت شد" /><StatusBadge v-else-if="row.status === 'pending'" status="warn" label="در انتظار پرداخت" /><StatusBadge v-else status="crit" :label="'ناموفق' + (row.retries ? ' · ' + fa(row.retries) + ' تلاش' : '')" /></template>
           </DataTable>
         </PanelCard>
         <div class="stack">
           <PanelCard title="اشتراک">
             <template v-if="a.paying">
               <div class="kv"><span class="k">پلن</span><span class="v"><PlanBadge :plan="a.plan" /></span></div>
-              <div class="kv"><span class="k">دورهٔ پرداخت</span><span class="v">{{ CYCLE_NAME[a.cycle] }}<template v-if="d.cycleDiscount"> ({{ pct(d.cycleDiscount) }} تخفیف)</template></span></div>
-              <div class="kv"><span class="k">صندلی</span><span class="v">{{ fa(a.seats) }}</span></div>
+              <div class="kv"><span class="k">دورهٔ پرداخت</span><span class="v">{{ CYCLE_NAME[a.cycle] || '—' }}<template v-if="d.cycleDiscount"> ({{ pct(d.cycleDiscount) }} تخفیف)</template></span></div>
+              <div v-if="a.seats" class="kv"><span class="k">همکار خریداری‌شده</span><span class="v">{{ fa(a.seats) }}</span></div>
               <div class="kv"><span class="k">درآمد ماهانه</span><span class="v">{{ money(a.mrr) }}</span></div>
               <div class="kv"><span class="k">تمدید بعدی</span><span class="v">{{ date(-a.renewIn, { year: true }) }} · {{ inDays(a.renewIn) }}</span></div>
             </template>
@@ -138,7 +165,7 @@
           </PanelCard>
           <PanelCard title="تغییرات پلن">
             <div v-if="d.planEvents.length" class="tl">
-              <div v-for="(e, i) in d.planEvents" :key="i" class="ev" :class="e.cls"><div class="t">{{ date(e.t, { year: true }) }} — {{ e.title }}</div><div class="d"><template v-if="e.kind === 'churn'">{{ a.churnReason || '' }}</template><template v-else>پلن {{ PLAN_NAME[e.plan] }} · {{ fa(e.seats) }} صندلی · {{ CYCLE_NAME[e.cycle] }} · {{ money(e.mrr) }} در ماه</template></div></div>
+              <div v-for="(e, i) in d.planEvents" :key="i" class="ev" :class="e.cls"><div class="t">{{ date(e.t, { year: true }) }} — {{ e.title }}</div><div class="d"><template v-if="e.kind === 'churn'">{{ a.churnReason || '' }}</template><template v-else>پلن {{ PLAN_NAME[e.plan] }} · {{ fa(e.seats) }} همکار · {{ CYCLE_NAME[e.cycle] }} · {{ money(e.mrr) }} در ماه</template></div></div>
             </div>
             <div v-else class="note">تغییری ثبت نشده.</div>
           </PanelCard>
@@ -167,6 +194,7 @@ import DataTable from 'components/DataTable.vue'
 import AppIcon from 'components/AppIcon.vue'
 import PlanBadge from 'components/PlanBadge.vue'
 import StatusBadge from 'components/StatusBadge.vue'
+import LastSeen from 'components/LastSeen.vue'
 import DeltaChip from 'components/DeltaChip.vue'
 import UsageMeter from 'components/UsageMeter.vue'
 import ColumnChart from 'components/charts/ColumnChart.vue'
@@ -176,14 +204,16 @@ import { useAsync } from 'src/composables/useAsync'
 import { useQueryParam } from 'src/composables/useUrlState'
 import { useDialogs } from 'src/composables/useDialogs'
 import { useUiStore } from 'stores/ui'
-import { n, fa, pct, compact, compactParts as cp, money, date, ago, agoDays, inDays, clock, initials, CURRENCY } from 'src/lib/format'
-import { REPS, CYCLE_NAME, HEALTH_COMPONENTS, SEGMENT_LABEL, sourceName } from 'src/lib/refs'
+import { n, fa, pct, compact, compactParts as cp, money, date, dateTime, ago, agoDays, inDays, clock, initials, CURRENCY } from 'src/lib/format'
+import { CYCLE_NAME, HEALTH_COMPONENTS, SEGMENT_LABEL, sourceName } from 'src/lib/refs'
 import { PLAN_NAME, band, toast } from 'src/lib/ui'
 
 const route = useRoute(), router = useRouter(), ui = useUiStore(), dialogs = useDialogs()
 const tab = useQueryParam('tab', 'summary')
 const { data: d, loading, error } = useAsync(() => api.customer(route.params.id), [() => route.params.id])
 const a = computed(() => d.value.account)
+const p = computed(() => d.value.profile)
+const copy = (v) => navigator.clipboard.writeText(v).then(() => toast('کپی شد'), () => toast('کپی نشد'))
 const bandLabel = computed(() => band(a.value.health).label)
 const tabs = computed(() => [
   { key: 'summary', label: 'خلاصه' }, { key: 'activity', label: 'فعالیت' },
@@ -200,6 +230,7 @@ const au120 = computed(() => ({ labels: labels(d.value.au120.length), xEvery: 20
 const memberCols = [
   { key: 'name', label: 'عضو', csv: (m) => m.name },
   { key: 'role', label: 'نقش', csv: (m) => m.role },
+  { key: 'mobile', label: 'موبایل', sort: false, csv: (m) => m.mobile || '' },
   { key: 'joined', label: 'عضو از', sort: (m) => -(m.joined ?? 0), csv: (m) => (m.joined != null ? date(m.joined, { year: true }) : '') },
   { key: 'lastSeen', label: 'آخرین فعالیت', csv: (m) => m.lastSeen },
   { key: 'active', label: 'این هفته', sort: (m) => (m.lastSeen <= 6 ? 1 : 0), csv: (m) => (m.lastSeen <= 6 ? 'فعال' : 'غیرفعال') },
@@ -220,5 +251,4 @@ const invoiceCols = [
   { key: 'amount', label: 'مبلغ (تومان)', num: true },
   { key: 'status', label: 'وضعیت', csv: (v) => v.status },
 ]
-async function changeOwner(v) { await api.setOwner([a.value.id], v || null); ui.bump(); toast('مسئول تغییر کرد') }
 </script>
