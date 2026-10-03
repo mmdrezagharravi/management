@@ -21,12 +21,13 @@ export function toAccount(s) {
   const lastSeenMin = s.lastSeenMin == null ? lastSeenDays * 1440 : s.lastSeenMin
   const recLimit = s.recordLimit || RECORD_LIMITS[s.plan] || RECORD_LIMITS.basic
   const recordMax = s.recordMax ?? s.records ?? 0
-  const collaborators = s.collaborators ?? s.memberCount ?? 1
+  const collaborators = s.collaborators ?? Math.max(0, (s.memberCount ?? 1) - 1)
+  const seatsUsed = s.seatsUsed ?? collaborators
   const collaboratorLimit = s.collaboratorLimit ?? null
   const usage = [
     { key: 'records', label: 'رکورد در پرمصرف‌ترین بیس', used: recordMax, limit: recLimit, ratio: recordMax / recLimit },
     { key: 'runs', label: 'اجرای خودکارسازی', used: s.runs || 0, limit: s.runsLimit || 0, ratio: s.runsLimit ? (s.runs || 0) / s.runsLimit : 0 },
-    { key: 'seats', label: 'همکار', used: collaborators, limit: collaboratorLimit, ratio: collaboratorLimit ? collaborators / collaboratorLimit : 0 },
+    { key: 'seats', label: 'ظرفیت همکار (با مالک)', used: seatsUsed, limit: collaboratorLimit, ratio: collaboratorLimit ? seatsUsed / collaboratorLimit : 0 },
   ]
   const maxUsage = usage.slice().sort((p, q) => q.ratio - p.ratio)[0]
   const lapsed = !s.paying && s.plan !== 'basic' && s.renewIn != null && s.renewIn < 0
@@ -34,7 +35,7 @@ export function toAccount(s) {
   return {
     id, name, slug: id.slice(-8), industry: null, industryName: '', city: '', source: s.referredBy ? 'invite' : 'direct',
     age: s.age ?? 0, contact: { first: s.name || '', last: '', mobile: s.mobile || '', email: s.email || null },
-    plan: planKey(s.plan), cycle: CYCLE_MAP[s.cycle] || null, seats: s.seats ?? null, collaborators, collaboratorLimit, mrr: s.mrr || 0, paying: !!s.paying, everPaid: !!s.everPaid,
+    plan: planKey(s.plan), cycle: CYCLE_MAP[s.cycle] || null, seats: s.seats ?? null, collaborators, seatsUsed, collaboratorLimit, mrr: s.mrr || 0, paying: !!s.paying, everPaid: !!s.everPaid,
     health: s.health ?? 0, band: s.band || 'crit', components: s.components || { activity: 0, trend: 0, depth: 0, team: 0, commercial: 0 },
     health2wAgo: s.health2wAgo ?? null, healthHistory: history,
     lastSeenDays, lastSeenMin, online: s.online === true || lastSeenMin <= 5,

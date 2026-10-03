@@ -30,5 +30,6 @@ export async function base(id) {
     peopleTotal: members.length,
     siblings: sibs.filter((x) => x.id !== d.id).map(toBaseRow).sort((p, q) => q.records - p.records).map((x) => ({ id: x.id, name: x.name, slug: x.slug, records: x.records, lastActive: x.la })),
     ownerName: a.name,
+    ownership: d.ownership || { transfers: [], earlier: [], createdBeforeOwnerSignup: false, logsAvailable: false },
   }
 }

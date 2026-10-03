@@ -35,5 +35,6 @@ export function base(id) {
     people: people.slice(0, 8).map((m) => ({ name: m.name, role: m.role, lastSeen: m.lastSeen })), peopleTotal: people.length,
     siblings: a.bases.filter((x) => x.id !== b.id).sort((p, q) => q.records - p.records).map((x) => ({ id: x.id, name: x.name, slug: x.slug, records: recsOf(x), lastActive: lastAct(x) })),
     ownerName: a.members[0].name,
+    ownership: { transfers: [], earlier: [], createdBeforeOwnerSignup: false, logsAvailable: true },
   })
 }

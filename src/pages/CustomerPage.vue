@@ -20,8 +20,7 @@
         <KpiTile label="اعضای فعال این هفته" :value="n(a.activeMembers7)" :unit="'از ' + n(a.memberCount)">
           <template #cmp>
             <template v-if="a.collaboratorLimit == null">{{ fa(a.collaborators) }} همکار · بدون سقف</template>
-            <b v-else-if="a.collaborators >= a.collaboratorLimit" style="color: var(--warn-ink)">سقف {{ fa(a.collaboratorLimit) }} همکار پر است</b>
-            <template v-else>{{ fa(a.collaborators) }} از {{ fa(a.collaboratorLimit) }} همکار · جای {{ fa(a.collaboratorLimit - a.collaborators) }} نفر دیگر</template>
+            <template v-else>{{ fa(a.collaborators) }} همکار · <b v-if="a.seatsUsed >= a.collaboratorLimit" style="color: var(--warn-ink)">ظرفیت پلن ({{ fa(a.collaboratorLimit) }} نفر با مالک) پر است</b><template v-else>ظرفیت پلن: {{ fa(a.seatsUsed) }} از {{ fa(a.collaboratorLimit) }} نفر با مالک</template></template>
           </template>
         </KpiTile>
         <KpiTile v-if="a.paying" label="تمدید بعدی" :value="inDays(a.renewIn)">
@@ -137,9 +136,9 @@
 
       <!-- bases -->
       <PanelCard v-if="tab === 'bases'" flush>
-        <div style="padding: 12px 16px 0; font-size: 12.5px"><b>{{ fa(a.bases) }}</b> بیس ساخته<template v-if="a.coOwnedBases"> · <b>{{ fa(a.coOwnedBases) }}</b> هم‌مالک</template><template v-if="a.sharedBases"> · <b>{{ fa(a.sharedBases) }}</b> اشتراکی</template><span class="faint"> — سقف تعداد بیس پلن فقط بیس‌های ساخته‌شده را می‌شمارد</span></div>
+        <div style="padding: 12px 16px 0; font-size: 12.5px"><b>{{ fa(a.bases) }}</b> بیس ساخته<template v-if="a.coOwnedBases"> · <b>{{ fa(a.coOwnedBases) }}</b> مالک</template><template v-if="a.sharedBases"> · <b>{{ fa(a.sharedBases) }}</b> اشتراکی</template><span class="faint"> — سقف تعداد بیس پلن فقط بیس‌های ساخته‌شده را می‌شمارد</span></div>
         <DataTable :rows="d.bases" :columns="baseCols" unit="بیس" :export-name="'bases-' + a.slug" :sort="{ key: 'records', dir: 'desc' }" :on-row="(b) => router.push('/bases/' + b.id)" empty-title="هنوز بیسی نساخته" :empty="'این مشتری ثبت‌نام کرده ولی بیسی نساخته است — ایمیل تمپلیت‌های صنعت ' + a.industryName + ' را بفرستید.'">
-          <template #col-name="{ row }"><router-link class="nm" :to="'/bases/' + row.id">{{ row.name }}</router-link><span class="s mono">/{{ row.slug }}</span></template>
+          <template #col-name="{ row }"><router-link class="nm" :to="'/bases/' + row.id">{{ row.name }}</router-link></template>
           <template #col-role="{ row }"><span v-if="!row.role || row.role === 'creator'">سازنده</span><template v-else>{{ ROLE_LABEL[row.role] }}<router-link v-if="row.creatorId" class="s" :to="'/customers/' + row.creatorId" @click.stop>بیسِ {{ row.creatorName }}</router-link></template></template>
           <template #col-tables="{ row }">{{ n(row.tables) }}</template>
           <template #col-records="{ row }">{{ n(row.records) }}</template>
@@ -247,7 +246,7 @@ const memberCols = [
   { key: 'lastSeen', label: 'آخرین فعالیت', csv: (m) => m.lastSeen },
   { key: 'active', label: 'این هفته', sort: (m) => (m.lastSeen <= 6 ? 1 : 0), csv: (m) => (m.lastSeen <= 6 ? 'فعال' : 'غیرفعال') },
 ]
-const ROLE_LABEL = { creator: 'سازنده', owner: 'هم‌مالک', collaborator: 'همکار' }
+const ROLE_LABEL = { creator: 'سازنده', owner: 'مالک', collaborator: 'همکار' }
 const baseCols = [
   { key: 'name', label: 'بیس', csv: (b) => b.name },
   { key: 'role', label: 'نقش', sort: (b) => ['creator', 'owner', 'collaborator'].indexOf(b.role), csv: (b) => ROLE_LABEL[b.role || 'creator'] + (b.creatorName ? ' · ' + b.creatorName : '') },

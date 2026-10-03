@@ -26,7 +26,7 @@
 
       <PanelCard flush>
         <DataTable :key="route.query.view + '|' + route.query.sort" :remote="api.basesPage" :columns="columns" :views="views" :filters="filters" :search="search" :sort="{ key: 'records', dir: 'desc' }" url export-name="bases" unit="بیس" :on-row="(r) => router.push('/bases/' + r.id)">
-          <template #col-name="{ row }"><router-link class="nm" :to="'/bases/' + row.id">{{ row.name }}</router-link><span class="s"><span class="mono">/{{ row.slug }}</span></span></template>
+          <template #col-name="{ row }"><router-link class="nm" :to="'/bases/' + row.id">{{ row.name }}</router-link></template>
           <template #col-acc="{ row }"><AccountLink v-if="row.accountId" :id="row.accountId" :name="row.accountName" style="font-weight: 600" /><span v-else class="faint">{{ row.accountName }}</span></template>
           <template #col-plan="{ row }"><PlanBadge :plan="row.plan" /></template>
           <template #col-tables="{ row }">{{ n(row.tables) }}</template>
@@ -86,7 +86,7 @@ const views = [
 const filters = [{ key: 'plan', label: 'پلن', options: PLAN_ORDER.map((k) => ({ v: k, l: PLAN_NAME[k] })) }]
 const search = { placeholder: 'نام بیس یا نام حساب…' }
 const columns = [
-  { key: 'name', sortKey: 'name', label: 'بیس', csv: (r) => r.name + ' /' + r.slug },
+  { key: 'name', sortKey: 'name', label: 'بیس', csv: (r) => r.name },
   { key: 'acc', sortKey: 'creatorName', label: 'حساب', sort: (r) => r.accountName, csv: (r) => r.accountName },
   { key: 'plan', sortKey: 'planRank', label: 'پلن', sort: (r) => PLAN_ORDER.indexOf(r.plan), desc: true, csv: (r) => PLAN_NAME[r.plan] },
   { key: 'tables', sortKey: 'tables', label: 'جدول', num: true },

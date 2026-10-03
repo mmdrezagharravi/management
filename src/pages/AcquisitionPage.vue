@@ -1,118 +1,109 @@
 <template>
-  <PageShell title="منابع جذب" sub="کدام کانال مشتری پرداخت‌کننده می‌آورد، نه فقط ثبت‌نام" range v-model:range="range" :sources="['clarity', 'main']" :loading="loading" :error="error">
+  <PageShell title="منابع جذب" sub="بازدید سایت از کجا می‌آید و چند نفرش ثبت‌نام می‌کنند — بازدید از Google Analytics 4، تا دیروز" range v-model:range="range" :loading="loading" :error="error">
     <template v-if="d">
-      <div class="kpis">
-        <KpiTile label="بازدید سایت" :value="n(k.visits)" :delta="{ cur: k.visits, prev: k.visitsPrev }" :cmp="'قبل: ' + n(k.visitsPrev)" :info="'بازدیدکنندهٔ یکتا در ' + fa(range) + ' روز'" />
-        <KpiTile label="ثبت‌نام" :value="n(k.signups)" to="/onboarding" :delta="{ cur: k.signups, prev: k.signupsPrev }" :cmp="'قبل: ' + n(k.signupsPrev)" />
-        <KpiTile label="نرخ ثبت‌نام" :value="pct(sr, 1)" info="ثبت‌نام ÷ بازدید" :delta="{ cur: sr, prev: srP, points: true }" :cmp="'قبل: ' + pct(srP, 1)" />
-        <KpiTile :label="'هزینهٔ جذب در ' + fa(range) + ' روز'" :value="cp(k.spend).num" :unit="cp(k.spend).unit + ' ' + CURRENCY" info="بودجهٔ ماهانهٔ کانال‌های پولی به نسبت بازه" :cmp="k.paidNames.join('، ')" />
-        <KpiTile label="هزینهٔ جذب هر مشتری" :value="k.cac == null ? '—' : cp(k.cac).num" :unit="k.cac == null ? '' : cp(k.cac).unit + ' ' + CURRENCY" info="CAC ترکیبی: کل هزینهٔ ۹۰ روز ÷ همهٔ پرداخت‌کنندگانِ کوهورت بالغ (ثبت‌نام ۳۰ تا ۱۲۰ روز پیش)، از هر منبع" :cmp="n(k.maturePaid) + ' پرداخت‌کننده از ' + n(k.matureSignups) + ' ثبت‌نام'" />
-        <KpiTile label="بهترین کانال (نرخ پرداخت)">
-          <template #value><span style="font-size: 19px">{{ d.best.name }}</span></template>
-          <template #cmp><b style="color: var(--ink)">{{ pct(d.best.paidRate, 1) }}</b> در برابر میانگین {{ pct(k.avgPaidRate, 1) }}</template>
-        </KpiTile>
-      </div>
+      <PanelCard v-if="!d.configured" title="Google Analytics وصل نیست">
+        <div class="prose">بک‌اند به Google Analytics 4 وصل نیست. <code>GA4_PROPERTY_ID</code>، <code>GA4_CLIENT_EMAIL</code> و <code>GA4_PRIVATE_KEY</code> را در تنظیمات سرور بگذارید تا بازدیدها این‌جا بیایند.</div>
+      </PanelCard>
 
-      <PanelCard cls="tint-accent">
-        <template #title><AppIcon name="target" />پیشنهاد این هفته</template>
-        <div class="prose">
-          <b>روی «{{ d.best.name }}» بیشتر سرمایه بگذارید:</b> {{ pct(d.best.paidRate, 1) }} از ثبت‌نام‌هایش پرداخت‌کننده شده‌اند، {{ n(ratio, 1) }} برابر میانگین<template v-if="d.best.spend"> و CAC آن {{ money(d.best.cac) }} است.</template><template v-else>، بدون هیچ هزینهٔ تبلیغاتی.</template>
-          {{ bestTip }}
-          <template v-if="d.worst"><br /><b>«{{ d.worst.name }}» گران‌ترین کانال پولی است:</b> <template v-if="d.worst.paid">هر مشتری پرداخت‌کننده {{ money(d.worst.cac) }} خرج برداشته<template v-if="d.worst.payback"> و {{ n(d.worst.payback, 0) }} ماه طول می‌کشد تا برگردد</template></template><template v-else>در کوهورت بالغ هیچ مشتری پرداخت‌کننده‌ای نیاورده</template>؛ در برابر «{{ d.bestPaid.name }}» با CAC {{ money(d.bestPaid.cac) }}. بودجه‌اش را کم کنید یا هدف‌گیری و صفحهٔ فرود را بازبینی کنید.</template>
+      <template v-else>
+        <div class="kpis">
+          <KpiTile label="بازدید سایت" :value="n(k.visits)" :delta="{ cur: k.visits, prev: k.visitsPrev }" :cmp="'قبل: ' + n(k.visitsPrev)" :info="'جلسه‌های سایت در ' + fa(range) + ' روز تا دیروز'" />
+          <KpiTile label="بازدیدکنندهٔ تازه" :value="n(k.newUsers)" :delta="{ cur: k.newUsers, prev: k.newUsersPrev }" :cmp="'قبل: ' + n(k.newUsersPrev)" info="کسانی که اولین بار به سایت آمده‌اند" />
+          <KpiTile label="ثبت‌نام" :value="n(k.signups)" to="/onboarding" :delta="{ cur: k.signups, prev: k.signupsPrev }" :cmp="'از لینک دعوت: ' + n(k.inviteSignups)" />
+          <KpiTile label="نرخ ثبت‌نام" :value="pct(sr, 1)" info="ثبت‌نام ÷ بازدید" :delta="{ cur: sr, prev: srP, points: true }" :cmp="'قبل: ' + pct(srP, 1)" />
         </div>
-        <template #footer><span>بر پایهٔ کوهورت بالغ ۹۰ روزه · {{ n(k.matureSignups) }} ثبت‌نام</span><router-link to="/funnel">قیف هر منبع</router-link></template>
-      </PanelCard>
 
-      <PanelCard title="کانال‌ها" :hint="'بازدید و ثبت‌نام: ' + fa(range) + ' روز اخیر'" flush cls="t-src">
-        <DataTable :rows="d.rows" :columns="columns" export-name="acquisition" unit="کانال" :page-sizes="false" compact :sort="{ key: 'signups', dir: 'desc' }" :on-row="(r) => router.push('/customers?view=all&source=' + r.key)">
-          <template #col-name="{ row }"><span class="nm">{{ row.name }}</span><span class="s">{{ row.paidCh ? 'پولی' : 'رایگان' }}</span></template>
-          <template #col-visits="{ row }">{{ n(row.visits) }}</template>
-          <template #col-signups="{ row }"><b v-if="isBest(row, 'signups')">{{ n(row.signups) }}</b><template v-else>{{ n(row.signups) }}</template></template>
-          <template #col-sr="{ row }"><b v-if="isBest(row, 'sr')">{{ pct(row.sr, 1) }}</b><template v-else>{{ pct(row.sr, 1) }}</template></template>
-          <template #col-act="{ row }"><b v-if="isBest(row, 'act')">{{ pct(row.act) }}</b><template v-else>{{ pct(row.act) }}</template></template>
-          <template #col-paid="{ row }">{{ n(row.paid) }}<span class="faint"> / {{ n(row.mSu) }}</span></template>
-          <template #col-pr="{ row }"><b v-if="isBest(row, 'pr')">{{ pct(row.pr, 1) }}</b><template v-else>{{ pct(row.pr, 1) }}</template></template>
-          <template #col-mrr="{ row }"><b v-if="isBest(row, 'mrr')">{{ compact(row.mrr) }}</b><template v-else>{{ compact(row.mrr) }}</template></template>
-          <template #col-spend="{ row }"><template v-if="row.spend">{{ compact(row.spend) }}</template><span v-else class="faint">—</span></template>
-          <template #col-cac="{ row }"><span v-if="row.cac == null" class="faint">—</span><template v-else>{{ compact(row.cac) }}</template></template>
-        </DataTable>
-        <template #footer><span>✱ کوهورت بالغ: ثبت‌نام‌های ۳۰ تا ۱۲۰ روز پیش؛ پرداخت و MRR به منبعِ ثبت‌نام نسبت داده می‌شود</span><span>روی ردیف بزنید: مشتریان همان منبع</span></template>
-      </PanelCard>
+        <PanelCard title="بازدید به تفکیک کانال" :hint="HINT[grain]">
+          <template #actions>
+            <div class="seg" role="group" aria-label="بازهٔ نمودار">
+              <button v-for="g in GRAINS" :key="g.key" :class="{ on: grain === g.key }" @click="grain = g.key">{{ g.label }}</button>
+            </div>
+          </template>
+          <template v-if="chart.series.length">
+            <ColumnChart :options="chart" />
+            <div class="legend" style="margin-top: 8px">
+              <span v-for="s in chart.series" :key="s.key" class="k"><i class="sw" :style="{ background: s.color }" />{{ s.name }}</span>
+              <span v-if="chart.restNames.length" class="k faint">({{ chart.restNames.join('، ') }})</span>
+            </div>
+          </template>
+          <div v-else class="muted" style="padding: 24px 0; text-align: center">در این بازه هنوز بازدیدی از Google Analytics نرسیده است.</div>
+          <template #footer><span>{{ syncText }}</span></template>
+        </PanelCard>
 
-      <PanelCard title="ثبت‌نام هفتگی به تفکیک منبع" hint="۱۲ هفتهٔ اخیر">
-        <ColumnChart :options="weeklyChart" />
-        <div class="legend" style="margin-top: 8px">
-          <span v-for="s in d.weekly.series" :key="s.key" class="k"><i class="sw" :style="{ background: s.color }" />{{ s.name }}</span>
-          <span class="k faint">({{ d.weekly.restNames.join('، ') }})</span>
-        </div>
-        <template #footer><span>ستون آخر = هفتهٔ جاری تا امروز</span><router-link to="/onboarding">ثبت‌نام‌های تازه</router-link></template>
-      </PanelCard>
-      <div class="grid g2">
-        <PanelCard title="کیفیت: نرخ فعال‌سازی هر منبع" hint="کوهورت بالغ">
-          <HBars :items="bars('activationRate')" :label-width="110" :format="(v) => pct(v, 0)" />
-          <template #footer><span>عدد کنار هر میله = حجم ثبت‌نام</span><router-link to="/funnel">قیف تبدیل</router-link></template>
+        <PanelCard title="کانال‌ها" :hint="'بازدید ' + fa(range) + ' روز تا دیروز، در برابر ' + fa(range) + ' روز پیش از آن'" flush>
+          <DataTable :rows="rows" :columns="columns" export-name="acquisition" unit="کانال" :page-sizes="false" compact :sort="{ key: 'sessions', dir: 'desc' }">
+            <template #col-sessions="{ row }"><b>{{ n(row.sessions) }}</b></template>
+            <template #col-share="{ row }">{{ pct(row.share, 1) }}</template>
+            <template #col-newUsers="{ row }">{{ n(row.newUsers) }}</template>
+            <template #col-prev="{ row }">{{ n(row.prev) }}</template>
+            <template #col-change="{ row }"><span v-if="row.change == null" class="faint">تازه</span><template v-else>{{ signedPct(row.change) }}</template></template>
+          </DataTable>
+          <template #footer><span>منبع ثبت‌نام فقط برای دعوت ثبت می‌شود؛ برای همین نرخ ثبت‌نام هر کانال جدا حساب نمی‌شود</span><router-link to="/funnel">قیف تبدیل</router-link></template>
         </PanelCard>
-        <PanelCard title="ارزش: نرخ پرداخت هر منبع" hint="کوهورت بالغ">
-          <HBars :items="bars('paidRate')" :label-width="110" :format="(v) => pct(v, 1)" />
-          <template #footer><span>روی هر منبع بزنید تا قیفش را ببینید</span><router-link to="/retention">نگهداشت</router-link></template>
-        </PanelCard>
-      </div>
+      </template>
     </template>
   </PageShell>
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed } from 'vue'
 import PageShell from 'components/PageShell.vue'
 import PanelCard from 'components/PanelCard.vue'
 import KpiTile from 'components/KpiTile.vue'
-import AppIcon from 'components/AppIcon.vue'
 import DataTable from 'components/DataTable.vue'
 import ColumnChart from 'components/charts/ColumnChart.vue'
-import HBars from 'components/charts/HBars.vue'
 import { api } from 'src/api'
 import { useAsync } from 'src/composables/useAsync'
 import { useRange } from 'src/composables/useRange'
-import { n, fa, pct, compact, compactParts as cp, money, date, CURRENCY } from 'src/lib/format'
+import { n, fa, pct, signedPct, date, daysAgo, dateTime, monthLabel } from 'src/lib/format'
+import { GA_CHANNEL_NAME } from 'src/lib/refs'
 
-const router = useRouter()
+const TOP_CHANNELS = 4
+const GRAINS = [{ key: 'day', label: 'روزانه' }, { key: 'week', label: 'هفتگی' }, { key: 'month', label: 'ماهانه' }]
+const HINT = { day: 'هر ستون یک روز', week: '۱۲ هفتهٔ اخیر', month: '۱۲ ماه اخیر' }
+
 const range = useRange()
+const grain = ref('day')
 const { data: d, loading, error } = useAsync(() => api.acquisition({ range: range.value }), [range])
 const k = computed(() => d.value.kpis)
-const sr = computed(() => (k.value.visits ? k.value.signups / k.value.visits : 0))
-const srP = computed(() => (k.value.visitsPrev ? k.value.signupsPrev / k.value.visitsPrev : 0))
-const ratio = computed(() => (k.value.avgPaidRate ? d.value.best.paidRate / k.value.avgPaidRate : 0))
-const TIPS = {
-  invite: 'دکمهٔ «دعوت همکار» را بعد از ساخت اولین بیس نشان دهید و برای دعوت‌کننده پاداش بگذارید.',
-  direct: 'این‌ها Airsheet را از قبل می‌شناسند؛ برنامهٔ معرفی و نمونه‌های موفق مشتریان را تقویت کنید تا این گروه بزرگ‌تر شود.',
-  google: 'برای جست‌وجوهای بیشتر، صفحهٔ قالب و محتوای آموزشی صنف‌به‌صنف بسازید.',
-}
-const bestTip = computed(() => TIPS[d.value.best.key] || (d.value.best.spend ? 'بودجهٔ این کانال را بالا ببرید.' : 'سهم این کانال از محتوا و پیگیری را بالا ببرید.'))
+const sr = computed(() => (k.value.visits ? k.value.signups / k.value.visits : null))
+const srP = computed(() => (k.value.visitsPrev ? k.value.signupsPrev / k.value.visitsPrev : null))
+const channelName = (c) => GA_CHANNEL_NAME[c] || c
 
-const bestOf = (key) => Math.max(...d.value.rows.map((r) => r[key]))
-const isBest = (r, key) => r[key] === bestOf(key) && r[key] > 0
-const columns = [
-  { key: 'name', label: 'منبع', csv: (r) => r.name },
-  { key: 'visits', label: 'بازدید', num: true },
-  { key: 'signups', label: 'ثبت‌نام', num: true },
-  { key: 'sr', label: 'نرخ ثبت‌نام', num: true, csv: (r) => (r.sr * 100).toFixed(1) },
-  { key: 'act', label: 'فعال‌سازی ✱', num: true, csv: (r) => (r.act * 100).toFixed(1) },
-  { key: 'paid', label: 'پرداخت‌کننده ✱', num: true, csv: (r) => r.paid },
-  { key: 'pr', label: 'نرخ پرداخت ✱', num: true, csv: (r) => (r.pr * 100).toFixed(1) },
-  { key: 'mrr', label: 'MRR امروز ✱', num: true },
-  { key: 'spend', label: 'هزینه ۹۰ روز ✱', num: true },
-  { key: 'cac', label: 'CAC ✱', num: true, sort: (r) => (r.cac == null ? -1 : r.cac), csv: (r) => (r.cac == null ? '' : Math.round(r.cac)) },
-]
-
-const weeklyChart = computed(() => {
-  const W = d.value.weekly.weeks, wl = []
-  for (let w = W - 1; w >= 0; w--) wl.push(date(w * 7 + 6))
-  return { labels: wl, tipLabels: wl.map((l, i) => 'هفتهٔ ' + l + (i === W - 1 ? ' (تا امروز)' : '')), series: d.value.weekly.series.map((s) => ({ name: s.name, values: s.values, color: s.color })), total: 'ثبت‌نام', height: 240 }
+const buckets = computed(() => {
+  if (grain.value === 'week') return d.value.weekly.map((w) => ({ label: date(daysAgo(w.to)), tip: 'هفتهٔ ' + date(daysAgo(w.from)) + ' تا ' + date(daysAgo(w.to)), sessions: w.sessions }))
+  if (grain.value === 'month') return d.value.monthly.map((mo) => ({ label: monthLabel(mo), tip: monthLabel(mo, true), sessions: mo.sessions }))
+  return d.value.daily.map((x) => ({ label: date(daysAgo(x.day)), tip: date(daysAgo(x.day), { year: true }), sessions: x.sessions }))
 })
-const bars = (key) => d.value.mature.slice().sort((p, q) => q[key] - p[key]).map((s) => ({ label: s.name, value: s[key], note: n(s.signups) + ' ثبت‌نام', to: '/funnel?src=' + s.key }))
-</script>
 
-<style scoped>
-.t-src :deep(table.tbl) { min-width: 860px; }
-</style>
+const chart = computed(() => {
+  const B = buckets.value, totals = {}
+  B.forEach((b) => Object.entries(b.sessions).forEach(([c, v]) => { totals[c] = (totals[c] || 0) + v }))
+  const ranked = Object.keys(totals).filter((c) => totals[c] > 0).sort((p, q) => totals[q] - totals[p])
+  const top = ranked.slice(0, TOP_CHANNELS), rest = ranked.slice(TOP_CHANNELS)
+  const series = top.map((c, i) => ({ key: c, name: channelName(c), color: 'var(--series-' + (i + 1) + ')', values: B.map((b) => b.sessions[c] || 0) }))
+  if (rest.length) series.push({ key: 'rest', name: 'سایر کانال‌ها', color: 'var(--deemph)', values: B.map((b) => rest.reduce((t, c) => t + (b.sessions[c] || 0), 0)) })
+  return { labels: B.map((b) => b.label), tipLabels: B.map((b) => b.tip), series, total: 'بازدید', height: 240, restNames: rest.map(channelName) }
+})
+
+const syncText = computed(() => {
+  const s = d.value.sync
+  return 'Google Analytics 4 · ' + (s && s.lastSuccessAt ? 'آخرین همگام‌سازی ' + dateTime(s.lastSuccessAt) : 'هنوز همگام نشده') + (s && s.ok === false ? ' · آخرین تلاش ناموفق: ' + s.error : '')
+})
+
+const rows = computed(() => {
+  const total = k.value.visits || 0
+  return d.value.channels.map((c, i) => ({
+    id: i, key: c.channel, name: channelName(c.channel), sessions: c.sessions, share: total ? c.sessions / total : 0,
+    newUsers: c.newUsers, prev: c.prevSessions, change: c.prevSessions ? c.sessions / c.prevSessions - 1 : null,
+  }))
+})
+const columns = [
+  { key: 'name', label: 'کانال', csv: (r) => r.name },
+  { key: 'sessions', label: 'بازدید', num: true },
+  { key: 'share', label: 'سهم', num: true, csv: (r) => (r.share * 100).toFixed(1) },
+  { key: 'newUsers', label: 'بازدیدکنندهٔ تازه', num: true },
+  { key: 'prev', label: 'بازهٔ قبل', num: true },
+  { key: 'change', label: 'تغییر', num: true, sort: (r) => (r.change == null ? Infinity : r.change), csv: (r) => (r.change == null ? '' : (r.change * 100).toFixed(1)) },
+]
+</script>

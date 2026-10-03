@@ -28,6 +28,12 @@ const SERVER = {
   '/renewals': { days: 30, lapsedDays: 180, upcoming: [customers[0]], lapsed: [customers[4]], totals: { upcoming: { n: 1, mrr: 500000 }, lapsed: { n: 1 } } },
   '/revenue': { mrr: 1, paying: 1, mrrMonths: [{ month: '1405-05', y: 1405, m: 5, end: 31, mrr: 1000, paying: 2, new: 100, expansion: 50, contraction: 20, churn: 30 }], nrr: { now: 1.02, prev: 0.98 } },
   '/customers': { items: customers, total: customers.length, page: 0, size: 0 },
+  '/acquisition': { range: 30, configured: true, sync: { lastRunAt: '2026-09-29T04:58:16Z', ok: true, error: null, lastSuccessAt: '2026-09-29T04:58:16Z' },
+    kpis: { visits: 10, visitsPrev: 7, newUsers: 8, newUsersPrev: 7, signups: 2, signupsPrev: 1, inviteSignups: 1 },
+    channels: [{ channel: 'instagram', sessions: 5, newUsers: 4, prevSessions: 0 }, { channel: 'direct', sessions: 5, newUsers: 4, prevSessions: 7 }],
+    daily: [{ day: '2026-09-28', sessions: { instagram: 5, direct: 5 } }],
+    weekly: [{ from: '2026-09-22', to: '2026-09-28', sessions: { instagram: 5, direct: 5 } }],
+    monthly: [{ month: '1405-07', y: 1405, m: 7, sessions: { instagram: 5, direct: 5 } }] },
 }
 vi.mock('../../src/api/http/client.js', () => ({
   get: vi.fn(async (path) => SERVER[path]),
@@ -40,6 +46,7 @@ const { funnel } = await import('../../src/api/http/funnel.js')
 const { retention } = await import('../../src/api/http/retention.js')
 const { features } = await import('../../src/api/http/features.js')
 const { journey } = await import('../../src/api/http/journey.js')
+const { acquisition } = await import('../../src/api/http/acquisition.js')
 
 const keys = (o) => Object.keys(o).sort()
 const hasKeys = (o, list) => expect(keys(o)).toEqual(expect.arrayContaining(list.slice().sort()))
@@ -98,15 +105,44 @@ describe('features', () => {
   })
 })
 
+describe('journey with Google Analytics', () => {
+  it('fills the awareness column from GA4 visits and rates signups per visit', async () => {
+    SERVER['/funnel'].visits = { sessions: 400, newUsers: 250, signups: 100, signupRate: 0.25, inviteSignupRate: 0.5,
+      channels: [{ channel: 'instagram', sessions: 300, newUsers: 200 }, { channel: 'google', sessions: 100, newUsers: 50 }],
+      sync: { ok: true, lastSuccessAt: '2026-09-27T00:30:00Z', error: null } }
+    try {
+      const d = await journey({ range: 30 })
+      expect(d.funnel[0]).toMatchObject({ key: 'visit', n: 400 })
+      expect(d.funnel[1]).toMatchObject({ key: 'signup', fromPrev: 0.25 })
+      expect(d.visits.channels[0].channel).toBe('instagram')
+      expect(d.stages[0].src).toContain('Google Analytics 4')
+      const f = await funnel({ range: 30 })
+      expect(f.total).toMatchObject({ visits: 400, sr: 0.25 })
+    } finally {
+      delete SERVER['/funnel'].visits
+    }
+  })
+})
+
 describe('journey', () => {
   it('mock contract keys, stages without data are null', async () => {
     const d = await journey({ range: 30 })
-    hasKeys(d, ['range', 'mature', 'stages', 'funnel', 'renew', 'refer', 'weakest', 'drops', 'assisted'])
-    expect(d.stages.map((s) => s.key)).toEqual(['visit', 'signup', 'firstBase', 'activated', 'habit', 'paid', 'renew', 'refer'])
+    hasKeys(d, ['range', 'mature', 'stages', 'funnel', 'renew', 'weakest', 'drops'])
+    expect(d.stages.map((s) => s.key)).toEqual(['visit', 'signup', 'firstBase', 'activated', 'habit', 'paid', 'renew'])
+    expect(d.stages[2].ways.map((w) => w.key)).toEqual(['ai', 'blank', 'excel', 'template', 'backup'])
     expect(d.funnel[0]).toMatchObject({ key: 'visit', n: null }); expect(d.funnel[1].fromPrev).toBeNull()
-    hasKeys(d.renew, ['due', 'renewed', 'rate', 'expanded', 'paying']); expect(d.renew.expanded).toBeNull()
-    hasKeys(d.refer, ['invited', 'signups', 'rate']); expect(d.refer).toEqual({ invited: 1, signups: 3, rate: 1 / 3 })
+    hasKeys(d.renew, ['due', 'renewed', 'rate'])
     expect(d.weakest).toBe('paid'); expect(d.drops).toHaveLength(3); hasKeys(d.drops[0], ['from', 'to', 'key', 'lost', 'rate'])
-    hasKeys(d.assisted, ['count', 'b2a', 'gain', 'top']); expect(d.assisted.count).toBe(1); expect(d.assisted.top[0].id).toBe(customers[1].id)
+  })
+})
+
+describe('acquisition', () => {
+  it('passes GA4 visits per channel and our signups through in the mock contract shape', async () => {
+    const d = await acquisition({ range: 30 })
+    hasKeys(d, ['range', 'configured', 'sync', 'kpis', 'channels', 'daily', 'weekly', 'monthly'])
+    hasKeys(d.kpis, ['visits', 'visitsPrev', 'newUsers', 'newUsersPrev', 'signups', 'signupsPrev', 'inviteSignups'])
+    hasKeys(d.channels[0], ['channel', 'sessions', 'newUsers', 'prevSessions'])
+    hasKeys(d.daily[0], ['day', 'sessions']); hasKeys(d.weekly[0], ['from', 'to', 'sessions']); hasKeys(d.monthly[0], ['month', 'y', 'm', 'sessions'])
+    expect(d.kpis.visits).toBe(10)
   })
 })

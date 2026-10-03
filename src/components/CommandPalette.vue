@@ -45,7 +45,7 @@ async function draw() {
     const r = await api.search(q.value)
     if (my !== seq) return
     r.customers.forEach((a) => out.push({ grp: 'مشتریان', ic: 'user', t: a.name, d: PLAN_NAME[a.plan] + ' · ' + a.contact.first + ' ' + a.contact.last + ' · سلامت ' + fa(a.health), end: a.paying ? money(a.mrr) : '', acc: a.id, to: '/customers/' + a.id }))
-    r.bases.forEach((b) => out.push({ grp: 'بیس‌ها', ic: 'db', t: b.name, d: b.accountName + ' · /' + b.slug, end: fa(b.records) + ' رکورد', to: '/bases/' + b.id }))
+    r.bases.forEach((b) => out.push({ grp: 'بیس‌ها', ic: 'db', t: b.name, d: b.accountName, end: fa(b.records) + ' رکورد', to: '/bases/' + b.id }))
   }
   PAGE_INDEX.filter((p) => !s || norm(p.label).includes(s)).slice(0, s ? 5 : 8).forEach((p) => out.push({ grp: 'صفحه‌ها', ic: p.icon, t: p.label, d: p.grp, to: p.to }))
   if (!s) out.unshift({ grp: 'کارها', ic: Dark.isActive ? 'sun' : 'moon', t: 'تغییر تم روشن/تیره', run: () => session.toggleTheme() })

@@ -1,11 +1,12 @@
 /* GET /management/funnel?range — mature-cohort conversion funnel. Same shape as mock/funnel.js.
-   Gaps: no site visits (visit step n = null), no previous cohort (prev = []), sources are only invite/direct. */
+   Visits come from Google Analytics 4 (server `visits`, null until GA4 is configured). Gaps: no previous cohort (prev = []), sources are only invite/direct. */
 import { get } from './client'
 import { customersAll } from './account'
 
 const ACTIVATION_RECORDS = 10 // cloud-back metrics.ts ACTIVATION.recordEvents
 const STEP = {
   visit: ['بازدید سایت', 'بازدیدکنندهٔ یکتا در بازه (هنوز متصل نیست)'],
+  visitGa: ['بازدید سایت', 'بازدید (session) در بازه، از Google Analytics'],
   signup: ['ثبت‌نام', 'حساب ساخته‌شده در بازه'],
   firstBase: ['اولین بیس', 'حداقل یک بیس ساخته'],
   activated: ['فعال‌سازی', ACTIVATION_RECORDS + ' رویداد رکورد در ۷ روز اول'],
@@ -15,11 +16,15 @@ const STEP = {
 export const FUNNEL_SOURCES = [{ key: 'invite', name: 'دعوت همکار', server: 'referral' }, { key: 'direct', name: 'مستقیم', server: 'direct' }]
 
 const step = (s) => ({ key: s.key, label: STEP[s.key] ? STEP[s.key][0] : s.key, n: s.n, def: STEP[s.key] ? STEP[s.key][1] : '', fromPrev: s.fromPrev ?? 0, fromStart: s.fromStart ?? 0, medianDays: null })
-/** Panel steps: a leading `visit` row with n = null so pages that skip the first step keep working. */
-const steps = (serverSteps) => [{ key: 'visit', label: STEP.visit[0], n: null, def: STEP.visit[1], fromPrev: 1, fromStart: 1, medianDays: null }, ...serverSteps.map(step)]
+/** Panel steps: a leading `visit` row (n = null until GA4 is connected); with visits, signup's fromPrev = signups ÷ visits. */
+const steps = (serverSteps, visits = null) => {
+  const out = [{ key: 'visit', label: STEP.visit[0], n: visits ? visits.sessions : null, def: visits ? STEP.visitGa[1] : STEP.visit[1], fromPrev: 1, fromStart: 1, medianDays: null }, ...serverSteps.map(step)]
+  if (visits) out[1] = { ...out[1], fromPrev: visits.signupRate }
+  return out
+}
 const summary = (f) => {
   const o = {}; f.forEach((x) => { o[x.key] = x })
-  return { visits: 0, signups: o.signup.n, sr: null, fb: o.firstBase.fromStart, act: o.activated.fromStart, habit: o.habit.fromStart, paid: o.paid.fromStart }
+  return { visits: o.visit.n, signups: o.signup.n, sr: o.visit.n ? o.signup.fromPrev : null, fb: o.firstBase.fromStart, act: o.activated.fromStart, habit: o.habit.fromStart, paid: o.paid.fromStart }
 }
 
 export async function funnel({ range: R = 30, source } = {}) {
@@ -27,7 +32,7 @@ export async function funnel({ range: R = 30, source } = {}) {
   const [f, accounts] = await Promise.all([get('/funnel', { range: R }), customersAll()])
   const mine = (a) => !src || a.source === src.key
 
-  const all = steps(f.steps)
+  const all = steps(f.steps, f.visits)
   const bySource = FUNNEL_SOURCES.map((s) => ({ key: s.key, name: s.name, ...summary(steps(f.bySource[s.server])) }))
   const total = summary(all)
   const own = src ? steps(f.bySource[src.server]) : all
@@ -50,6 +55,6 @@ export async function funnel({ range: R = 30, source } = {}) {
 
   return {
     range: R, mature: f.matureDays, source: src ? src.key : null, sourceName: src ? src.name : null, activationRecords: ACTIVATION_RECORDS, dataSince: f.dataSince || null,
-    steps: own, prev: [], worst: worst ? worst.key : null, stuck, bySource, total, weekly,
+    steps: own, prev: [], worst: worst ? worst.key : null, stuck, bySource, total, weekly, visits: f.visits || null,
   }
 }

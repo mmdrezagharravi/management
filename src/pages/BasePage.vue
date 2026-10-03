@@ -1,7 +1,7 @@
 <template>
   <PageShell :title="d ? d.base.name : 'جزئیات بیس'" :sources="['main']" :loading="loading" :error="error">
     <template v-if="d" #crumbs><router-link to="/bases">بیس‌ها</router-link> › <AccountLink :id="a.id" :name="a.name" /> › {{ d.base.name }}</template>
-    <template v-if="d" #sub><span class="mono">/{{ d.base.slug }}</span> · <PlanBadge :plan="a.plan" /><template v-if="a.industryName"> · {{ a.industryName }}</template><template v-if="a.city"> · {{ a.city }}</template></template>
+    <template v-if="d" #sub><PlanBadge :plan="a.plan" /><template v-if="a.industryName"> · {{ a.industryName }}</template><template v-if="a.city"> · {{ a.city }}</template></template>
     <template v-if="d" #actions>
       <button class="btn" @click="ui.openAccount(a.id)"><AppIcon name="eye" />نمای سریع حساب</button>
       <router-link class="btn primary" :to="'/customers/' + a.id"><AppIcon name="user" />پروفایل مشتری</router-link>
@@ -17,7 +17,7 @@
         </KpiTile>
         <KpiTile label="جدول" :value="n(b.tables)" :cmp="'میانگین ' + n(b.records / Math.max(1, b.tables)) + ' رکورد در هر جدول'" />
         <KpiTile label="خودکارسازی" :value="n(b.automations)" :info="d.exact ? 'اجراهای ۳۰ روز اخیر خودکارسازی‌های این بیس' : 'اجراها سهم این بیس از اجرای ۳۰ روز حساب است (به نسبت تعداد خودکارسازی)'" :cmp="autoCmp" />
-        <KpiTile label="همکار" :value="n(b.collaborators)" :unit="d.seatLim == null ? 'بدون سقف' : 'از ' + n(d.seatLim) + ' همکار'" :cmp="n(a.activeMembers7) + ' عضو حساب این هفته فعال بوده‌اند'" />
+        <KpiTile label="همکار این بیس" :value="n(b.collaborators)" unit="نفر" :cmp="n(a.activeMembers7) + ' عضو حساب این هفته فعال بوده‌اند'" />
         <KpiTile label="آخرین فعالیت" :value="agoDays(b.lastActive)">
           <template #cmp><span v-if="b.lastActive === 0 && a.online" class="live"><i />هم‌اکنون آنلاین</span><template v-else>{{ date(b.lastActive) }}</template></template>
         </KpiTile>
@@ -25,7 +25,7 @@
 
       <div class="grid g-main">
         <div class="stack">
-          <PanelCard title="فعالیت روزانه" :hint="d.exact ? 'رویدادهای ثبت‌شدهٔ این بیس · ۹۰ روز' : 'تخمینی · رویدادهای حساب × سهم این بیس از رکوردها (' + pct(d.share) + ') · ۹۰ روز'">
+          <PanelCard title="فعالیت روزانه" :hint="d.exact ? 'کارهای انجام‌شده در این بیس (ساخت، ویرایش، حذف) · ۹۰ روز' : 'تخمینی · رویدادهای حساب × سهم این بیس از رکوردها (' + pct(d.share) + ') · ۹۰ روز'">
             <ColumnChart :options="actChart" />
             <template #footer><span>{{ n(d.activeDays) }} روز فعال در ۹۰ روز · حدود {{ n(d.sumEv) }} رویداد</span><router-link :to="'/customers/' + a.id">فعالیت دقیق حساب</router-link></template>
           </PanelCard>
@@ -43,15 +43,18 @@
 
           <PanelCard title="بیس‌های دیگر این حساب" :hint="d.siblings.length ? n(d.siblings.length) + ' بیس' : ''" flush>
             <div v-if="d.siblings.length" class="list" style="padding: 0 16px">
-              <router-link v-for="x in d.siblings" :key="x.id" class="li" :to="'/bases/' + x.id"><AppIcon name="db" cls="faint" /><span class="main"><span class="t">{{ x.name }}</span><span class="d"><span class="mono">/{{ x.slug }}</span> · آخرین فعالیت {{ agoDays(x.lastActive) }}</span></span><span class="end"><b>{{ n(x.records) }}</b> <span class="muted">رکورد</span></span></router-link>
+              <router-link v-for="x in d.siblings" :key="x.id" class="li" :to="'/bases/' + x.id"><AppIcon name="db" cls="faint" /><span class="main"><span class="t">{{ x.name }}</span><span class="d">آخرین فعالیت {{ agoDays(x.lastActive) }}</span></span><span class="end"><b>{{ n(x.records) }}</b> <span class="muted">رکورد</span></span></router-link>
             </div>
             <div v-else class="note" style="padding: 0 16px 14px">این تنها بیس این حساب است. حساب‌های چندبیسی بیشتر می‌مانند — در تماس بعدی ساخت بیس دوم را پیشنهاد دهید.</div>
           </PanelCard>
 
-          <PanelCard title="تاریخچهٔ انتقال مالکیت" hint="هنوز ذخیره نمی‌شود">
-            <div class="kv"><span class="k">مالک فعلی</span><span class="v">{{ d.ownerName }}</span></div>
-            <div class="note" style="margin-top: 8px"><code class="mono">transferBaseCreator</code> فقط <code class="mono">Base.creator</code> را عوض می‌کند و ردی از مالک قبلی، زمان و انجام‌دهنده نمی‌ماند؛ برای همین این کارت خالی است.</div>
-            <div class="note" style="margin-top: 6px"><b>راه‌حل:</b> همین mutation هر انتقال را (بیس، مالک قبلی، مالک جدید، انجام‌دهنده، زمان) با <code class="mono">LogFactory</code> ثبت کند تا این تاریخچه از داده‌ی واقعی پر شود.</div>
+          <PanelCard title="تاریخچهٔ مالکیت">
+            <div class="kv"><span class="k">مالک فعلی</span><span class="v"><AccountLink :id="a.id" :name="a.name" /></span></div>
+            <div v-for="(t, i) in own.transfers" :key="'t' + i" class="kv"><span class="k">انتقال · {{ dateTime(t.at) }}</span><span class="v">از <PersonLink :p="t.from" /> به <PersonLink :p="t.to" /><template v-if="t.by"> · توسط <PersonLink :p="t.by" /></template></span></div>
+            <div v-for="(e, i) in own.earlier" :key="'e' + i" class="kv"><span class="k">{{ e.source === 'creation' ? 'سازندهٔ بیس' : 'مالک قبلی' }}</span><span class="v"><PersonLink :p="e.owner" /><span v-if="e.until" class="faint"> · تا دست‌کم {{ date(daysAgo(e.until), { year: true }) }}</span></span></div>
+            <div v-if="!own.transfers.length && !own.earlier.length" class="note" style="margin-top: 8px">{{ own.createdBeforeOwnerSignup ? 'این بیس قبل از ثبت‌نام مالک فعلی ساخته شده، پس از کس دیگری به او منتقل شده؛ ولی مالک قبلی در هیچ داده‌ای ثبت نشده است.' : 'انتقالی برای این بیس ثبت نشده است.' }}</div>
+            <div v-if="!own.logsAvailable" class="note" style="margin-top: 6px">لاگ‌ها در دسترس نبودند؛ فقط دادهٔ دیتابیس نشان داده شده است.</div>
+            <template #footer><span>انتقال‌ها از ۵ مهر ۱۴۰۵ ثبت می‌شوند · «مالک قبلی» از لاگ ویرایش‌های بیس پیدا شده (تاریخ = آخرین باری که مالک بوده)</span></template>
           </PanelCard>
         </div>
 
@@ -65,7 +68,7 @@
               </div>
             </div>
             <div class="kv"><span class="k">امتیاز سلامت</span><span class="v"><HealthScore :score="a.health" /></span></div>
-            <div class="kv"><span class="k">بیس‌ها</span><span class="v">{{ n(a.bases) }} بیس ساخته<template v-if="a.coOwnedBases || a.sharedBases"> · {{ n((a.coOwnedBases || 0) + (a.sharedBases || 0)) }} هم‌مالک یا اشتراکی</template> · {{ n(a.memberCount) }} عضو</span></div>
+            <div class="kv"><span class="k">بیس‌ها</span><span class="v">{{ n(a.bases) }} بیس ساخته<template v-if="a.coOwnedBases || a.sharedBases"> · {{ n((a.coOwnedBases || 0) + (a.sharedBases || 0)) }} مالک یا اشتراکی</template> · {{ n(a.memberCount) }} عضو</span></div>
             <div v-if="a.paying" class="kv"><span class="k">تمدید بعدی</span><span class="v">{{ date(-a.renewIn) }} · {{ inDays(a.renewIn) }}</span></div>
             <div v-if="up" style="margin-top: 10px"><UsageMeter :label="mu.label" :used="mu.used" :limit="mu.limit" /></div>
             <template #footer>
@@ -87,7 +90,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, h } from 'vue'
 import { useRoute } from 'vue-router'
 import PageShell from 'components/PageShell.vue'
 import PanelCard from 'components/PanelCard.vue'
@@ -102,7 +105,7 @@ import ColumnChart from 'components/charts/ColumnChart.vue'
 import { api } from 'src/api'
 import { useAsync } from 'src/composables/useAsync'
 import { useUiStore } from 'stores/ui'
-import { n, fa, pct, compact, money, date, agoDays, inDays, initials } from 'src/lib/format'
+import { n, fa, pct, compact, money, date, dateTime, daysAgo, agoDays, inDays, initials } from 'src/lib/format'
 
 const route = useRoute(), ui = useUiStore()
 const { data: d, loading, error } = useAsync(() => api.base(route.params.id), [() => route.params.id])
@@ -116,6 +119,9 @@ const actChart = computed(() => {
   const labels = d.value.activity.map((x) => date(x.daysAgo))
   return { labels, tipLabels: labels, height: 210, series: [{ name: d.value.exact ? 'رویداد' : 'رویداد (تخمینی)', values: d.value.activity.map((x) => x.v) }] }
 })
+const own = computed(() => d.value.ownership)
+const PersonLink = (props) => (props.p ? h(AccountLink, { id: props.p.id, name: props.p.name || 'کاربر حذف‌شده' }) : h('span', { class: 'faint' }, 'نامشخص'))
+PersonLink.props = ['p']
 const cells = computed(() => [
   { label: 'جدول', value: n(b.value.tables), sub: n(b.value.records / Math.max(1, b.value.tables)) + ' رکورد در هر جدول' },
   { label: 'رکورد', value: n(b.value.records), sub: (d.value.recordsUsed != null ? 'سقف هر بیس: ' : 'سقف حساب: ') + compact(L.value.records) },
