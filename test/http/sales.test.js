@@ -7,6 +7,7 @@ const { get, all } = await import('src/api/http/client')
 const { revenue, lastMonths } = await import('src/api/http/revenue')
 const { sales } = await import('src/api/http/sales')
 const { onboarding, onboardingPage } = await import('src/api/http/onboarding')
+const { segments } = await import('src/api/http/segments')
 
 const iso = (d) => new Date(Date.now() - d * 864e5).toISOString()
 const summary = (o = {}) => ({
@@ -71,33 +72,45 @@ describe('http sales adapter', () => {
 })
 
 describe('http onboarding adapter', () => {
-  it('sends the ids marked done and labels the open steps', async () => {
-    get.mockImplementation(() => Promise.resolve({ range: 30, activation: { records: 10, days: 7 }, kpis: {}, daily: [], buckets: [], steps: [{ key: 'invite', n: 1 }] }))
+  it('asks for the range and adds the high-potential definition', async () => {
+    get.mockImplementation(() => Promise.resolve({ range: 30, activation: { records: 10, days: 7 }, kpis: {}, daily: [], buckets: [] }))
     const d = await onboarding({ range: 30 })
-    expect(get).toHaveBeenLastCalledWith('/onboarding', { range: 30, done: 'n1,n2.tpl' })
-    expect(d.steps).toEqual([{ key: 'invite', n: 1, label: 'پیشنهاد دعوت همکار' }])
-    for (const k of ['hpDef', 'stepLabels']) expect(d).toHaveProperty(k)
+    expect(get).toHaveBeenLastCalledWith('/onboarding', { range: 30 })
+    expect(d).toHaveProperty('hpDef')
   })
 
   it('turns one server page of signups into table rows', async () => {
-    const row = { ...fresh, status: 'stuck', next: 'call', stuck: true, highPot: true, hasBase: false, stepsDone: 0 }
+    const row = { ...fresh, status: 'stuck', stuck: true, highPot: true, hasBase: false, stepsDone: 0 }
     get.mockImplementation((path) => Promise.resolve(path === '/definitions' ? { activation: { days: 7, recordEvents: 10 } } : { items: [row], total: 1, counts: { all: 1, stuck: 1 } }))
     const r = await onboardingPage({ view: 'stuck', range: 30 })
     expect(get).toHaveBeenCalledWith('/onboarding/signups', { view: 'stuck', range: 30 })
     expect(r).toMatchObject({ total: 1, counts: { all: 1, stuck: 1 } })
-    expect(r.rows[0]).toMatchObject({ sourceName: 'دعوت همکار', status: 'stuck', highPot: true, done: true, next: { key: 'call', text: 'تماس خوشامد' } })
+    expect(r.rows[0]).toMatchObject({ sourceName: 'دعوت همکار', status: 'stuck', highPot: true })
     expect(r.rows[0].checklist.map((x) => x.s)).toEqual(['open', 'wait', 'open', 'open', 'wait'])
   })
 
-  it('keeps a done mark on its own step, reads week-two return from last30 and names collaborator accounts', async () => {
+  it('reads week-two return from last30', async () => {
     const last30 = Array.from({ length: 30 }, (_, i) => (i === 29 - 20 + 9 ? 3 : 0))
-    const moved = { ...fresh, id: 'n2', age: 20, last30, status: 'path', next: 'excel', stuck: false, highPot: false, hasBase: true, stepsDone: 1 }
-    const member = { ...fresh, id: 'n3', status: 'member', next: 'wait', stuck: false, highPot: false, hasBase: false, stepsDone: 0 }
-    get.mockImplementation((path) => Promise.resolve(path === '/definitions' ? {} : { items: [moved, member], total: 2, counts: {} }))
-    const r = await onboardingPage({ next: 'excel', range: 30 })
-    expect(get).toHaveBeenCalledWith('/onboarding/signups', { next: 'excel', range: 30, done: 'n1,n2.tpl' })
-    expect(r.rows[0].done).toBe(false)
+    const moved = { ...fresh, id: 'n2', age: 20, last30, status: 'path', stuck: false, highPot: false, hasBase: true, stepsDone: 1 }
+    get.mockImplementation((path) => Promise.resolve(path === '/definitions' ? {} : { items: [moved], total: 1, counts: {} }))
+    const r = await onboardingPage({ range: 30 })
     expect(r.rows[0].checklist[4]).toMatchObject({ s: 'done', d: 'برگشت' })
-    expect(r.rows[1].next.text).toContain('عضو بیس همکار')
+  })
+})
+
+describe('http segments adapter', () => {
+  it('labels the server totals without loading every customer', async () => {
+    get.mockImplementation(() => Promise.resolve({
+      totalAccounts: 3, inAny: 2, activeN: 1, totalMrr: 0, activeWindow: 7,
+      segs: [{ key: 'new', n: 2, mrr: 0, active: 1, avgHealth: 40, dist: [{ key: 'good', n: 0 }, { key: 'warn', n: 1 }, { key: 'ser', n: 0 }, { key: 'crit', n: 1 }] }],
+      cells: [[1]], top: { r: 'new', c: 'stuck', v: 0.5 },
+    }))
+    all.mockClear()
+    const d = await segments()
+    expect(get).toHaveBeenLastCalledWith('/segments')
+    expect(all).not.toHaveBeenCalled()
+    expect(d.segs[0]).toMatchObject({ key: 'new', label: 'تازه‌وارد', n: 2 })
+    expect(d.segs[0].dist.every((b) => b.label)).toBe(true)
+    expect(d.top).toMatchObject({ r: { key: 'new' }, c: { key: 'stuck' }, v: 0.5 })
   })
 })

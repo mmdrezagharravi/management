@@ -1,10 +1,8 @@
-/* GET /management/segments + the customer list → the shape mock/segments.js returns. */
+/* GET /management/segments → the shape mock/segments.js returns; members come from customersPage({ segment }). */
 import { get } from './client'
-import { customersAll } from './account'
 import { SEGMENT_LABEL } from 'src/lib/refs'
 import { BANDS } from 'src/lib/ui'
 
-const ACTIVE_WINDOW = 7
 // rules as cloud-back/src/api/management/metrics.ts SEGMENTS defines them
 const META = {
   new: { rule: 'signup_age <= 14', desc: 'در دو هفتهٔ اخیر ثبت‌نام کرده‌اند' },
@@ -19,38 +17,12 @@ const META = {
 }
 
 export async function segments() {
-  const [srv, accounts] = await Promise.all([get('/segments'), customersAll()])
-  const segs = srv.map((s) => ({ key: s.key, label: SEGMENT_LABEL[s.key] || s.key, ...(META[s.key] || { rule: '', desc: '' }), n: s.n, mrr: s.mrr }))
-  const members = {}, idSets = {}
-  segs.forEach((s) => { members[s.key] = accounts.filter((a) => a.segments.includes(s.key)); idSets[s.key] = new Set(members[s.key].map((a) => a.id)) })
-  const isActive = (a) => a.lastSeenDays < ACTIVE_WINDOW
-
-  // overlap: share of row members that are also in the column group
-  const cells = segs.map((r) => segs.map((c) => {
-    if (!r.n) return null
-    if (r.key === c.key) return 1
-    let k = 0; for (const id of idSets[r.key]) if (idSets[c.key].has(id)) k++
-    return k / r.n
-  }))
-  let top = null
-  segs.forEach((r, i) => segs.forEach((c, j) => {
-    if (i === j || r.n < 20 || cells[i][j] == null) return
-    if (!top || cells[i][j] > top.v) top = { r: { key: r.key, label: r.label }, c: { key: c.key, label: c.label }, v: cells[i][j] }
-  }))
-
+  const r = await get('/segments')
+  const label = (key) => SEGMENT_LABEL[key] || key
+  const bandLabel = Object.fromEntries(BANDS.map((b) => [b.key, b.label]))
   return {
-    totalAccounts: accounts.length, inAny: accounts.filter((a) => a.segments.length).length, activeN: accounts.filter(isActive).length,
-    totalMrr: accounts.reduce((t, a) => t + a.mrr, 0), activeWindow: ACTIVE_WINDOW,
-    segs: segs.map((s) => {
-      const list = members[s.key]
-      return {
-        ...s,
-        active: list.filter(isActive).length,
-        dist: BANDS.map((b) => ({ key: b.key, label: b.label, n: list.filter((a) => a.band === b.key).length })),
-        avgHealth: list.length ? Math.round(list.reduce((x, a) => x + a.health, 0) / list.length) : 0,
-      }
-    }),
-    cells, top,
-    membersBy: members,
+    ...r,
+    segs: r.segs.map((s) => ({ ...s, label: label(s.key), ...(META[s.key] || { rule: '', desc: '' }), dist: s.dist.map((b) => ({ ...b, label: bandLabel[b.key] })) })),
+    top: r.top && { r: { key: r.top.r, label: label(r.top.r) }, c: { key: r.top.c, label: label(r.top.c) }, v: r.top.v },
   }
 }

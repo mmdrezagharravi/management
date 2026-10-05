@@ -35,7 +35,7 @@
         <template #actions>
           <label class="row" style="gap: 6px; font-size: 12px; color: var(--muted)">دسته<select class="select" style="height: 28px; font-size: 12px" :value="cur" @change="pick($event.target.value, false)"><option v-for="s in d.segs" :key="s.key" :value="s.key">{{ s.label }} ({{ fa(s.n) }})</option></select></label>
         </template>
-        <DataTable :key="cur" :rows="members" :columns="columns" :filters="filters" :search="search" :sort="SEG_SORT[cur] || { key: 'mrr', dir: 'desc' }" url :export-name="'segment-' + cur" unit="حساب" :on-row="(a) => ui.openAccount(a.id)">
+        <DataTable :key="cur" :remote="membersPage" :columns="columns" :filters="filters" :search="search" :sort="SEG_SORT[cur] || { key: 'mrr', dir: 'desc' }" url :export-name="'segment-' + cur" unit="حساب" :on-row="(a) => ui.openAccount(a.id)">
           <template #col-name="{ row }"><AccountCell :a="row" /></template>
           <template #col-plan="{ row }"><PlanBadge :plan="row.plan" /></template>
           <template #col-mrr="{ row }"><template v-if="row.mrr">{{ compact(row.mrr) }}</template><span v-else class="faint">—</span></template>
@@ -93,7 +93,7 @@ const ui = useUiStore(), route = useRoute(), router = useRouter()
 const seg = useQueryParam('seg', 'upsell')
 const { data: d, loading, error } = useAsync(() => api.segments(), [])
 const cur = computed(() => (d.value.segs.some((s) => s.key === seg.value) ? seg.value : 'upsell'))
-const members = computed(() => d.value.membersBy[cur.value] || [])
+const membersPage = (p) => api.customersPage({ ...p, segment: cur.value })
 const curSeg = computed(() => d.value.segs.find((s) => s.key === cur.value))
 
 const p = (x) => pct(x, x < 0.1 ? 1 : 0)
@@ -109,17 +109,17 @@ async function pick(k, scroll) {
   if (scroll) { await nextTick(); const el = document.getElementById('members'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }) }
 }
 
-const search = { placeholder: 'نام، شخص یا شماره…', text: (a) => a.name + ' ' + a.contact.first + ' ' + a.contact.last + ' ' + a.contact.mobile + ' ' + a.slug }
+const search = { placeholder: 'نام یا شمارهٔ موبایل…' }
 const filters = [
-  { key: 'plan', label: 'پلن', options: PLAN_ORDER.map((k) => ({ v: k, l: PLAN_NAME[k] })), test: (a, v) => a.plan === v },
+  { key: 'plan', label: 'پلن', options: PLAN_ORDER.map((k) => ({ v: k, l: PLAN_NAME[k] })) },
 ]
 const columns = [
   { key: 'name', label: 'حساب', cls: 'nmcol', csv: (a) => a.name },
-  { key: 'plan', label: 'پلن', sort: (a) => PLAN_ORDER.indexOf(a.plan) * 1e9 + a.mrr, desc: true, csv: (a) => PLAN_NAME[a.plan] },
-  { key: 'mrr', label: 'درآمد ماهانه', num: true, csv: (a) => a.mrr },
-  { key: 'health', label: 'سلامت', num: true, csv: (a) => a.health },
-  { key: 'lastSeen', label: 'آخرین فعالیت', sort: (a) => -a.lastSeenMin, desc: true, csv: (a) => a.lastSeenDays },
-  { key: 'signal', label: 'سیگنال', sort: (a) => (a.pastDue ? 4 : 0) + (a.atLimit ? 2 : 0) + (a.nearLimit ? 1 : 0), desc: true, csv: (a) => [a.pastDue && 'پرداخت ناموفق', a.atLimit ? 'سقف پر شده' : a.nearLimit ? 'نزدیک سقف' : ''].filter(Boolean).join('، ') },
+  { key: 'plan', sortKey: 'planRank', label: 'پلن', desc: true, csv: (a) => PLAN_NAME[a.plan] },
+  { key: 'mrr', sortKey: 'mrr', label: 'درآمد ماهانه', num: true, csv: (a) => a.mrr },
+  { key: 'health', sortKey: 'health', label: 'سلامت', num: true, csv: (a) => a.health },
+  { key: 'lastSeen', sortKey: 'lastSeen', label: 'آخرین فعالیت', desc: true, csv: (a) => a.lastSeenDays },
+  { key: 'signal', sortKey: 'signal', label: 'سیگنال', desc: true, csv: (a) => [a.pastDue && 'پرداخت ناموفق', a.atLimit ? 'سقف پر شده' : a.nearLimit ? 'نزدیک سقف' : ''].filter(Boolean).join('، ') },
 ]
 
 const overlap = computed(() => {

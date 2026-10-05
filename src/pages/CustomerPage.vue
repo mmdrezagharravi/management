@@ -88,10 +88,6 @@
             <div class="sub-h">ورود و دستگاه‌ها <span class="faint" style="font-weight: 400">· {{ p.sessionCount ? fa(p.sessionCount) + ' نشست باز' : 'نشست بازی ندارد' }}</span></div>
             <div v-for="(x, i) in p.sessions" :key="i" class="kv"><span class="k">{{ x.device || 'دستگاه نامشخص' }}<span v-if="x.ip" class="faint ltr"> · {{ x.ip }}</span></span><span class="v">{{ dateTime(x.lastUse) }}</span></div>
           </PanelCard>
-          <PanelCard :title="'چرا امتیاز سلامت ' + fa(a.health) + ' است؟'" :hint="bandLabel">
-            <div v-for="c in HEALTH_COMPONENTS" :key="c.key" class="comp"><span>{{ c.label }}</span><span class="tr"><i :style="{ width: (a.components[c.key] / 20) * 100 + '%', background: c.key === d.weakest ? 'var(--serious)' : undefined }" /></span><b>{{ n(a.components[c.key]) }}</b><q-tooltip>{{ c.desc }}</q-tooltip></div>
-            <div class="banner info" style="margin-top: 12px"><AppIcon name="target" /><div><b>قدم بعدی:</b> {{ d.nextStep }}</div></div>
-          </PanelCard>
           <PanelCard title="سیگنال‌ها">
             <div class="kv"><span class="k">وضعیت سقف رکورد</span><span class="v"><span v-if="a.atLimit" class="sig limit">سقف پر شده · {{ a.maxUsage.label }}</span><span v-else-if="a.nearLimit" class="sig price">نزدیک سقف · {{ pct(a.maxUsage.ratio) }}</span><span v-else class="faint">عادی</span></span></div>
             <div class="kv"><span class="k">وضعیت پرداخت</span><span class="v"><span v-if="a.pastDue" class="sig due">پرداخت ناموفق</span><span v-else class="faint">بدون خطا</span></span></div>
@@ -214,7 +210,7 @@ import { useQueryParam } from 'src/composables/useUrlState'
 import { useDialogs } from 'src/composables/useDialogs'
 import { useUiStore } from 'stores/ui'
 import { n, fa, pct, compact, compactParts as cp, money, date, dateTime, ago, agoDays, inDays, clock, initials, daysAgo, signupDaysAgo, CURRENCY } from 'src/lib/format'
-import { CYCLE_NAME, HEALTH_COMPONENTS, SEGMENT_LABEL, sourceName } from 'src/lib/refs'
+import { CYCLE_NAME, SEGMENT_LABEL, sourceName } from 'src/lib/refs'
 import { PLAN_NAME, band, toast } from 'src/lib/ui'
 
 const route = useRoute(), router = useRouter(), ui = useUiStore(), dialogs = useDialogs()

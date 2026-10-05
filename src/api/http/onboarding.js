@@ -1,26 +1,12 @@
-/* GET /management/onboarding (cards, chart, open steps) and /management/onboarding/signups (the table, one page per request).
-   The server decides status, next step and every view/filter; labels and the per-row checklist are built here.
-   Steps the server cannot see (return in week 2) come back with status 'na'; the page greys them. */
+/* GET /management/onboarding (cards, chart) and /management/onboarding/signups (the table, one page per request).
+   The server decides status and every view/filter; labels and the per-row checklist are built here.
+   Steps the server cannot see (return in week 2) come back with status 'na'; the page leaves them out. */
 import { get } from './client'
-import { toAccount, definitions, taskState } from './account'
-import { useLocalStore } from 'stores/local'
+import { toAccount, definitions } from './account'
 import { fa } from 'src/lib/format'
 import { sourceName } from 'src/lib/refs'
 
 const HP_DEF = 'همکار دعوت کرده یا از لینک دعوت آمده'
-const STEPS = {
-  call: 'تماس خوشامد',
-  tpl: 'ایمیل تمپلیت‌های شروع',
-  excel: 'راهنمای ورود داده از Excel',
-  back: 'پیام بازگشت',
-  invite: 'پیشنهاد دعوت همکار',
-  auto: 'معرفی خودکارسازی',
-  plan: 'پیشنهاد پلن پایه',
-  paid: 'تماس خوشامد مشتری پرداخت‌کننده',
-  wait: 'فعلاً صبر',
-}
-const NEXT_TEXT = { ...STEPS, wait: 'فعلاً صبر — روز ۲ بررسی شود', auto: 'معرفی خودکارسازی با یک نمونهٔ آماده' }
-const MEMBER_TEXT = 'اقدامی لازم نیست — عضو بیس همکار است'
 const WEEK = 7
 
 /** Any activity in days 7..13 after signup, read from last30 (index 29 = today); 'na' once that week left the 30-day window. */
@@ -42,23 +28,15 @@ function checklist(a, ACT) {
     { l: 'بازگشت در هفتهٔ ۲', ...weekTwo(a) },
   ]
 }
-/** A mark counts only for the step it was made on; once the account moves on, its next step is open again. */
-const isDone = (id, step) => { const t = taskState('onb:' + id) || {}; return t.status === 'done' && (!t.step || t.step === step) }
-/** The most recently marked tasks as id.step, capped at the server's 500-entry limit for `done`. */
-const doneMarks = () => Object.entries(useLocalStore().tasks)
-  .filter(([k, t]) => k.startsWith('onb:') && t && t.status === 'done')
-  .map(([k, t]) => k.slice(4) + (t.step ? '.' + t.step : ''))
-  .slice(-500)
-const doneParam = () => { const d = doneMarks(); return d.length ? d.join(',') : undefined }
 
 export async function onboarding({ range = 30 } = {}) {
-  const r = await get('/onboarding', { range, done: doneParam() })
-  return { ...r, hpDef: HP_DEF, stepLabels: STEPS, steps: r.steps.map((s) => ({ ...s, label: STEPS[s.key] })) }
+  const r = await get('/onboarding', { range })
+  return { ...r, hpDef: HP_DEF }
 }
 
-/** One page of the signup table: view, status/source/next-step filters, search, sort and paging all run on the server. */
+/** One page of the signup table: view, status/source filters, search, sort and paging all run on the server. */
 export async function onboardingPage(params) {
-  const [r, def] = await Promise.all([get('/onboarding/signups', { ...params, done: params.next ? doneParam() : undefined }), definitions().catch(() => ({}))])
+  const [r, def] = await Promise.all([get('/onboarding/signups', params), definitions().catch(() => ({}))])
   const ACT = { records: def.activation?.recordEvents ?? 10, days: def.activation?.days ?? 7 }
   const rows = r.items.map((s) => {
     const a = toAccount(s)
@@ -68,8 +46,6 @@ export async function onboardingPage(params) {
       status: s.status,
       checklist: checklist(a, ACT),
       stuck: s.stuck, highPot: s.highPot, activated: s.activated === true, hasBase: s.hasBase, stepsDone: s.stepsDone,
-      next: { key: s.next, text: s.status === 'member' ? MEMBER_TEXT : NEXT_TEXT[s.next] },
-      done: isDone(a.id, s.next),
     }
   })
   return { rows, total: r.total, counts: r.counts || {} }

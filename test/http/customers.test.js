@@ -41,7 +41,7 @@ const detail = () => ({
 
 // keys of the mock twins (src/api/mock/customer.js, shared.js enrich())
 const ACCOUNT_KEYS = ['id', 'name', 'slug', 'industry', 'industryName', 'city', 'source', 'age', 'contact', 'plan', 'cycle', 'seats', 'mrr', 'paying', 'everPaid', 'health', 'band', 'components', 'health2wAgo', 'healthHistory', 'lastSeenDays', 'lastSeenMin', 'online', 'memberCount', 'activeMembers7', 'activeDays28', 'activeDays7', 'events30', 'records30', 'records', 'trendPct', 'renewIn', 'churnedAt', 'churnReason', 'pastDue', 'tenureDays', 'limitHits30', 'pricingVisits30', 'tickets', 'nps', 'segments', 'maxUsage', 'usage', 'bases', 'automations', 'upgradeValue', 'last30', 'milestones', 'feat', 'invitesSent', 'wk', 'decline']
-const CUSTOMER_KEYS = ['fallback', 'account', 'ev120', 'au120', 'paidTotal', 'paidCount', 'lastInvoiceRetries', 'weakest', 'nextStep', 'log', 'activeMembersToday', 'invitesAccepted', 'cycleDiscount', 'members', 'bases', 'invoices', 'planEvents', 'timeline', 'interactions', 'notes', 'limits', 'featureList', 'profile']
+const CUSTOMER_KEYS = ['fallback', 'account', 'ev120', 'au120', 'paidTotal', 'paidCount', 'lastInvoiceRetries', 'log', 'activeMembersToday', 'invitesAccepted', 'cycleDiscount', 'members', 'bases', 'invoices', 'planEvents', 'timeline', 'interactions', 'notes', 'limits', 'featureList', 'profile']
 
 describe('http customers adapter', () => {
   it('customers() lists every account, no cities', async () => {
@@ -107,7 +107,6 @@ describe('http customer adapter', () => {
     expect(d.members.map((m) => m.role)).toEqual(['مالک', 'عضو'])
     expect(d.bases[0]).toMatchObject({ slug: 'bbbbbbbb', tables: 4, lastActive: 1, created: 199, role: 'creator', creatorId: null })
     expect(d.bases[1]).toMatchObject({ role: 'owner', creatorId: 'd'.repeat(24), creatorName: 'ابوالفضل' })
-    expect(d.weakest).toBe('trend'); expect(d.nextStep).toBeTruthy()
     expect(d.log).toEqual([{ local: true, who: 'من', what: 'زنگ زدم', kind: 'تماس' }])
     expect(d.account.feat).toEqual({ Record: true, View: true })
     expect(d.featureList.some((f) => f.key === 'View')).toBe(true)

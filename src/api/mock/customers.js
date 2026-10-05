@@ -20,9 +20,10 @@ const SORTS = {
 }
 const FILTERS = {
   plan: (a, v) => a.plan === v, band: (a, v) => a.band === v, source: (a, v) => (v === 'invite') === (a.source === 'invite'),
+  segment: (a, v) => a.segments.includes(v),
 }
 
-/** GET /management/customers?view&q&plan&band&source&sort&dir&page&size — one page, per-view counts. */
+/** GET /management/customers?view&q&plan&band&source&segment&sort&dir&page&size — one page, per-view counts. */
 export function customersPage(p = {}) {
   return pageOf(DB.accounts.map(enrich), p, { views: VIEWS, sorts: SORTS, filters: FILTERS, text: (a) => a.name + ' ' + a.contact.first + ' ' + a.contact.last + ' ' + a.contact.mobile + ' ' + a.contact.email })
 }

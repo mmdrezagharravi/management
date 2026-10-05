@@ -179,6 +179,7 @@ body.body--dark .btn.primary:hover { background: #2a78d6; }
 
 .input, .select { height: 32px; border: 1px solid var(--border-strong); border-radius: 8px; background: var(--surface); color: var(--ink); padding: 0 10px; font-size: 12.5px; min-width: 0; font-family: inherit; transition: border-color .12s, box-shadow .12s; }
 .select.on { border-color: var(--accent); background-color: var(--accent-wash); color: var(--accent-ink); }
+.select option { background-color: var(--surface); color: var(--ink); }
 .select { padding-inline-end: 26px; appearance: none; cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath d='M1 3l4 4 4-4' fill='none' stroke='%23898781' stroke-width='1.6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: left 9px center; }
 .input:focus, .select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-wash); }
 textarea.input { height: auto; padding: 8px 10px; resize: vertical; line-height: 1.8; }

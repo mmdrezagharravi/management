@@ -2,7 +2,6 @@
 import { get } from './client'
 import { toAccount, notesOf, planKey, RECORD_LIMITS, CYCLE_MAP } from './account'
 import { fa, money, ago, daysAgo, date, dateTime } from 'src/lib/format'
-import { HEALTH_COMPONENTS } from 'src/lib/refs'
 import { PLAN_NAME } from 'src/lib/ui'
 
 // Invoice.status: Paid | Pending | Processing | Overdue | Failed — an abandoned checkout stays Pending
@@ -10,13 +9,6 @@ const INV_STATUS = { Paid: 'paid', Pending: 'pending', Processing: 'pending', Ov
 const peCls = (k) => (k === 'churn' ? 'crit' : k === 'contraction' ? 'warn' : 'good')
 const PE_TITLE = { new: 'اولین پرداخت', expansion: 'ارتقا', contraction: 'کاهش پلن', churn: 'لغو اشتراک' }
 const FEATURE_LABEL = { Record: 'رکورد', Cell: 'ویرایش سلول', View: 'نما و فیلتر', Automation: 'خودکارسازی', Collaborator: 'افزودن همکار', Page: 'درگاه و صفحه', Role: 'نقش و دسترسی', AI: 'هوش مصنوعی', ExportTemplate: 'خروجی تمپلیت' }
-const ACTIONS = {
-  activity: 'تماس بگیرید و دلیل کاهش استفاده را بپرسید — معمولاً تغییر آدم‌ها یا فرایند کار در سمت مشتری است.',
-  trend: 'فعالیت دو هفتهٔ اخیر افت کرده؛ بپرسید چه چیزی در تیم یا کارشان تغییر کرده.',
-  depth: 'فقط جدول‌ها را استفاده می‌کنند؛ یک جلسهٔ ۲۰ دقیقه‌ای برای خودکارسازی و فرم پیشنهاد دهید.',
-  team: 'بیشتر اعضا وارد نمی‌شوند؛ با مدیر حساب برای فعال کردن تیم هماهنگ کنید.',
-  commercial: 'مشکل پرداخت، تیکت باز یا برخورد مکرر با سقف دارد؛ اول همین را حل کنید.',
-}
 
 /** Detail → panel account. The detail's healthHistory is daily [{day,score}] up to yesterday; the account wants the
     list's shape: 7 weekly scores (7 weeks ago … last week) + the current score, like data.ts healthHistory. */
@@ -60,7 +52,6 @@ export async function customer(id) {
   const paid = invoices.filter((i) => i.status === 'paid')
   const bases = (s.basesList || []).map((b) => ({ id: b.id, name: b.name, slug: b.id.slice(-8), tables: b.tables, records: b.records, automations: b.automations, portals: b.portals ?? 0, collaborators: b.collaborators, lastActive: b.lastSeenDays ?? 9999, created: daysAgo(b.createdAt) ?? a.age, role: b.role || 'creator', creatorId: b.creator ? b.creator.id : null, creatorName: b.creator ? b.creator.name || fa(b.creator.mobile || '') : null }))
   const planEvents = planEventsOf(a, invoices)
-  const weakest = HEALTH_COMPONENTS.slice().sort((p, q) => a.components[p.key] - a.components[q.key])[0].key
   const featureKeys = Object.keys(FEATURE_LABEL)
   return {
     fallback: false,
@@ -69,7 +60,6 @@ export async function customer(id) {
     au120: [],
     paidTotal: paid.reduce((t, i) => t + i.amount, 0), paidCount: paid.length,
     lastInvoiceRetries: 0,
-    weakest, nextStep: ACTIONS[weakest],
     log: notesOf(a.id).map((x) => ({ local: true, who: x.who, what: x.text, kind: x.kind === 'call' ? 'تماس' : 'یادداشت' })),
     activeMembersToday: null,
     invitesAccepted: Math.max(0, a.memberCount - 1),

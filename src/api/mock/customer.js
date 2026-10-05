@@ -54,14 +54,6 @@ function timeline(a) {
   return ev.sort((p, q) => q.t - p.t)
 }
 
-/* next step by weakest health component */
-const ACTIONS = {
-  activity: 'تماس بگیرید و دلیل کاهش استفاده را بپرسید — معمولاً تغییر آدم‌ها یا فرایند کار در سمت مشتری است.',
-  trend: 'فعالیت دو هفتهٔ اخیر افت کرده؛ بپرسید چه چیزی در تیم یا کارشان تغییر کرده.',
-  depth: 'فقط جدول‌ها را استفاده می‌کنند؛ یک جلسهٔ ۲۰ دقیقه‌ای برای خودکارسازی و فرم پیشنهاد دهید.',
-  team: 'بیشتر اعضا وارد نمی‌شوند؛ با مدیر حساب برای فعال کردن تیم هماهنگ کنید.',
-  commercial: 'مشکل پرداخت، تیکت باز یا برخورد مکرر با سقف دارد؛ اول همین را حل کنید.',
-}
 const KIND = { call: 'تماس', email: 'ایمیل', meeting: 'جلسه', deal: 'قرارداد' }
 
 /** Full profile page. Unknown id → the paying customer with the most revenue at risk (fallback: true). */
@@ -73,7 +65,6 @@ export function customer(id) {
   for (let d = 119; d >= 0; d--) { ev120.push(a.ev[d]); au120.push(a.au[d]) }
   const paid = a.invoices.filter((i) => i.status === 'paid')
   const paidTotal = paid.reduce((s, i) => s + i.amount, 0)
-  const weakest = C.health.components.slice().sort((p, q) => a.components[p.key] - a.components[q.key])[0]
   const last = a.invoices[a.invoices.length - 1]
   const interactions = interactionsOf(a.id)
   // interaction log: browser notes first, then calls/deals oldest → newest (same day: latest first)
@@ -85,8 +76,6 @@ export function customer(id) {
     ev120, au120,
     paidTotal, paidCount: paid.length,
     lastInvoiceRetries: last ? last.retries : 0,
-    weakest: weakest.key,
-    nextStep: ACTIONS[weakest.key],
     log,
     activeMembersToday: a.au[0],
     invitesAccepted: a.invitesAccepted,

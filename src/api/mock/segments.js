@@ -1,4 +1,4 @@
-/* GET /management/segments?seg=upsell — behavioural groups, their overlap, and the members of one group. */
+/* GET /management/segments — behavioural groups and their overlap; members come from customersPage({ segment }). */
 import { DB } from 'src/mock/engine'
 import { C, ok, enrich } from './shared'
 
@@ -38,6 +38,5 @@ export function segments() {
       }
     }),
     cells, top,
-    membersBy: Object.fromEntries(Object.entries(members).map(([k, list]) => [k, list.map(enrich)])),
   })
 }
