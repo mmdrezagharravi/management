@@ -1,7 +1,7 @@
 <template>
   <q-dialog v-model="open" @hide="$emit('closed')">
     <div class="modal">
-      <div class="mh"><span>ثبت نتیجهٔ تماس — {{ account.name }}</span><button class="btn ghost sm icon" aria-label="بستن" @click="open = false"><AppIcon name="x" /></button></div>
+      <div class="mh"><span>ثبت نتیجهٔ تماس — {{ account.name }}</span><button class="btn ghost small icon" aria-label="بستن" @click="open = false"><AppIcon name="x" /></button></div>
       <div class="mb">
         <div class="field">نتیجه
           <select class="select" v-model="outcome">

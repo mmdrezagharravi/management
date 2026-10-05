@@ -16,16 +16,16 @@ const CONFIG = {
   currency: 'تومان',
 
   plans: {
-    free:  { key: 'free',  name: 'رایگان', price: 0,       seatsIncluded: 1,  seatPrice: 0,
+    basic:  { key: 'basic',  name: 'پایه', price: 0,       seatsIncluded: 1,  seatPrice: 0,
              limits: { records: 1000,    runs: 0,      sms: 0,     ai: 20000,   storage: 1,   seats: 2 } },
-    basic: { key: 'basic', name: 'پایه',   price: 190000,  seatsIncluded: 3,  seatPrice: 0,
+    team: { key: 'team', name: 'تیم',   price: 190000,  seatsIncluded: 3,  seatPrice: 0,
              limits: { records: 10000,   runs: 1000,   sms: 300,   ai: 100000,  storage: 5,   seats: 3 } },
-    pro:   { key: 'pro',   name: 'پرو',    price: 490000,  seatsIncluded: 5,  seatPrice: 90000,
+    business:   { key: 'business',   name: 'کسب و کار',    price: 490000,  seatsIncluded: 5,  seatPrice: 90000,
              limits: { records: 100000,  runs: 20000,  sms: 3000,  ai: 500000,  storage: 50,  seats: null } },
-    ent:   { key: 'ent',   name: 'سازمانی', price: 2900000, seatsIncluded: 25, seatPrice: 60000,
+    enterprise:   { key: 'enterprise',   name: 'سازمانی', price: 2900000, seatsIncluded: 25, seatPrice: 60000,
              limits: { records: 1000000, runs: 200000, sms: 20000, ai: 3000000, storage: 500, seats: null } },
   },
-  planOrder: ['free', 'basic', 'pro', 'ent'],
+  planOrder: ['basic', 'team', 'business', 'enterprise'],
 
   cycles: {
     monthly:   { key: 'monthly',   name: 'ماهانه',  days: 30,  months: 1,  discount: 0 },
@@ -50,6 +50,7 @@ const CONFIG = {
     { key: 'telegram',  name: 'تلگرام',         share: 0.08, signupRate: 0.030, quality: 0.85, spend: 12000000 },
     { key: 'other',     name: 'سایر',           share: 0.07, signupRate: 0.024, quality: 0.90, spend: 0 },
   ],
+  newVisitorShare: 0.72, // share of sessions from first-time visitors
 
   // تعریف‌ها — هر صفحه همین‌ها را می‌خواند
   activation: { records: 40, days: 7 },           // فعال‌سازی: ۴۰ رکورد در ۷ روز اول
@@ -251,15 +252,15 @@ function genAccount(id) {
 
   // ---- paid lifecycle
   const paidP = m.activated !== undefined ? clamp(0.05 + 0.5 * Math.pow(e, 1.1) + (m.team !== undefined ? 0.08 : 0) + 0.06 * e, 0, 0.85) : 0.01;
-  let plan = 'free', seats = 1, cycle = 'monthly';
+  let plan = 'basic', seats = 1, cycle = 'monthly';
   if (R.chance(paidP)) {
     const off = R.int(6, 75);
     if (age >= off) {
       m.paid = off;
       if (m.pricing === undefined || m.pricing > off) m.pricing = Math.max(0, off - R.int(0, 3));
       const roll = R.f();
-      plan = e > 0.72 && roll < 0.08 ? 'ent' : roll < 0.52 ? 'basic' : 'pro';
-      seats = plan === 'basic' ? R.int(1, 3) : plan === 'pro' ? 5 + Math.floor(Math.pow(R.f(), 2) * 8) : R.int(25, 55);
+      plan = e > 0.72 && roll < 0.08 ? 'enterprise' : roll < 0.52 ? 'team' : 'business';
+      seats = plan === 'team' ? R.int(1, 3) : plan === 'business' ? 5 + Math.floor(Math.pow(R.f(), 2) * 8) : R.int(25, 55);
       const cr = R.f(); cycle = cr < 0.6 ? 'monthly' : cr < 0.85 ? 'quarterly' : 'yearly';
       let t = age - off;                                     // days ago of first payment
       let cur = { plan, seats, cycle };
@@ -274,10 +275,10 @@ function genAccount(id) {
           push(next, 'churn'); a.churnedAt = next; a.churnReason = R.pick(CONFIG.churnReasons); break;
         }
         const r = R.f();
-        if (r < 0.07 && cur.plan === 'basic' && e > 0.45) { cur.plan = 'pro'; cur.seats = Math.max(5, cur.seats); push(next, 'expansion'); }
-        else if (r < 0.13 && cur.plan !== 'basic') { cur.seats += R.int(1, 3); push(next, 'expansion'); }
-        else if (r < 0.155 && cur.plan === 'pro' && cur.seats > 5) { cur.seats = Math.max(5, cur.seats - R.int(1, 3)); push(next, 'contraction'); }
-        else if (r < 0.165 && cur.plan === 'pro' && e < 0.4) { cur.plan = 'basic'; cur.seats = 3; push(next, 'contraction'); }
+        if (r < 0.07 && cur.plan === 'team' && e > 0.45) { cur.plan = 'business'; cur.seats = Math.max(5, cur.seats); push(next, 'expansion'); }
+        else if (r < 0.13 && cur.plan !== 'team') { cur.seats += R.int(1, 3); push(next, 'expansion'); }
+        else if (r < 0.155 && cur.plan === 'business' && cur.seats > 5) { cur.seats = Math.max(5, cur.seats - R.int(1, 3)); push(next, 'contraction'); }
+        else if (r < 0.165 && cur.plan === 'business' && e < 0.4) { cur.plan = 'team'; cur.seats = 3; push(next, 'contraction'); }
         a.invoices.push({ t: next, amount: mrrOf(cur.plan, cur.seats, cur.cycle) * months, status: 'paid', plan: cur.plan, cycle: cur.cycle });
         next -= CONFIG.cycles[cur.cycle].days;
       }
@@ -288,10 +289,10 @@ function genAccount(id) {
         if (last.t <= 12 && last.t > 0 && a.invoices.length > 1 && R.chance(0.09 + (1 - e) * 0.08)) {
           last.status = 'failed'; last.retries = R.int(1, 3); a.pastDue = true;
         }
-      } else { plan = 'free'; seats = 1; cycle = 'monthly'; }
+      } else { plan = 'basic'; seats = 1; cycle = 'monthly'; }
     }
   }
-  a.plan = plan; a.seats = plan === 'free' ? 1 : seats; a.cycle = cycle;
+  a.plan = plan; a.seats = plan === 'basic' ? 1 : seats; a.cycle = cycle;
   a.mrr = mrrOf(plan, a.seats, cycle);
   a.paying = a.mrr > 0;
   a.everPaid = m.paid !== undefined;
@@ -302,11 +303,11 @@ function genAccount(id) {
 
   // ---- members
   const cap = plans[plan].limits.seats || a.seats;
-  let members = plan === 'free' ? (m.team !== undefined ? 2 : 1)
-    : plan === 'basic' ? R.int(1, a.seats)
+  let members = plan === 'basic' ? (m.team !== undefined ? 2 : 1)
+    : plan === 'team' ? R.int(1, a.seats)
     : Math.max(2, Math.round(a.seats * (0.6 + R.f() * 0.45)));
-  members = Math.min(members, plan === 'free' ? 2 : plan === 'basic' ? 3 : a.seats + (R.chance(0.15) ? R.int(1, 2) : 0));
-  if (m.team === undefined && plan !== 'ent') members = Math.min(members, plan === 'pro' ? members : 1);
+  members = Math.min(members, plan === 'basic' ? 2 : plan === 'team' ? 3 : a.seats + (R.chance(0.15) ? R.int(1, 2) : 0));
+  if (m.team === undefined && plan !== 'enterprise') members = Math.min(members, plan === 'business' ? members : 1);
   a.memberCount = Math.max(1, members);
   a.seatCap = cap;
 
@@ -381,19 +382,19 @@ function genAccount(id) {
   if (m.firstBase !== undefined) a.feat.tables = { first: age - m.firstBase, last: ls };
   F('views', 0.45 + 0.5 * e);
   F('forms', 0.18 + 0.5 * e);
-  F('automation', 0.04 + 0.7 * e, 'basic');
+  F('automation', 0.04 + 0.7 * e, 'team');
   F('share', 0.08 + 0.45 * e);
-  F('portal', 0.03 + 0.35 * e, 'pro');
+  F('portal', 0.03 + 0.35 * e, 'business');
   F('export', 0.12 + 0.25 * e);
   F('ai', 0.05 + 0.3 * e);
-  F('plugin', 0.01 + 0.1 * e, 'basic');
-  F('api', 0.01 + 0.25 * e, 'pro');
+  F('plugin', 0.01 + 0.1 * e, 'team');
+  F('api', 0.01 + 0.25 * e, 'business');
 
   // ---- bases
   const nb = m.firstBase === undefined ? 0 : 1 + Math.floor(Math.pow(R.f(), 1.6) * (1 + e * 5));
   // bases share the records the plan actually allowed (free/basic are capped at the limit)
   const capLimit = plans[plan].limits.records;
-  let left = plan === 'free' || plan === 'basic' ? Math.min(recordsRaw, capLimit) : recordsRaw;
+  let left = plan === 'basic' || plan === 'team' ? Math.min(recordsRaw, capLimit) : recordsRaw;
   const baseNames = ind.bases.slice();
   for (let i = 0; i < nb; i++) {
     const name = i < baseNames.length ? baseNames[i] : baseNames[i % baseNames.length] + ' ' + String(i + 1).replace(/[0-9]/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
@@ -414,15 +415,15 @@ function genAccount(id) {
   // ---- usage vs plan limits (current month / cumulative)
   const L = plans[plan].limits;
   a.recordsDemand = recordsRaw;
-  a.records = plan === 'free' || plan === 'basic' ? Math.min(recordsRaw, L.records) : recordsRaw;
+  a.records = plan === 'basic' || plan === 'team' ? Math.min(recordsRaw, L.records) : recordsRaw;
   const runsDemand = a.automations * Math.round(intensity * 1.8 * (0.5 + R.f()));
   a.runs30 = L.runs ? Math.min(runsDemand, L.runs) : 0;
   a.sms30 = a.feat.automation && R.chance(0.45) ? Math.min(Math.round(a.runs30 * (0.08 + R.f() * 0.2)), L.sms) : 0;
-  a.ai30 = a.feat.ai ? Math.min(Math.round(R.logn(0.7) * (plan === 'free' ? 2500 + 12000 * e : 8000 + 60000 * e)), L.ai) : 0;
-  a.storage = Math.round((a.records * (plan === 'free' ? 0.00035 : 0.0009) + R.f() * (a.paying ? 6 : 0.2)) * 10) / 10;
+  a.ai30 = a.feat.ai ? Math.min(Math.round(R.logn(0.7) * (plan === 'basic' ? 2500 + 12000 * e : 8000 + 60000 * e)), L.ai) : 0;
+  a.storage = Math.round((a.records * (plan === 'basic' ? 0.00035 : 0.0009) + R.f() * (a.paying ? 6 : 0.2)) * 10) / 10;
   a.storage = Math.min(a.storage, L.storage);
   const over = Math.max(recordsRaw - L.records * 0.97, runsDemand - (L.runs || Infinity) * 0.97, 0);
-  a.limitHits30 = ls <= 30 && over > 0 ? clamp(Math.ceil(over / (plan === 'free' ? 60 : 400)), 1, 40) : 0;
+  a.limitHits30 = ls <= 30 && over > 0 ? clamp(Math.ceil(over / (plan === 'basic' ? 60 : 400)), 1, 40) : 0;
   a.pricingVisits30 = a.limitHits30 > 0 ? (R.chance(0.7) ? R.int(1, 7) : 0) : (ls <= 30 && R.chance(0.06) ? R.int(1, 2) : 0);
 
   // ---- members list
@@ -522,7 +523,7 @@ function inSegment(a, key) {
     case 'builders': return a.bases.length >= 2 && a.lastSeenDays <= 30;
     case 'automators': return a.automations >= 1 && a.lastSeenDays <= 30;
     case 'teams': return a.activeMembers7 >= 2;
-    case 'upsell': return (a.plan === 'free' || a.plan === 'basic') && a.limitHits30 >= 2 && a.pricingVisits30 >= 1 && a.lastSeenDays <= 14;
+    case 'upsell': return (a.plan === 'basic' || a.plan === 'team') && a.limitHits30 >= 2 && a.pricingVisits30 >= 1 && a.lastSeenDays <= 14;
     case 'risk': return a.paying && a.health < 50;
     case 'champions': return a.paying && a.tenureDays >= 180 && a.health >= 80;
     case 'dormant': return a.lastSeenDays > CONFIG.dormantDays;
@@ -626,7 +627,7 @@ function tasksFor(repId) {
       out.push({ id: 'upsell:' + a.id, type: 'upsell', accountId: a.id, due: 1, value: upgradeValue(a), score: a.limitHits30 * (1 + a.pricingVisits30),
         why: fa(a.limitHits30) + ' بار به سقف ' + a.maxUsage.label + ' خورده و ' + fa(a.pricingVisits30) + ' بار صفحهٔ قیمت را دیده' });
     }
-    if (a.paying && a.plan !== 'basic' && a.memberCount >= a.seats && a.activeMembers7 >= a.seats) {
+    if (a.paying && a.plan !== 'team' && a.memberCount >= a.seats && a.activeMembers7 >= a.seats) {
       out.push({ id: 'seats:' + a.id, type: 'seats', accountId: a.id, due: 2, value: plans[a.plan].seatPrice * 2,
         why: fa(a.memberCount) + ' عضو از سقف ' + fa(a.seats) + ' همکار · هر ' + fa(a.activeMembers7) + ' نفر این هفته فعال بوده‌اند' });
     }
@@ -658,8 +659,8 @@ function tasksFor(repId) {
   return list.sort((p, q) => Math.max(0, p.due) - Math.max(0, q.due) || TASK_TYPES[p.type].prio - TASK_TYPES[q.type].prio || q.value - p.value);
 }
 function upgradeValue(a) {
-  if (a.plan === 'free') return mrrOf('basic', 1, 'monthly');
-  if (a.plan === 'basic') return mrrOf('pro', 5, 'monthly') - a.mrr;
+  if (a.plan === 'basic') return mrrOf('team', 1, 'monthly');
+  if (a.plan === 'team') return mrrOf('business', 5, 'monthly') - a.mrr;
   return plans[a.plan].seatPrice * 2;
 }
 

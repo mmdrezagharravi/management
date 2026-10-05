@@ -1,6 +1,6 @@
 <template>
   <PageShell title="تحلیل هوشمند" sub="گزارش روزانه — هر جمله از عددهای همین پنل ساخته شده؛ روی نام هر مشتری بزنید تا نمای سریع باز شود" :sources="['main', 'behavior', 'wallet']" :banner="false" :loading="loading" :error="error">
-    <template #actions><button class="btn sm" @click="copyBrief"><AppIcon name="copy" />کپی متن گزارش</button></template>
+    <template #actions><button class="btn small" @click="copyBrief"><AppIcon name="copy" />کپی متن گزارش</button></template>
     <template v-if="d">
       <PanelCard cls="ai-card" id="brief" :hint="weekdayName(0) + ' ' + date(0)">
         <template #title><span style="color: #7fb2f0; display: inline-flex"><AppIcon name="sparkle" /></span>وضعیت امروز</template>
@@ -17,12 +17,12 @@
             <div class="ev">شواهد: <Rich :parts="f.ev" /></div>
           </div>
           <div class="card-f" style="justify-content: flex-start; flex-wrap: wrap; gap: 6px">
-            <button v-if="f.taskOpen" class="btn sm ghost good" title="لغو وظیفه" @click="toggleTask(f)"><AppIcon name="check" />وظیفه ساخته شد</button>
-            <button v-else class="btn sm primary" @click="toggleTask(f)"><AppIcon name="plus" />ساخت وظیفه</button>
-            <router-link class="btn sm ghost" :to="f.link.to">{{ f.link.label }}<AppIcon name="chevronL" /></router-link>
+            <button v-if="f.taskOpen" class="btn small ghost good" title="لغو وظیفه" @click="toggleTask(f)"><AppIcon name="check" />وظیفه ساخته شد</button>
+            <button v-else class="btn small primary" @click="toggleTask(f)"><AppIcon name="plus" />ساخت وظیفه</button>
+            <router-link class="btn small ghost" :to="f.link.to">{{ f.link.label }}<AppIcon name="chevronL" /></router-link>
             <span style="margin-inline-start: auto; display: inline-flex; gap: 4px">
-              <button class="btn sm icon fb" :class="{ on: f.feedback === 'up' }" :aria-pressed="String(f.feedback === 'up')" title="مفید بود" aria-label="مفید بود" @click="feedback(f, 'up')"><AppIcon name="thumb" size="15" /></button>
-              <button class="btn sm icon fb" :class="{ on: f.feedback === 'down' }" :aria-pressed="String(f.feedback === 'down')" title="مفید نبود" aria-label="مفید نبود" @click="feedback(f, 'down')"><span style="display: inline-flex; transform: scaleY(-1)"><AppIcon name="thumb" size="15" /></span></button>
+              <button class="btn small icon fb" :class="{ on: f.feedback === 'up' }" :aria-pressed="String(f.feedback === 'up')" title="مفید بود" aria-label="مفید بود" @click="feedback(f, 'up')"><AppIcon name="thumb" size="15" /></button>
+              <button class="btn small icon fb" :class="{ on: f.feedback === 'down' }" :aria-pressed="String(f.feedback === 'down')" title="مفید نبود" aria-label="مفید نبود" @click="feedback(f, 'down')"><span style="display: inline-flex; transform: scaleY(-1)"><AppIcon name="thumb" size="15" /></span></button>
             </span>
           </div>
         </section>
@@ -40,8 +40,8 @@
               </div>
             </div>
             <div class="acts">
-              <button v-if="x.inToday" class="btn sm ghost good" title="حذف از کارهای امروز" @click="toggleToday(x)"><AppIcon name="check" />در کارهای امروز</button>
-              <button v-else class="btn sm" @click="toggleToday(x)"><AppIcon name="inbox" />ثبت در کارهای امروز</button>
+              <button v-if="x.inToday" class="btn small ghost good" title="حذف از کارهای امروز" @click="toggleToday(x)"><AppIcon name="check" />در کارهای امروز</button>
+              <button v-else class="btn small" @click="toggleToday(x)"><AppIcon name="inbox" />ثبت در کارهای امروز</button>
             </div>
           </div>
           <template #footer><span>{{ fa(d.actions.total) }} مورد بررسی شد؛ {{ fa(d.actions.top.length) }} مورد پراثرتر اینجاست</span><router-link to="/today">کارهای امروز</router-link></template>

@@ -48,7 +48,7 @@ export function health() {
   return ok({
     payingCount: paying.length, totalMrr,
     kpis: { riskMrr, riskCount: atRisk.length, avg, avg2w, dropsCount: drops.length, dropsMrr: sum(drops, (a) => a.mrr) },
-    bands, compAvg, weakAvg, riskN,
+    bands, compAvg, weakAvg, riskN, hasHistory: true, historyFrom: null,
     atRisk: atRisk.map(withWeak),
     down, up,
   })

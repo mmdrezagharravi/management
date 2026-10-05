@@ -61,8 +61,8 @@
         <div class="stack">
           <PanelCard v-if="p" title="اطلاعات تماس و حساب">
             <div class="kv"><span class="k">نام</span><span class="v"><b>{{ p.name || '—' }}</b></span></div>
-            <div class="kv"><span class="k">موبایل</span><span class="v"><template v-if="p.mobile"><a class="ltr" :href="'tel:' + p.mobile" style="font-weight: 700">{{ fa(p.mobile) }}</a><button class="btn sm ghost icon" title="کپی شماره" aria-label="کپی شماره" @click="copy(p.mobile)"><AppIcon name="copy" /></button></template><span v-else class="faint">—</span></span></div>
-            <div class="kv"><span class="k">ایمیل</span><span class="v"><template v-if="p.email"><a class="ltr" :href="'mailto:' + p.email">{{ p.email }}</a><button class="btn sm ghost icon" title="کپی ایمیل" aria-label="کپی ایمیل" @click="copy(p.email)"><AppIcon name="copy" /></button></template><span v-else class="faint">ثبت نشده</span></span></div>
+            <div class="kv"><span class="k">موبایل</span><span class="v"><template v-if="p.mobile"><a class="ltr" :href="'tel:' + p.mobile" style="font-weight: 700">{{ fa(p.mobile) }}</a><button class="btn small ghost icon" title="کپی شماره" aria-label="کپی شماره" @click="copy(p.mobile)"><AppIcon name="copy" /></button></template><span v-else class="faint">—</span></span></div>
+            <div class="kv"><span class="k">ایمیل</span><span class="v"><template v-if="p.email"><a class="ltr" :href="'mailto:' + p.email">{{ p.email }}</a><button class="btn small ghost icon" title="کپی ایمیل" aria-label="کپی ایمیل" @click="copy(p.email)"><AppIcon name="copy" /></button></template><span v-else class="faint">ثبت نشده</span></span></div>
             <div v-if="p.username" class="kv"><span class="k">نام کاربری</span><span class="v ltr">{{ p.username }}</span></div>
 
             <template v-if="p.company">
@@ -78,7 +78,8 @@
             <div class="kv"><span class="k">وضعیت</span><span class="v"><StatusBadge v-if="p.blocked" status="crit" label="مسدود" /><StatusBadge v-else status="good" label="فعال" /></span></div>
             <div class="kv"><span class="k">عضو از</span><span class="v">{{ dateTime(p.signedUpAt) }}</span></div>
             <div v-if="p.planUntil" class="kv"><span class="k">اعتبار پلن</span><span class="v">{{ p.planFrom ? dateTime(p.planFrom) + ' تا ' : 'تا ' }}{{ dateTime(p.planUntil) }}</span></div>
-            <div class="kv"><span class="k">معرف</span><span class="v"><router-link v-if="p.referredBy" :to="'/customers/' + p.referredBy.id">{{ p.referredBy.name || fa(p.referredBy.mobile || '') }}</router-link><span v-else class="faint">مستقیم</span></span></div>
+            <div v-if="p.invitedBy" class="kv"><span class="k">دعوت‌کننده</span><span class="v"><router-link :to="'/customers/' + p.invitedBy.id">{{ p.invitedBy.name || fa(p.invitedBy.mobile || '') }}</router-link><span class="faint"> · حساب با افزودن همکار ساخته شد</span></span></div>
+            <div v-else class="kv"><span class="k">معرف</span><span class="v"><router-link v-if="p.referredBy" :to="'/customers/' + p.referredBy.id">{{ p.referredBy.name || fa(p.referredBy.mobile || '') }}</router-link><span v-else class="faint">ثبت‌نام مستقیم</span></span></div>
             <div class="kv"><span class="k">معرفی کرده</span><span class="v">{{ p.referrals ? fa(p.referrals) + ' نفر' : '—' }}<span v-if="p.referralCode" class="faint ltr"> · کد {{ p.referralCode }}</span></span></div>
             <div class="kv"><span class="k">موجودی کیف پول</span><span class="v"><template v-if="p.wallet != null">{{ money(p.wallet) }}</template><span v-else class="faint">در دسترس نیست</span></span></div>
             <div class="kv"><span class="k">اعتبار باقی‌مانده</span><span class="v">{{ n(p.credits.aiTokens) }} توکن هوش مصنوعی · {{ n(p.credits.sms) }} پیامک · {{ n(p.credits.email) }} ایمیل</span></div>
@@ -182,7 +183,7 @@
 
       <!-- log -->
       <PanelCard v-if="tab === 'log'" title="تعامل‌ها" hint="تماس، ایمیل، جلسه و قرارداد" flush>
-        <template #actions><button class="btn sm" @click="dialogs.addNote(a)"><AppIcon name="note" />یادداشت</button><button class="btn sm primary" @click="dialogs.logCall(a)"><AppIcon name="phone" />ثبت تماس</button></template>
+        <template #actions><button class="btn small" @click="dialogs.addNote(a)"><AppIcon name="note" />یادداشت</button><button class="btn small primary" @click="dialogs.logCall(a)"><AppIcon name="phone" />ثبت تماس</button></template>
         <div v-if="d.log.length" class="list" style="padding: 0 16px">
           <div v-for="(r, i) in d.log" :key="i" class="li"><span class="tag">{{ r.kind }}</span><span class="main"><span class="t" style="font-weight: 600">{{ r.what }}</span><span class="d">{{ r.who }}</span></span><span class="end faint">{{ r.local ? 'همین مرورگر' : agoDays(r.t) + ' ' + clock(r.min) }}</span></div>
         </div>

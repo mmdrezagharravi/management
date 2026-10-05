@@ -1,13 +1,11 @@
 <template>
-  <PageShell title="درآمد" sub="درآمد ماهانهٔ تکرارشونده، جابه‌جایی‌ها و پول دریافتی — هر عدد با بازهٔ هم‌طول قبلی مقایسه شده" range v-model:range="range" :sources="['wallet']" :loading="loading" :error="error">
+  <PageShell title="درآمد" sub="درآمد ماهانه، جابه‌جایی‌ها و پول دریافتی — هر عدد با بازهٔ هم‌طول قبلی مقایسه شده" range v-model:range="range" :sources="['wallet']" :loading="loading" :error="error">
     <template v-if="d">
       <div class="kpis">
-        <KpiTile label="درآمد ماهانه (MRR)" :value="cp(k.mrr.now).num" :unit="cp(k.mrr.now).unit + ' ' + CURRENCY" info="جمع اشتراک‌های فعال به ماه؛ سه‌ماهه و سالانه تقسیم بر تعداد ماه" :delta="{ cur: k.mrr.now, prev: k.mrr.prev }" :cmp="'قبل: ' + compact(k.mrr.prev)" :spark="{ values: k.mrr.spark, area: true }" />
-        <KpiTile label="درآمد سالانه (ARR)" :value="cp(k.mrr.now * 12).num" :unit="cp(k.mrr.now * 12).unit + ' ' + CURRENCY" info="MRR × ۱۲" :delta="{ cur: k.mrr.now * 12, prev: k.mrr.prev == null ? null : k.mrr.prev * 12 }" :cmp="'قبل: ' + (k.mrr.prev == null ? '—' : compact(k.mrr.prev * 12))" />
-        <KpiTile :label="'رشد خالص در ' + fa(range) + ' روز'" :value="(k.net.now < 0 ? '−' : '+') + cp(Math.abs(k.net.now)).num" :unit="cp(Math.abs(k.net.now)).unit + ' ' + CURRENCY" info="تغییر MRR در بازه: مشتری جدید + ارتقا − کاهش − ریزش" :delta="{ cur: k.net.now, prev: k.net.prev }" :cmp="k.net.prev == null ? 'بازهٔ قبل در دسترس نیست' : 'بازهٔ قبل: ' + signed(k.net.prev)" />
-        <KpiTile label="نگهداشت درآمد (NRR)" :value="pct(k.nrr.now, 1)" info="مشتریانی که ۹۰ روز پیش پرداخت می‌کردند: درآمد امروزشان ÷ درآمد آن روزشان. ارتقا بالا می‌بردش، کاهش و ریزش پایین؛ مشتری جدید حساب نمی‌شود." :delta="{ cur: k.nrr.now, prev: k.nrr.prev, points: true }" :cmp="'۹۰ روز اخیر · قبل: ' + pct(k.nrr.prev, 1)" />
-        <KpiTile label="میانگین درآمد هر مشتری" :value="cp(k.arpa.now).num" :unit="cp(k.arpa.now).unit + ' ' + CURRENCY" info="ARPA: MRR ÷ مشتریان پرداخت‌کننده" :delta="{ cur: k.arpa.now, prev: k.arpa.prev }" :cmp="'قبل: ' + compact(k.arpa.prev)" />
+        <KpiTile label="درآمد ماهانه (MRR)" :value="cp(k.mrr.now).num" :unit="cp(k.mrr.now).unit + ' ' + CURRENCY" info="جمع اشتراک‌های فعال به ماه؛ سه‌ماهه و سالانه تقسیم بر تعداد ماه" :delta="{ cur: k.mrr.now, prev: k.mrr.prev }" :cmp="'سالانه (ARR): ' + compact(k.mrr.now * 12)" :spark="{ values: k.mrr.spark, area: true }" />
         <KpiTile label="مشتری پرداخت‌کننده" :value="n(k.paying.now)" to="/customers" :delta="{ cur: k.paying.now, prev: k.paying.prev }" :cmp="'قبل: ' + n(k.paying.prev)" :spark="{ values: k.paying.spark }" />
+        <KpiTile label="میانگین درآمد هر مشتری" :value="cp(k.arpa.now).num" :unit="cp(k.arpa.now).unit + ' ' + CURRENCY" info="MRR ÷ مشتریان پرداخت‌کننده" :delta="{ cur: k.arpa.now, prev: k.arpa.prev }" :cmp="'قبل: ' + compact(k.arpa.prev)" />
+        <KpiTile label="نگهداشت درآمد (NRR)" :value="pct(k.nrr.now, 1)" info="مشتریانی که ۹۰ روز پیش پرداخت می‌کردند: درآمد امروزشان ÷ درآمد آن روزشان. ارتقا بالا می‌بردش، کاهش و ریزش پایین؛ مشتری جدید حساب نمی‌شود." :delta="{ cur: k.nrr.now, prev: k.nrr.prev, points: true }" :cmp="'۹۰ روز اخیر · قبل: ' + pct(k.nrr.prev, 1)" />
       </div>
 
       <div class="grid g-main">
@@ -17,7 +15,7 @@
             <span v-for="l in mvLegend" :key="l.label" class="k"><i class="sw" :style="{ background: l.color }" />{{ l.label }} <b style="color: var(--ink)">{{ signed(l.v) }}</b></span>
             <span class="faint">جمع ۱۲ ماه</span>
           </div>
-          <template #footer><span>ریزش {{ fa(d.months[d.months.length - 1].churnCount) }} مشتری در ماه جاری</span><a class="nowrap" href="#churn">مشتریان ریزش‌کرده</a></template>
+          <template #footer><span>ریزش {{ fa(d.months[d.months.length - 1].churnCount) }} مشتری در ماه جاری</span><router-link class="nowrap" to="/sales?tab=winback">بازگرداندنی‌ها در میز فروش</router-link></template>
         </PanelCard>
         <PanelCard title="روند درآمد ماهانه" hint="MRR در پایان هر ماه · تومان">
           <LineChart :options="mrrChart" />
@@ -46,66 +44,34 @@
               <tr><td class="muted">جمع</td><td class="num muted">{{ n(d.cycMix.tn) }}</td><td class="num"><b>{{ compact(d.cycMix.tm) }}</b></td><td class="num muted">{{ compact(d.cycMix.tn ? d.cycMix.tm / d.cycMix.tn : 0) }}</td><td class="num muted">۱۰۰٪</td></tr>
             </tbody>
           </table></div>
-          <div v-if="d.cycleDiscount" class="note" style="margin-top: 8px">تخفیف: {{ ['quarterly', 'yearly'].map((c) => CYCLE_NAME[c] + ' ' + pct(d.cycleDiscount[c])).join(' · ') }} — ARPA دوره‌های بلندتر به همین دلیل پایین‌تر است.</div>
+          <div v-if="d.cycleDiscount" class="note" style="margin-top: 8px">تخفیف: {{ Object.keys(d.cycleDiscount).map((c) => CYCLE_NAME[c] + ' ' + pct(d.cycleDiscount[c])).join(' · ') }} — ARPA دوره‌های بلندتر به همین دلیل پایین‌تر است.</div>
           <template #footer><span>{{ pct(cyc('monthly').n / d.cycMix.tn) }} ماهانه، فقط {{ pct(cyc('yearly').n / d.cycMix.tn) }} سالانه — به وفادارها پیشنهاد سالانه بدهید</span><router-link class="nowrap" to="/sales?tab=champions">مشتریان وفادار</router-link></template>
         </PanelCard>
       </div>
 
-      <div class="grid g-main">
+      <div class="grid g2">
         <PanelCard title="پول دریافتی در هر ماه" hint="جمع صورتحساب‌های پرداخت‌شده · تومان">
           <ColumnChart :options="cashChart" />
           <template #footer><span>ماه جاری تا امروز: {{ money(lastCash.amount) }} از {{ n(lastCash.n) }} پرداخت</span><span>سالانه‌ها کل سال را یکجا می‌پردازند</span></template>
         </PanelCard>
-        <PanelCard title="تمدیدهای پیش رو" hint="درآمد ماهانه‌ای که سررسید می‌شود">
-          <div v-for="(b, bi) in d.buckets" :key="b.lo" :style="{ padding: (bi ? '10px' : '2px') + ' 0 10px', borderBottom: bi < d.buckets.length - 1 ? '1px solid var(--grid)' : undefined }">
-            <div class="row between"><b style="font-size: 12.8px">{{ BUCKET_LABEL[bi] }}</b><span class="nowrap"><b style="font-size: 16px" class="tnum">{{ compact(b.ok + b.risk) }}</b> <span class="muted" style="font-size: 11.5px">{{ CURRENCY }}</span></span></div>
-            <div style="display: flex; gap: 2px; height: 10px; border-radius: 4px; overflow: hidden; margin: 6px 0 4px; background: var(--grid)">
-              <i v-if="b.ok" title="سلامت ۵۰ و بالاتر" :style="{ flex: b.ok + ' 1 0', background: 'var(--series-1)' }" />
-              <i v-if="b.risk" title="سلامت زیر ۵۰" :style="{ flex: b.risk + ' 1 0', background: 'var(--critical)', minWidth: '3px' }" />
-            </div>
-            <div class="note">{{ n(b.nOk + b.nRisk) }} سررسید · <b>{{ n(b.nRisk) }}</b> با سلامت زیر ۵۰ ({{ compact(b.risk) }} {{ CURRENCY }})</div>
+        <PanelCard title="تقویم تمدید" hint="۱۳ هفتهٔ آینده · درآمد ماهانه‌ای که سررسید می‌شود · تومان">
+          <ColumnChart :options="calChart" />
+          <div class="legend" style="margin-top: 8px">
+            <span class="k"><i class="sw" style="background: var(--series-1)" />سالم</span>
+            <span class="k"><i class="sw" style="background: var(--critical)" />در خطر (سلامت زیر {{ fa(d.risk) }})</span>
           </div>
-          <div class="legend" style="margin-top: 10px"><span class="k"><i class="sw" style="background: var(--series-1)" />سلامت ۵۰ و بالاتر</span><span class="k"><i class="sw" style="background: var(--critical)" />سلامت زیر ۵۰</span></div>
-          <div class="note" style="margin-top: 6px">اشتراک ماهانه در هر بازه یک بار سررسید می‌شود.</div>
-          <template #footer><span>{{ compact(d.riskDue) }} {{ CURRENCY }} سررسید در خطر</span><router-link class="nowrap" to="/sales">برنامهٔ تمدید در میز فروش</router-link></template>
+          <template #footer><span>{{ fa(d.calendar.nRiskTotal) }} سررسید در خطر · {{ money(d.calendar.riskTotal) }}</span><router-link class="nowrap" to="/sales">فهرست تمدیدها در میز فروش</router-link></template>
         </PanelCard>
       </div>
-
-      <PanelCard id="pastdue" title="پرداخت‌های ناموفق" :hint="fa(d.pastDue.length) + ' مشتری در دورهٔ مهلت · ' + money(sum(d.pastDue, (a) => a.mrr)) + ' در ماه'" flush style="scroll-margin-top: 70px">
-        <DataTable :rows="d.pastDue" :columns="pdColumns" export-name="failed-payments" unit="مشتری" :page-sizes="false" compact :sort="{ key: 'mrr', dir: 'desc' }" :on-row="(a) => ui.openAccount(a.id)" empty-title="پرداخت ناموفقی نیست" empty="همهٔ تمدیدها با موفقیت پرداخت شده‌اند.">
-          <template #col-name="{ row }"><div style="min-width: 150px"><AccountCell :a="row"><template #sub>{{ PLAN_NAME[row.plan] }} · {{ CYCLE_NAME[row.cycle] }}</template></AccountCell></div></template>
-          <template #col-mrr="{ row }"><b>{{ compact(row.mrr) }}</b></template>
-          <template #col-retries="{ row }">{{ row.retries ? fa(row.retries) + ' بار' : '—' }}</template>
-          <template #col-inv="{ row }"><template v-if="row.invT != null"><span class="nowrap">{{ date(row.invT) }}</span><span class="s">{{ agoDays(row.invT) }} · {{ money(row.invAmount) }}</span></template><span v-else class="faint">—</span></template>
-          <template #col-follow="{ row }"><span v-if="row.lastNote" class="s" style="max-width: 220px; white-space: normal">{{ row.lastNote }}</span><span v-else class="faint">ثبت نشده</span></template>
-          <template #col-act="{ row }"><button class="btn sm" @click="logFollow(row)"><AppIcon name="phone" />ثبت پیگیری</button></template>
-        </DataTable>
-        <template #footer><span>اگر تا پایان مهلت پرداخت نشود، اشتراک لغو می‌شود — امروز تماس بگیرید</span><router-link class="nowrap" to="/sales?tab=pastdue">در میز فروش</router-link></template>
-      </PanelCard>
-
-      <PanelCard id="churn" :title="'ریزش در ' + fa(range) + ' روز اخیر'" :hint="fa(d.churned.length) + ' مشتری' + (d.churned.some((a) => a.lostMrr != null) ? ' · ' + money(sum(d.churned, (a) => a.lostMrr)) + ' درآمد ماهانه از دست رفت' : '')" flush style="scroll-margin-top: 70px">
-        <DataTable :rows="d.churned" :columns="chColumns" export-name="churn" unit="مشتری" :page-size="10" :page-sizes="false" compact :sort="{ key: 'when', dir: 'asc' }" :on-row="(a) => ui.openAccount(a.id)" empty-title="در این بازه ریزشی نبوده" empty="بازهٔ بلندتری انتخاب کنید.">
-          <template #col-name="{ row }"><div style="min-width: 150px"><AccountCell :a="row"><template #sub>{{ PLAN_NAME[row.lostPlan] }} · {{ row.industryName }}</template></AccountCell></div></template>
-          <template #col-when="{ row }"><span class="nowrap">{{ date(row.churnedAt) }}</span><span class="s">{{ agoDays(row.churnedAt) }}</span></template>
-          <template #col-lost="{ row }"><b>{{ compact(row.lostMrr) }}</b></template>
-          <template #col-reason="{ row }"><span class="tag">{{ row.churnReason }}</span></template>
-          <template #col-tenure="{ row }">{{ row.tenure == null ? '—' : duration(row.tenure) }}</template>
-        </DataTable>
-        <template #footer><span>{{ d.topReason ? 'بیشترین دلیل: «' + d.topReason.reason + '» (' + fa(d.topReason.n) + ' مشتری)' : 'در این بازه ریزشی نبوده' }}</span><router-link class="nowrap" to="/sales?tab=winback">فهرست بازگرداندنی‌ها</router-link></template>
-      </PanelCard>
     </template>
   </PageShell>
 </template>
 
 <script setup>
-import { computed, watch, nextTick } from 'vue'
-import { useRoute } from 'vue-router'
+import { computed } from 'vue'
 import PageShell from 'components/PageShell.vue'
 import PanelCard from 'components/PanelCard.vue'
 import KpiTile from 'components/KpiTile.vue'
-import DataTable from 'components/DataTable.vue'
-import AppIcon from 'components/AppIcon.vue'
-import AccountCell from 'components/AccountCell.vue'
 import PlanBadge from 'components/PlanBadge.vue'
 import LineChart from 'components/charts/LineChart.vue'
 import ColumnChart from 'components/charts/ColumnChart.vue'
@@ -113,22 +79,17 @@ import Stack100 from 'components/charts/Stack100.vue'
 import { api } from 'src/api'
 import { useAsync } from 'src/composables/useAsync'
 import { useRange } from 'src/composables/useRange'
-import { useDialogs } from 'src/composables/useDialogs'
-import { useUiStore } from 'stores/ui'
-import { n, fa, pct, compact, compactParts as cp, money, signed, signedPct, date, agoDays, duration, monthLabel, CURRENCY } from 'src/lib/format'
+import { n, fa, pct, compact, compactParts as cp, money, signed, signedPct, date, monthLabel, CURRENCY } from 'src/lib/format'
 import { CYCLE_NAME } from 'src/lib/refs'
 import { PLAN_NAME } from 'src/lib/ui'
 
-const ui = useUiStore(), route = useRoute(), dialogs = useDialogs()
 const range = useRange()
 const { data: d, loading, error } = useAsync(() => api.revenue({ range: range.value }), [range])
 const k = computed(() => d.value.kpis)
-const sum = (list, f) => list.reduce((t, a) => t + f(a), 0)
 const cycColor = (c) => 'var(--series-' + (Object.keys(CYCLE_NAME).indexOf(c) + 1) + ')'
 const cyc = (c) => d.value.cycMix.rows.find((r) => r.k === c)
 const topPlan = computed(() => d.value.planMix.rows.slice().sort((p, q) => q.mrr - p.mrr)[0])
 const lastCash = computed(() => d.value.cash[d.value.cash.length - 1])
-const BUCKET_LABEL = ['۳۰ روز آینده', '۳۱ تا ۶۰ روز', '۶۱ تا ۹۰ روز']
 const mvLegend = computed(() => [
   { color: 'var(--mv-new)', label: 'مشتری جدید', v: d.value.tot12.n }, { color: 'var(--mv-exp)', label: 'ارتقا', v: d.value.tot12.e },
   { color: 'var(--mv-con)', label: 'کاهش', v: d.value.tot12.c }, { color: 'var(--mv-churn)', label: 'ریزش', v: d.value.tot12.ch }])
@@ -154,23 +115,10 @@ const cashChart = computed(() => ({
   series: [{ name: 'دریافتی', values: d.value.cash.map((m) => m.amount), color: 'var(--series-1)' }],
 }))
 
-const pdColumns = [
-  { key: 'name', label: 'مشتری', csv: (a) => a.name },
-  { key: 'mrr', label: 'درآمد ماهانه', num: true, csv: (a) => a.mrr },
-  { key: 'retries', label: 'تلاش ناموفق', num: true, csv: (a) => a.retries },
-  { key: 'inv', label: 'آخرین صورتحساب', sort: (a) => -a.invT, csv: (a) => (a.invT == null ? '' : date(a.invT)) },
-  { key: 'follow', label: 'آخرین پیگیری', sort: false, csv: (a) => a.lastNote || '' },
-  { key: 'act', label: '', sort: false, csv: false },
-]
-const chColumns = [
-  { key: 'name', label: 'مشتری', csv: (a) => a.name },
-  { key: 'when', label: 'تاریخ لغو', sort: (a) => a.churnedAt, csv: (a) => date(a.churnedAt) },
-  { key: 'lost', label: 'درآمد ازدست‌رفته', num: true, sort: (a) => a.lostMrr, csv: (a) => a.lostMrr },
-  { key: 'reason', label: 'دلیل', sort: (a) => a.churnReason, csv: (a) => a.churnReason },
-  { key: 'tenure', label: 'مدت اشتراک', num: true, csv: (a) => a.tenure },
-]
-async function logFollow(a) { if (await dialogs.logCall(a, 'pastdue:' + a.id)) ui.bump() }
-
-/* deep links revenue#pastdue / #churn scroll to their card once the data is in */
-const stop = watch(d, (v) => { if (!v) return; stop(); if (['#pastdue', '#churn'].includes(route.hash)) nextTick(() => document.querySelector(route.hash)?.scrollIntoView({ block: 'start' })) })
+const calChart = computed(() => {
+  const c = d.value.calendar, labels = [], tipLabels = []
+  for (let w = 0; w < c.weeks; w++) { labels.push(date(-(7 * w + 1))); tipLabels.push('هفتهٔ ' + date(-(7 * w + 1)) + ' تا ' + date(-(7 * w + 7))) }
+  return { labels, tipLabels, height: 220, total: 'جمع', yFormat: (v) => compact(v), tipFormat: (v) => money(v),
+    series: [{ name: 'سالم', values: c.ok, color: 'var(--series-1)' }, { name: 'در خطر', values: c.risk, color: 'var(--critical)' }] }
+})
 </script>

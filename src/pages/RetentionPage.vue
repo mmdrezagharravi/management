@@ -5,8 +5,9 @@
         <KpiTile :label="d.weeks ? 'نگهداشت هفتهٔ ۴' : 'نگهداشت ماه ۱'" :value="pct(k.m1.v)" :info="(d.weeks ? 'سهم حساب‌هایی که در هفتهٔ چهارم پس از ثبت‌نام فعال بوده‌اند' : 'سهم حساب‌هایی که در ماه دوم پس از ثبت‌نام دست‌کم یک هفته فعال بوده‌اند') + ' — میانگین ۳ کوهورت آخر'" :delta="{ cur: k.m1.v, prev: k.m1.p, points: true }" :cmp="names(k.m1)" />
         <KpiTile :label="d.weeks ? 'نگهداشت هفتهٔ ۱۲' : 'نگهداشت ماه ۳'" :value="pct(k.m3.v)" :info="'همان تعریف برای ' + (d.weeks ? 'هفتهٔ دوازدهم' : 'ماه چهارم') + ' پس از ثبت‌نام — میانگین ۳ کوهورت آخر'" :delta="{ cur: k.m3.v, prev: k.m3.p, points: true }" :cmp="names(k.m3)" />
         <KpiTile label="ریزش مشتری ۳۰ روز" :value="pct(k.logo.r, 1)" info="مشتریان پرداخت‌کننده‌ای که در ۳۰ روز اخیر لغو کرده‌اند ÷ پرداخت‌کنندگان ۳۰ روز پیش" :to="{ hash: '#churned' }" :delta="{ cur: k.logo.r, prev: k.logoPrev.r, points: true, goodUp: false }" :cmp="n(k.logo.n) + ' از ' + n(k.logo.base) + ' مشتری'" />
-        <KpiTile label="نگهداشت خالص درآمد (NRR)" :value="pct(k.rev90.nrr, 1)" info="MRR امروزِ مشتریانی که ۹۰ روز پیش پرداخت‌کننده بودند ÷ MRR همان‌ها در ۹۰ روز پیش — با احتساب ارتقا، کاهش و ریزش" to="/revenue" :delta="{ cur: k.rev90.nrr, prev: k.rev90Prev.nrr, points: true }" :cmp="'۹۰ روز · ' + n(k.rev90.n) + ' مشتری'" />
-        <KpiTile label="نگهداشت ناخالص درآمد (GRR)" :value="pct(k.rev90.grr, 1)" info="مثل NRR ولی ارتقا حساب نمی‌شود؛ فقط کاهش و ریزش را نشان می‌دهد" to="/revenue" :delta="{ cur: k.rev90.grr, prev: k.rev90Prev.grr, points: true }" :cmp="'ازدست‌رفته: ' + compact(k.rev90.lost)" />
+        <KpiTile label="نگهداشت خالص درآمد (NRR)" :value="pct(k.rev90.nrr, 1)" info="MRR امروزِ مشتریانی که ۹۰ روز پیش پرداخت‌کننده بودند ÷ MRR همان‌ها در ۹۰ روز پیش — با احتساب ارتقا، کاهش و ریزش" to="/revenue" :delta="{ cur: k.rev90.nrr, prev: k.rev90Prev.nrr, points: true }" :cmp="k.rev90.n == null ? '۹۰ روز' : '۹۰ روز · ' + n(k.rev90.n) + ' مشتری'" />
+        <KpiTile v-if="k.grrMonth" label="نگهداشت ناخالص درآمد (GRR)" :value="pct(k.grrMonth.grr, 1)" info="MRR اول ماه منهای کاهش و ریزش ÷ MRR اول ماه؛ ارتقا حساب نمی‌شود" to="/revenue" :cmp="monthLabel(k.grrMonth, true) + ' · ازدست‌رفته: ' + compact(k.grrMonth.lost)" />
+        <KpiTile v-else-if="k.rev90.grr != null" label="نگهداشت ناخالص درآمد (GRR)" :value="pct(k.rev90.grr, 1)" info="مثل NRR ولی ارتقا حساب نمی‌شود؛ فقط کاهش و ریزش را نشان می‌دهد" to="/revenue" :delta="{ cur: k.rev90.grr, prev: k.rev90Prev.grr, points: true }" :cmp="'ازدست‌رفته: ' + compact(k.rev90.lost)" />
       </div>
 
       <PanelCard title="نگهداشت کوهورت‌های ماهانه" :hint="'درصد حساب‌های فعال در هر ' + (d.weeks ? 'هفته' : 'ماه') + ' پس از ثبت‌نام'">
@@ -29,7 +30,8 @@
 
       <PanelCard cls="tint-accent">
         <template #title><AppIcon name="zap" />خودکارسازی، قوی‌ترین نشانهٔ ماندن</template>
-        <div class="prose">در هفتهٔ {{ fa(lastWeek) }} پس از ثبت‌نام، <b>{{ pct(cv.automation.values[lastWeek]) }}</b> از حساب‌های دارای خودکارسازی هنوز فعال‌اند؛ بقیه فقط <b>{{ pct(cv.noAutomation.values[lastWeek]) }}</b> — یعنی <b>{{ n(cv.lift, 1) }} برابر</b>. اما تنها {{ pct(cv.autoShare) }} از حساب‌های فعال خودکارسازی دارند و {{ n(cv.payNoAuto) }} مشتری پرداخت‌کننده هنوز یکی هم نساخته‌اند. برایشان قالب خودکارسازی آماده بفرستید و در دموی فروش به حساب‌های رایگان، خودکارسازی را اول نشان دهید.</div>
+        <div v-if="cv.small || cv.liftWeek == null" class="prose">هنوز حساب کافی در دو گروه «با خودکارسازی» ({{ n(cv.automation.n) }}) و «بدون خودکارسازی» ({{ n(cv.noAutomation.n) }}) نیست که مقایسه قابل اتکا باشد. تنها {{ pct(cv.autoShare) }} از حساب‌های فعال خودکارسازی دارند و {{ n(cv.payNoAuto) }} مشتری پرداخت‌کننده هنوز یکی هم نساخته‌اند.</div>
+        <div v-else class="prose">در هفتهٔ {{ fa(d.weeks ? lastWeek + 1 : lastWeek) }} پس از ثبت‌نام، <b>{{ pct(cv.automation.values[lastWeek]) }}</b> از حساب‌های دارای خودکارسازی هنوز فعال‌اند؛ بقیه فقط <b>{{ pct(cv.noAutomation.values[lastWeek]) }}</b> — یعنی <b>{{ n(cv.lift, 1) }} برابر</b>. اما تنها {{ pct(cv.autoShare) }} از حساب‌های فعال خودکارسازی دارند و {{ n(cv.payNoAuto) }} مشتری پرداخت‌کننده هنوز یکی هم نساخته‌اند. برایشان قالب خودکارسازی آماده بفرستید و در دموی فروش به حساب‌های رایگان، خودکارسازی را اول نشان دهید.</div>
         <template #footer><span>همبستگی است، نه اثبات علت</span><router-link to="/features">اثر قابلیت‌ها بر نگهداشت</router-link></template>
       </PanelCard>
 
@@ -41,7 +43,7 @@
             <span class="k"><i class="ln" style="background: var(--series-2)" />بدون خودکارسازی <span class="faint">({{ n(cv.noAutomation.n) }})</span></span>
             <span class="k"><i class="ln" style="background: var(--series-3)" />تیمی — همکار دعوت کرده <span class="faint">({{ n(cv.team.n) }})</span></span>
           </div>
-          <template #footer><span>حساب‌هایی که دست‌کم ۱۲ هفته از ثبت‌نامشان گذشته</span><router-link to="/segments">دسته‌بندی‌ها</router-link></template>
+          <template #footer><span>هر نقطه فقط حساب‌هایی را می‌شمارد که آن هفته را کامل گذرانده‌اند؛ عدد کنار هر گروه = اعضای هفتهٔ اول</span><router-link to="/segments">دسته‌بندی‌ها</router-link></template>
         </PanelCard>
         <PanelCard title="نگهداشت درآمد ماهانه" hint="۶ ماه اخیر · تومان" flush>
           <div v-if="!d.revMonths.length" class="note" style="margin: 12px 16px">این بخش هنوز از بک‌اند داده نمی‌گیرد.</div>
@@ -67,9 +69,8 @@
             <template #col-tenure="{ row }">{{ months(row.tenure) }}</template>
           </DataTable>
         </PanelCard>
-        <PanelCard title="دلیل لغو اشتراک" :hint="n(ch.total) + ' مشتری در ۱۸۰ روز'">
-          <div v-if="!ch.reasons.length" class="note">این بخش هنوز از بک‌اند داده نمی‌گیرد.</div>
-          <HBars v-else :items="ch.reasons.map((r) => ({ label: r.reason, sub: compact(r.mrr) + ' MRR', value: r.n, note: pct(ch.total ? r.n / ch.total : 0) }))" :label-width="108" :format="(v) => n(v)" />
+        <PanelCard :title="ch.reasons.length ? 'دلیل لغو اشتراک' : 'خلاصهٔ ریزش'" :hint="n(ch.total) + ' مشتری در ۱۸۰ روز'">
+          <HBars v-if="ch.reasons.length" :items="ch.reasons.map((r) => ({ label: r.reason, sub: compact(r.mrr) + ' MRR', value: r.n, note: pct(ch.total ? r.n / ch.total : 0) }))" :label-width="108" :format="(v) => n(v)" />
           <div style="margin-top: 12px; border-top: 1px solid var(--grid); padding-top: 6px">
             <div class="kv"><span class="k">MRR ازدست‌رفته در ۱۸۰ روز</span><span class="v">{{ money(ch.lostMrr) }}</span></div>
             <div class="kv"><span class="k">میانهٔ مدت اشتراک پیش از لغو</span><span class="v">{{ months(ch.medianTenure) }}</span></div>
@@ -97,7 +98,7 @@ import { api } from 'src/api'
 import { useAsync } from 'src/composables/useAsync'
 import { useQueryParam } from 'src/composables/useUrlState'
 import { useUiStore } from 'stores/ui'
-import { n, fa, pct, compact, money, date, agoDays, monthLabel } from 'src/lib/format'
+import { n, fa, pct, compact, money, date, daysAgo, agoDays, monthLabel } from 'src/lib/format'
 import { SOURCES } from 'src/lib/refs'
 
 const ui = useUiStore()
@@ -110,19 +111,19 @@ const k = computed(() => d.value.kpis), cv = computed(() => d.value.curves), ch 
 const names = (m) => m.months.map((r) => monthLabel(r)).join('، ')
 const months = (v) => (v < 30 ? fa(v) + ' روز' : fa(Math.round(v / 30.4)) + ' ماه')
 
-const lastWeek = computed(() => cv.value.automation.values.length - 1)
+const lastWeek = computed(() => cv.value.liftWeek ?? cv.value.automation.values.length - 1)
 const heat = computed(() => {
   const cols = []; for (let x = 0; x < (d.value.weeks || 12); x++) cols.push(d.value.weeks ? 'هفتهٔ ' + fa(x + 1) : 'ماه ' + fa(x))
   return {
     rowHead: 'ماه ثبت‌نام', cols, tipLabel: 'فعال', domain: d.value.domain,
     rows: d.value.cohorts.map((r) => ({
-      label: monthLabel(r, true) + ' ', sub: n(r.size) + ' حساب' + (r.partial ? ' · ناتمام' : ''), cells: r.cells,
-      tips: r.cells.map((v) => (v == null ? '' : n(Math.round(v * r.size)) + ' از ' + n(r.size) + ' حساب')),
+      label: monthLabel(r, true) + ' ', sub: n(r.size) + ' حساب' + (r.partial ? ' · ناتمام' : '') + (r.startsAt ? ' · از ' + date(daysAgo(r.startsAt)) : ''), cells: r.cells,
+      tips: r.cells.map((v, i) => { const of = (r.eligible && r.eligible[i]) ?? r.size; return v == null ? '' : n(Math.round(v * of)) + ' از ' + n(of) + ' حساب' }),
     })),
   }
 })
 const curveChart = computed(() => {
-  const wl = []; for (let w = 0; w <= lastWeek.value; w++) wl.push('هفتهٔ ' + fa(d.value.weeks ? w + 1 : w))
+  const wl = []; for (let w = 0; w < cv.value.automation.values.length; w++) wl.push('هفتهٔ ' + fa(d.value.weeks ? w + 1 : w))
   return { labels: wl, height: 250, yFormat: (v) => pct(v), area: false,
     series: [{ name: 'با خودکارسازی', values: cv.value.automation.values }, { name: 'بدون خودکارسازی', values: cv.value.noAutomation.values }, { name: 'تیمی', values: cv.value.team.values }] }
 })

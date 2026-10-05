@@ -6,7 +6,7 @@ import { C, ok, enrich, local, notesOf } from './shared'
 const SMS_BUDGET = 60000 // بستهٔ ماهانهٔ پیامک نزد اپراتور
 const AI_BUDGET = 12000000 // سقف ماهانهٔ توکن نزد سرویس هوش مصنوعی
 
-const low = (a) => a.plan === 'free' || a.plan === 'basic'
+const low = (a) => a.plan === 'basic' || a.plan === 'team'
 const usageOf = (a, k) => a.usage.find((u) => u.key === k)
 const ratioOf = (a, k) => { const u = usageOf(a, k); return u && u.limit ? u.ratio : 0 }
 // days until the limit at the last 30 days' pace: null = already there, 'na' = only records are predictable, 'flat' = nothing added
@@ -51,7 +51,7 @@ export function quota() {
       const offer = notesOf(a.id).find((x) => x.kind === 'offer')
       return {
         ...enrich(a), usage, maxUsage: usage.find((u) => u.key === a.maxUsage.key),
-        low: low(a), nextPlan: C.plans[a.plan === 'free' ? 'basic' : 'pro'].name,
+        low: low(a), nextPlan: C.plans[a.plan === 'basic' ? 'team' : 'business'].name,
         action: offer ? { kind: offer.offer || (offer.text.startsWith('پیشنهاد ارتقا') ? 'upgrade' : 'quota') } : null,
       }
     }),

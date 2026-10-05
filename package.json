@@ -7,6 +7,7 @@
   "type": "module",
   "scripts": {
     "dev": "quasar dev",
+    "dev:mock": "API_MODE=mock quasar dev --port 9200",
     "build": "quasar build",
     "test": "vitest run"
   },

@@ -139,7 +139,7 @@ svg { display: block; }
 .who { display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 6px 0 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); font-size: 12px; white-space: nowrap; cursor: pointer; font-family: inherit; color: var(--ink); }
 .who:hover { border-color: var(--border-strong); }
 .avatar { width: 24px; height: 24px; border-radius: 50%; flex: none; display: grid; place-items: center; background: var(--accent-wash-2); color: var(--accent-ink); font-size: 11px; font-weight: 800; }
-.avatar.lg { width: 44px; height: 44px; font-size: 17px; border-radius: 12px; }
+.avatar.large { width: 44px; height: 44px; font-size: 17px; border-radius: 12px; }
 
 .pop { min-width: 220px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow-lg); padding: 6px; }
 .pop .it { display: flex; align-items: center; gap: 9px; width: 100%; padding: 7px 9px; border-radius: 7px; font-size: 12.5px; text-align: start; color: var(--ink); background: none; border: 0; cursor: pointer; font-family: inherit; }
@@ -166,10 +166,10 @@ body.body--dark .btn.primary:hover { background: #2a78d6; }
 .btn.ghost { border-color: transparent; background: transparent; color: var(--ink-2); }
 .btn.ghost:hover { background: var(--surface-3); color: var(--ink); }
 .btn.good { color: var(--good-ink); }
-.btn.sm { height: 27px; padding: 0 9px; font-size: 11.8px; border-radius: 7px; gap: 5px; }
-.btn.sm svg { width: 13px; height: 13px; }
+.btn.small { height: 27px; padding: 0 9px; font-size: 11.8px; border-radius: 7px; gap: 5px; }
+.btn.small svg { width: 13px; height: 13px; }
 .btn.icon { width: 32px; padding: 0; }
-.btn.sm.icon { width: 27px; }
+.btn.small.icon { width: 27px; }
 .btn[disabled] { opacity: .45; pointer-events: none; }
 
 .seg { display: inline-flex; padding: 2px; border-radius: 9px; background: var(--surface-3); border: 1px solid var(--border); gap: 2px; }
@@ -230,11 +230,16 @@ textarea.input { height: auto; padding: 8px 10px; resize: vertical; line-height:
 .banner { display: flex; align-items: flex-start; gap: 10px; padding: 10px 14px; border-radius: 9px; font-size: 12.5px; line-height: 1.85; border: 1px solid color-mix(in srgb, var(--warning) 45%, transparent); background: var(--warn-wash); color: var(--ink); }
 .banner.crit { border-color: color-mix(in srgb, var(--critical) 35%, transparent); background: var(--crit-wash); }
 .banner.info { border-color: color-mix(in srgb, var(--accent) 35%, transparent); background: var(--accent-wash); }
+.banner.warn { border-color: color-mix(in srgb, var(--warning) 45%, transparent); background: var(--warn-wash); }
 .banner svg { width: 17px; height: 17px; flex: none; margin-top: 3px; }
 .banner a { font-weight: 700; text-decoration: underline; }
 
 /* ================================================================ KPI tiles */
 .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(178px, 1fr)); gap: 12px; }
+/* six tiles: two rows of three, one row when wide — auto-fit would leave the sixth alone on its own row */
+.kpis.six { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (min-width: 1700px) { .kpis.six { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+@media (max-width: 800px) { .kpis.six { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .kpi { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); box-shadow: var(--shadow); padding: 13px 15px 12px; display: flex; flex-direction: column; gap: 2px; min-width: 0; position: relative; }
 a.kpi:hover { border-color: var(--border-strong); }
 .kpi .lab { font-size: 12px; color: var(--ink-2); font-weight: 600; display: flex; align-items: center; gap: 6px; }

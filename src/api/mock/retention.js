@@ -67,7 +67,7 @@ export function retention({ cohort } = {}) {
   return ok({
     kpis: { m1: monthK(1), m3: monthK(3), logo: lc, logoPrev: lcp, rev90: r90, rev90Prev: r90p },
     cohortMode: mode, cohorts, domain: later.length ? [Math.min(...later), Math.max(...later)] : [0, 1],
-    curves: { automation: curve(cA), noAutomation: curve(cN), team: curve(cT), lift: cN[12] ? cA[12] / cN[12] : null, autoShare: active30.length ? active30.filter((a) => a.feat.automation).length / active30.length : 0, payNoAuto },
+    curves: { automation: curve(cA), noAutomation: curve(cN), team: curve(cT), liftWeek: 12, small: false, lift: cN[12] ? cA[12] / cN[12] : null, autoShare: active30.length ? active30.filter((a) => a.feat.automation).length / active30.length : 0, payNoAuto },
     revMonths,
     churn: { total: churned.length, lostMrr: churned.reduce((t, a) => t + lastMrr(a), 0), early, medianTenure: medTen, reasons, reasonList: C.churnReasons, rows: churned.map((a) => ({ ...enrich(a), lastMrr: lastMrr(a), tenure: tenure(a) })) },
   })

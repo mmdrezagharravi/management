@@ -23,7 +23,6 @@ export function setAiFeedback(k, v) { local().setAiFeedback(k, v); return ok(tru
 /** The only cron the server lets us trigger is the management sync (POST /management/sync). */
 export async function runCron(key) {
   if (key !== 'management-nightly') throw new Error('اجرای دستی این کران از پنل ممکن نیست')
-  local().setCronRun(key, { at: Date.now() })
   local().logAudit(whoName(), 'اجرای دوبارهٔ کران «همگام‌سازی پنل مدیریت»')
   const r = await post('/sync', {})
   clearCaches()

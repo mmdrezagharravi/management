@@ -4,29 +4,30 @@
       <div class="kpis">
         <KpiTile label="منابع سالم" :value="n(good.length)" :unit="'از ' + n(d.sources.length)" :cmp="d.sources.filter((s) => s.status !== 'good').map((s) => s.desc + ' ' + ST_LABEL[s.status]).join(' · ') || 'همه به‌روزند'" />
         <KpiTile label="بیشترین تأخیر" :value="lagText(d.worst.lagMin)"><template #cmp>{{ d.worst.desc }} · <span class="mono">{{ d.worst.name }}</span></template></KpiTile>
-        <KpiTile label="رویداد گم‌شده در ۲۴ ساعت" :value="n(d.dropped)" :cmp="d.dropSources.length ? 'همه از ' + d.dropSources.join('، ') : 'چیزی گم نشده'" />
-        <KpiTile label="مشکل شناخته‌شدهٔ باز" :value="n(d.issuesOpen + d.issuesInProgress)" :cmp="n(d.issuesOpen) + ' باز · ' + n(d.issuesInProgress) + ' در حال رفع'" :to="{ hash: '#issues' }" />
+        <KpiTile v-if="d.issuesTracked !== false" label="رویداد گم‌شده در ۲۴ ساعت" :value="n(d.dropped)" :cmp="d.dropSources.length ? 'همه از ' + d.dropSources.join('، ') : 'چیزی گم نشده'" />
+        <KpiTile v-if="d.issuesTracked !== false" label="مشکل شناخته‌شدهٔ باز" :value="n(d.issuesOpen + d.issuesInProgress)" :cmp="n(d.issuesOpen) + ' باز · ' + n(d.issuesInProgress) + ' در حال رفع'" :to="{ hash: '#issues' }" />
       </div>
 
       <PanelCard title="منبع‌های داده" hint="تأخیر = فاصلهٔ تازه‌ترین رکورد رسیده تا الان" flush>
         <div class="tbl-wrap"><table class="tbl">
-          <thead><tr><th>منبع</th><th>وضعیت</th><th class="num">تأخیر</th><th class="num">گم‌شده در ۲۴ ساعت</th><th>تازه‌ترین داده</th><th class="num">نرخ دریافت</th></tr></thead>
+          <thead><tr><th>منبع</th><th>وضعیت</th><th class="num">تأخیر</th><th v-if="hasDropped" class="num">گم‌شده در ۲۴ ساعت</th><th>تازه‌ترین داده</th><th class="num">نرخ دریافت</th></tr></thead>
           <tbody>
             <tr v-for="s in d.sources" :key="s.key">
               <td><b class="mono">{{ s.name }}</b><span class="s">{{ s.desc }}</span></td>
               <td><StatusBadge :status="s.status" :label="ST_LABEL[s.status]" /></td>
               <td class="num"><b>{{ lagText(s.lagMin) }}</b></td>
-              <td class="num"><b v-if="s.dropped24" style="color: var(--crit-ink)">{{ n(s.dropped24) }}</b><span v-else class="faint">۰</span></td>
-              <td class="nowrap">{{ agoDays(s.lastData.daysAgo) }} {{ clock(s.lastData.min) }}</td>
-              <td class="num"><span v-if="s.rate == null" class="muted">یک‌بار در روز</span><template v-else>{{ n(s.rate, 1) }} <span class="muted">در ثانیه</span></template></td>
+              <td v-if="hasDropped" class="num"><b v-if="s.dropped24" style="color: var(--crit-ink)">{{ n(s.dropped24) }}</b><span v-else class="faint">۰</span></td>
+              <td class="nowrap"><template v-if="s.lastData">{{ agoDays(s.lastData.daysAgo) }} {{ clock(s.lastData.min) }}</template><span v-else class="faint">هنوز همگام نشده</span></td>
+              <td class="num"><span v-if="s.rate == null" class="muted">{{ s.rateText || 'یک‌بار در روز' }}</span><template v-else>{{ n(s.rate, 1) }} <span class="muted">در ثانیه</span></template></td>
             </tr>
           </tbody>
         </table></div>
       </PanelCard>
 
       <div class="grid g-main">
-        <PanelCard title="رویدادهای رفتاری: مورد انتظار و دریافتی" :hint="daily ? 'روزانه · ' + fa(d.events.length) + ' روز · مورد انتظار = میانهٔ ۷ روز قبل' : 'ساعتی · ۴۸ ساعت'">
+        <PanelCard title="رویدادهای رفتاری: مورد انتظار و دریافتی" :hint="daily ? 'روزانه · ' + fa(d.events.length) + ' روز · مورد انتظار = میانهٔ همان روز هفته در ۴ هفتهٔ قبل' : 'ساعتی · ۴۸ ساعت'">
           <LineChart :options="evChart" />
+          <div v-if="d.events.length && d.events.every((x) => x.expected == null)" class="note" style="margin-top: 6px">«مورد انتظار» از میانهٔ همان روز هفته در ۴ هفتهٔ قبل ساخته می‌شود و تا دو هفته داده جمع نشود خالی می‌ماند.</div>
           <div class="legend" style="margin-top: 8px"><span class="k"><i class="ln" style="background: var(--deemph)" />مورد انتظار</span><span class="k"><i class="ln" style="background: var(--series-1)" />دریافتی</span></div>
           <template #footer>
             <template v-if="d.gap && d.gap.missing != null">
@@ -53,8 +54,8 @@
         </PanelCard>
       </div>
 
-      <div class="grid g2">
-        <PanelCard id="issues" title="مشکل‌های شناخته‌شده" :hint="n(d.issues.length) + ' مورد'" flush style="scroll-margin-top: 70px">
+      <div :class="d.issuesTracked !== false ? 'grid g2' : 'stack'">
+        <PanelCard v-if="d.issuesTracked !== false" id="issues" title="مشکل‌های شناخته‌شده" :hint="n(d.issues.length) + ' مورد'" flush style="scroll-margin-top: 70px">
           <div v-if="!d.issues.length" class="note" style="padding: 0 16px 14px">این بخش هنوز از بک‌اند داده نمی‌گیرد.</div>
           <div v-else class="list" style="padding: 0 16px">
             <div v-for="i in d.issues" :key="i.id" class="li" style="align-items: flex-start">
@@ -67,7 +68,7 @@
         <PanelCard title="کدام صفحه‌ها تحت تأثیرند" hint="تا رفع تأخیر با احتیاط بخوانید" flush>
           <div class="list" style="padding: 0 16px">
             <router-link v-for="p in d.affected" :key="p.to" class="li" :to="p.to" style="align-items: flex-start">
-              <span class="main"><span class="t">{{ p.label }}</span><span class="d" style="white-space: normal">{{ p.what }}</span><span class="d">{{ p.desc }} · {{ lagText(p.lagMin) }} عقب</span></span>
+              <span class="main"><span class="t">{{ p.label }}</span><span class="d" style="white-space: normal">{{ p.what }}</span><span class="d">{{ p.desc }} · {{ p.lagMin == null ? 'تأخیر نامعلوم' : lagText(p.lagMin) + ' عقب' }}</span></span>
               <span class="end"><StatusBadge :status="p.status" :label="ST_LABEL[p.status]" /></span>
               <AppIcon name="chevronL" cls="faint" />
             </router-link>
@@ -93,7 +94,8 @@ import { n, fa, compact, clock, date, agoDays, lagText } from 'src/lib/format'
 import { STATUS_COLOR } from 'src/lib/ui'
 
 const { data: d, loading, error } = useAsync(() => api.dataHealth(), [])
-const ST_LABEL = { good: 'سالم', warn: 'با تأخیر', crit: 'بحرانی' }
+const ST_LABEL = { good: 'سالم', warn: 'با تأخیر', crit: 'بحرانی', unknown: 'نامعلوم' }
+const hasDropped = computed(() => d.value.sources.some((s) => s.dropped24 != null))
 const ISSUE_LABEL = { open: 'باز', in_progress: 'در حال رفع', done: 'رفع شد' }
 const DAY = { today: 'امروز', yesterday: 'دیروز', before: 'پریروز' }
 const good = computed(() => d.value.sources.filter((s) => s.status === 'good'))

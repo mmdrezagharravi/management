@@ -26,7 +26,7 @@
           </DataTable>
           <template #footer><span>«تغییر» به واحد درصد، نسبت به {{ fa(range) }} روز قبل</span><router-link to="/segments">دسته‌بندی‌ها</router-link></template>
         </PanelCard>
-        <PanelCard title="نفوذ به تفکیک پلن" hint="سهم حساب‌های فعالِ هر پلن">
+        <PanelCard title="نفوذ به تفکیک پلن" hint="سهم حساب‌های فعالِ هر پلن · پلن فعلی حساب، چه پرداختی چه هدیه؛ ستون «پرداخت‌کننده» در جدول فقط حساب‌های با درآمد است">
           <div v-if="!d.planHeat" class="note">این بخش هنوز از بک‌اند داده نمی‌گیرد.</div>
           <div v-else class="tbl-wrap"><div style="min-width: 340px"><HeatMap :options="planHeat" /></div></div>
           <template v-if="opp.length">
@@ -101,7 +101,7 @@ const columns = [
   { key: 'label', label: 'قابلیت', csv: (f) => f.label },
   { key: 'users', label: 'حساب', num: true },
   { key: 'rate', label: 'نفوذ', num: true, csv: (f) => (f.rate * 100).toFixed(1) },
-  { key: 'ch', label: 'تغییر', num: true, csv: (f) => (f.ch * 100).toFixed(1) },
+  { key: 'ch', label: 'تغییر', num: true, csv: (f) => (f.ch == null ? '' : (f.ch * 100).toFixed(1)) },
   { key: 'pay', label: 'پرداخت‌کننده', num: true, csv: (f) => (f.pay * 100).toFixed(1) },
   { key: 'free', label: 'رایگان', num: true, csv: (f) => (f.free * 100).toFixed(1) },
 ]

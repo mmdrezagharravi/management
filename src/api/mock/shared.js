@@ -59,8 +59,8 @@ export function alerts() {
   DB.ops.ingestion.filter((s) => s.status === 'crit').forEach((s) => out.push({ lvl: 'crit', t: 'تأخیر در ' + s.desc, d: s.name + ' · ' + fa(Math.round(s.lagMin / 60)) + ' ساعت عقب', to: '/data-health' }))
   const pd = DB.accounts.filter((a) => a.pastDue)
   if (pd.length) out.push({ lvl: 'warn', t: fa(pd.length) + ' پرداخت تمدید ناموفق', d: 'درآمد ماهانه در دورهٔ مهلت', mrr: pd.reduce((t, a) => t + a.mrr, 0), to: '/sales?tab=pastdue' })
-  const crit = DB.accounts.filter((a) => a.paying && a.health < 30 && (a.plan === 'pro' || a.plan === 'ent'))
-  if (crit.length) out.push({ lvl: 'crit', t: fa(crit.length) + ' مشتری پرو/سازمانی بحرانی شده', d: 'مجموع درآمد ماهانه', mrr: crit.reduce((t, a) => t + a.mrr, 0), to: '/health' })
+  const crit = DB.accounts.filter((a) => a.paying && a.health < 30 && (a.plan === 'business' || a.plan === 'enterprise'))
+  if (crit.length) out.push({ lvl: 'crit', t: fa(crit.length) + ' مشتری کسب و کار/سازمانی بحرانی شده', d: 'مجموع درآمد ماهانه', mrr: crit.reduce((t, a) => t + a.mrr, 0), to: '/health' })
   DB.ops.queues.filter((q) => q.waiting > 1000).forEach((q) => out.push({ lvl: 'warn', t: 'صف ' + q.name + ' عقب افتاده', d: fa(q.waiting) + ' کار در انتظار · ' + fa(q.failed24) + ' ناموفق در ۲۴ ساعت', to: '/jobs' }))
   return ok(out)
 }

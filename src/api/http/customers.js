@@ -2,7 +2,8 @@
    (search, alerts, navBadges, freshness, interactionsOf) that the layout and components call. */
 import { get, memo } from './client'
 import { customersAll, toAccount } from './account'
-import { fa, norm, daysAgo } from 'src/lib/format'
+import { fa, norm } from 'src/lib/format'
+import { cronsNeedingAttention } from './jobs'
 
 
 /** All accounts. The backend has no city → `cities` stays empty and the page drops that filter. */
@@ -24,20 +25,25 @@ export async function search(q) {
 /* ------------------------------------------------------- ops (jobs, sync) */
 const jobs = memo(() => get('/jobs').catch(() => null))
 const dataHealth = memo(() => get('/data-health').catch(() => null))
-const failedCrons = (j) => ((j && j.crons) || []).filter((c) => c.lastStatus === 'fail') // needs backend: /jobs.crons
-const lagOf = (h) => (h && h.lagDays != null ? h.lagDays : 0)
+const failedCrons = cronsNeedingAttention
+// minutes since the live sync last wrote; null = unknown (data-health failed or never synced), never "fresh"
+const lagOf = (h) => (h && h.lagMinutes != null ? h.lagMinutes : null)
+export const LAG = { warn: 60, crit: 6 * 60 }
+const lagStatus = (m) => (m == null ? 'unknown' : m < LAG.warn ? 'good' : m < LAG.crit ? 'warn' : 'crit')
+const lagWords = (m) => (m < 60 ? fa(m) + ' دقیقه' : m < 2880 ? fa(Math.round(m / 60)) + ' ساعت' : fa(Math.round(m / 1440)) + ' روز')
 const PAID_PLANS = ['team', 'business', 'enterprise', 'partner']
 
 /* ----------------------------------------------------------------- alerts */
 export async function alerts() {
   const [rows, j, h] = await Promise.all([customersAll(), jobs(), dataHealth()])
   const out = []
-  failedCrons(j).forEach((c) => out.push({ lvl: 'crit', t: 'کران «' + c.name + '» اجرا نشد', d: (c.lastRunAt ? fa(daysAgo(c.lastRunAt)) + ' روز پیش' : '') + (c.lastError ? ' · ' + c.lastError : ''), to: '/jobs' }))
-  const lag = lagOf(h)
-  if (lag >= 2) out.push({ lvl: 'crit', t: 'تأخیر در رویدادهای رفتاری', d: 'index=behavior · ' + fa(lag) + ' روز عقب', to: '/data-health' })
+  failedCrons(j).forEach((c) => out.push({ lvl: 'crit', t: 'کران «' + c.name + '» ' + (c.stale ? 'متوقف شده' : 'اجرا نشد'), d: (c.lastT != null ? fa(c.lastT) + ' روز پیش' : '') + (c.consecutiveFails > 1 ? ' · ' + fa(c.consecutiveFails) + ' بار پشت سر هم' : '') + (c.error ? ' · ' + c.error : ''), to: '/jobs' }))
+  const lag = lagOf(h), ls = lagStatus(lag)
+  if (ls === 'crit') out.push({ lvl: 'crit', t: 'تأخیر در رویدادهای رفتاری', d: 'آخرین همگام‌سازی ' + lagWords(lag) + ' پیش', to: '/data-health' })
+  else if (ls === 'unknown') out.push({ lvl: 'warn', t: 'وضعیت همگام‌سازی رویدادها معلوم نیست', d: 'گزارش سلامت داده نرسید', to: '/data-health' })
   const pd = rows.filter((a) => a.pastDue)
   if (pd.length) out.push({ lvl: 'warn', t: fa(pd.length) + ' پرداخت تمدید ناموفق', d: 'درآمد ماهانه در دورهٔ مهلت', mrr: pd.reduce((t, a) => t + a.mrr, 0), to: '/sales?tab=pastdue' })
-  const crit = rows.filter((a) => a.paying && a.health < 30 && PAID_PLANS.includes(a.plan))
+  const crit = rows.filter((a) => a.paying && a.mrr > 0 && a.health < 30 && PAID_PLANS.includes(a.plan))
   if (crit.length) out.push({ lvl: 'crit', t: fa(crit.length) + ' مشتری پولی بحرانی شده', d: 'مجموع درآمد ماهانه', mrr: crit.reduce((t, a) => t + a.mrr, 0), to: '/health' })
   return out
 }
@@ -49,15 +55,15 @@ export async function navBadges() {
     today: null,
     health: { n: rows.filter((a) => a.paying && a.health < 30).length, warn: true },
     jobs: { n: failedCrons(j).length, warn: true },
-    'data-health': { n: lagOf(h) >= 2 ? 1 : 0, warn: true },
+    'data-health': { n: ['crit', 'unknown'].includes(lagStatus(lagOf(h))) ? 1 : 0, warn: true },
   }
 }
 
 /* -------------------------------------------------------------- freshness */
-/** The only ingestion source is the behaviour index synced nightly; its lag is in days. */
+/** The only ingestion source is the behaviour index, synced every minute; its lag is minutes since the last sync. */
 export async function freshness() {
-  const lagDays = lagOf(await dataHealth())
-  return { key: 'behavior', name: 'index=behavior', desc: 'رویدادهای رفتاری', lagMin: lagDays * 1440, status: lagDays <= 1 ? 'good' : lagDays <= 3 ? 'warn' : 'crit' }
+  const lagMin = lagOf(await dataHealth())
+  return { key: 'behavior', name: 'index=behavior', desc: 'رویدادهای رفتاری', lagMin, status: lagStatus(lagMin) }
 }
 
 /** Calls/deals live nowhere on the backend. */

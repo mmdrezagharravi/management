@@ -41,11 +41,11 @@
             <span v-else-if="resOf(row).forecast === 'na' || resOf(row).forecast === 'flat'" class="faint">—<q-tooltip>{{ resOf(row).forecast === 'flat' ? 'در ۳۰ روز اخیر رکوردی اضافه نشده' : 'فقط برای رکورد پیش‌بینی می‌شود' }}</q-tooltip></span>
             <b v-else>{{ inDays(resOf(row).forecast) }}</b>
           </template>
-          <template #col-hits="{ row }"><span v-if="row.atLimit" class="sig limit">سقف پر شده</span><span v-else class="sig price">نزدیک سقف</span></template>
+          <template #col-hits="{ row }"><span v-if="resOf(row).ratio >= 1" class="sig limit">سقف پر شده</span><span v-else class="sig price">نزدیک سقف</span></template>
           <template #col-act="{ row }">
             <span v-if="row.action" class="badge st-good"><i class="dot" />{{ row.action.kind === 'upgrade' ? 'پیشنهاد ثبت شد' : 'درخواست ثبت شد' }}</span>
-            <button v-else-if="row.low" class="btn sm primary" @click.stop="offer(row)"><AppIcon name="up" />پیشنهاد ارتقا</button>
-            <button v-else class="btn sm" @click.stop="offer(row)"><AppIcon name="plus" />افزایش سهمیه</button>
+            <button v-else-if="row.low" class="btn small primary" @click.stop="offer(row)"><AppIcon name="up" />پیشنهاد ارتقا</button>
+            <button v-else class="btn small" @click.stop="offer(row)"><AppIcon name="plus" />افزایش سهمیه</button>
           </template>
         </DataTable>
       </PanelCard>
@@ -93,13 +93,15 @@ const filters = [
   { key: 'seen', label: 'فعالیت', options: [{ v: '14', l: 'فعال در ۱۴ روز' }, { v: '30', l: 'فعال در ۳۰ روز' }], test: (a, v) => a.lastSeenDays <= +v },
 ]
 const search = { placeholder: 'نام حساب یا شخص…', text: (a) => a.name + ' ' + a.contact.first + ' ' + a.contact.last + ' ' + a.slug }
-const columns = [
+const hasForecast = computed(() => d.value.rows.some((r) => r.usage.some((u) => typeof u.forecast === 'number')))
+const columns = computed(() => ALL_COLUMNS.filter((c) => c.key !== 'fc' || hasForecast.value))
+const ALL_COLUMNS = [
   { key: 'name', label: 'حساب', csv: (a) => a.name },
   { key: 'plan', label: 'پلن', sort: (a) => PLAN_ORDER.indexOf(a.plan), desc: true, csv: (a) => PLAN_NAME[a.plan] },
   { key: 'res', label: 'منبع', sort: (a) => resOf(a).label, csv: (a) => resOf(a).label },
   { key: 'usage', label: 'مصرف', num: true, sort: (a) => resOf(a).ratio, csv: (a) => Math.round(resOf(a).ratio * 100) + '%' },
   { key: 'fc', label: 'رسیدن به ۱۰۰٪', num: true, title: 'با سرعت ۳۰ روز اخیر — فقط برای رکورد قابل پیش‌بینی است', desc: false, sort: fcSort, csv: fcCsv },
-  { key: 'hits', label: 'وضعیت سقف', title: 'وضعیت فعلی سهمیهٔ رکورد در پرمصرف‌ترین بیس', sort: (a) => a.atLimit ? 2 : a.nearLimit ? 1 : 0, desc: true, csv: (a) => a.atLimit ? 'سقف پر شده' : 'نزدیک سقف' },
+  { key: 'hits', label: 'وضعیت سقف', title: 'وضعیت همین منبع: پر (۱۰۰٪) یا نزدیک (۸۰٪ به بالا)', sort: (a) => resOf(a).ratio, desc: true, csv: (a) => (resOf(a).ratio >= 1 ? 'سقف پر شده' : 'نزدیک سقف') },
   { key: 'act', label: 'اقدام', sort: false, csv: false },
 ]
 

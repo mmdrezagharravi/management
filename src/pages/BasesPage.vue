@@ -3,10 +3,10 @@
     <template v-if="d">
       <div class="kpis">
         <KpiTile label="کل بیس‌ها" :value="n(k.total)" :cmp="'در ' + n(k.withBases) + ' حساب · میانگین ' + n(k.total / k.withBases, 1) + ' بیس'" />
-        <KpiTile label="فعال در ۷ روز" :value="n(k.active7)" info="بیسی که در ۷ روز اخیر دست‌کم یک ویرایش داشته" to="/bases?view=active" :cmp="pct(k.active7 / k.total) + ' از کل بیس‌ها'" />
+        <KpiTile label="فعال در ۷ روز" :value="n(k.active7)" info="بیسی که در ۷ روز اخیر دست‌کم یک رویداد (ساخت، ویرایش، حذف، کپی، خروجی…) داشته" to="/bases?view=active" :cmp="pct(k.active7 / k.total) + ' از کل بیس‌ها'" />
         <KpiTile label="بیس تازه در ۳۰ روز" :value="n(k.new30)" :delta="{ cur: k.new30, prev: k.new30prev }" :cmp="'۳۰ روز قبل: ' + n(k.new30prev)" />
         <KpiTile label="میانگین رکورد هر بیس فعال" :value="n(k.avgRec)" unit="رکورد" info="فقط بیس‌های فعال در ۷ روز اخیر" :cmp="'میانه: ' + n(k.medRec) + ' — چند بیس بزرگ میانگین را بالا برده‌اند'" />
-        <KpiTile label="بیس روی پلنِ نزدیک سقف" :value="n(k.nearBases)" to="/quota?view=records" info="بیس‌هایی که حسابشان ۹۰٪ یا بیشتر از سقف رکورد پلن را پر کرده" :cmp="n(k.nearAcc) + ' حساب به ۹۰٪ سقف رکورد رسیده‌اند — فرصت ارتقا'" />
+        <KpiTile label="بیس نزدیک سقف رکورد" :value="n(k.nearBases)" to="/quota?view=records" info="بیس‌هایی که ۸۰٪ یا بیشتر از سقف رکورد پلن سازنده‌شان را پر کرده‌اند؛ سقف رکورد برای هر بیس جداست" :cmp="'در ' + n(k.nearAcc) + ' حساب — فرصت ارتقا'" />
       </div>
 
       <div class="grid g2">
@@ -20,11 +20,11 @@
           <Stack100 :options="planStack" />
           <div class="section-title" style="margin: 18px 0 8px">بیس‌ها بر اساس آخرین فعالیت</div>
           <Stack100 :options="stateStack" />
-          <template #footer><span>{{ pct(d.small / k.total) }} بیس‌ها زیر ۱۰۰ رکوردند (بیشتر آزمایشی) · {{ n(d.big) }} بیس بالای ۱۰ هزار</span><router-link to="/bases?sort=records">بزرگ‌ترین‌ها</router-link></template>
+          <template #footer><span>{{ pct(d.small / k.total) }} بیس‌ها زیر ۱۰۰ رکوردند (بیشتر آزمایشی) · {{ n(d.big) }} بیس بالای ۱۰ هزار</span><router-link :to="{ query: { sort: 'records', dir: 'desc' }, hash: '#list' }">بزرگ‌ترین‌ها</router-link></template>
         </PanelCard>
       </div>
 
-      <PanelCard flush>
+      <PanelCard id="list" flush style="scroll-margin-top: 70px">
         <DataTable :key="route.query.view + '|' + route.query.sort" :remote="api.basesPage" :columns="columns" :views="views" :filters="filters" :search="search" :sort="{ key: 'records', dir: 'desc' }" url export-name="bases" unit="بیس" :on-row="(r) => router.push('/bases/' + r.id)">
           <template #col-name="{ row }"><router-link class="nm" :to="'/bases/' + row.id">{{ row.name }}</router-link></template>
           <template #col-acc="{ row }"><AccountLink v-if="row.accountId" :id="row.accountId" :name="row.accountName" style="font-weight: 600" /><span v-else class="faint">{{ row.accountName }}</span></template>
@@ -92,7 +92,7 @@ const columns = [
   { key: 'tables', sortKey: 'tables', label: 'جدول', num: true },
   { key: 'records', sortKey: 'records', label: 'رکورد', num: true },
   { key: 'automations', sortKey: 'automations', label: 'خودکارسازی', num: true },
-  { key: 'collaborators', sortKey: 'collaborators', label: 'همکار', num: true },
+  { key: 'collaborators', sortKey: 'collaborators', label: 'اعضا', title: 'همکاران و هم‌مالکان بدون سازنده؛ حساب‌های تستر هم شمرده می‌شوند', num: true },
   { key: 'created', sortKey: 'createdAt', label: 'ساخته‌شده', sort: (r) => -r.created, desc: true, csv: (r) => r.created },
   { key: 'la', sortKey: 'recent', label: 'آخرین فعالیت', sort: (r) => -r.la, desc: true, csv: (r) => r.la },
 ]

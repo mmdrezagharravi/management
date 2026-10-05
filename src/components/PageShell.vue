@@ -15,7 +15,11 @@
     </div>
     <div v-if="lag && lag.status === 'crit' && banner" class="banner crit">
       <AppIcon name="alert" />
-      <div><b>بخشی از عددهای این صفحه {{ lagText(lag.lagMin) }} عقب است.</b> {{ lag.desc }} ({{ lag.name }}) به‌خاطر باگ‌های شناخته‌شدهٔ لایهٔ لاگ کامل نمی‌رسد. <router-link to="/data-health">جزئیات در «سلامت داده»</router-link></div>
+      <div><b>بخشی از عددهای این صفحه {{ lagText(lag.lagMin) }} عقب است.</b> {{ lag.desc }} ({{ lag.name }}) در این مدت همگام نشده. <router-link to="/data-health">جزئیات در «سلامت داده»</router-link></div>
+    </div>
+    <div v-else-if="lag && lag.status === 'unknown' && banner" class="banner warn">
+      <AppIcon name="alert" />
+      <div><b>تازگی {{ lag.desc }} معلوم نیست.</b> گزارش همگام‌سازی نرسید؛ ممکن است بخشی از عددهای این صفحه قدیمی باشد. <router-link to="/data-health">«سلامت داده»</router-link></div>
     </div>
     <div v-if="loading && !$slots.skeleton" class="stack" style="gap: 16px">
       <div class="kpis"><div v-for="i in 5" :key="i" class="skel" style="height: 96px" /></div>

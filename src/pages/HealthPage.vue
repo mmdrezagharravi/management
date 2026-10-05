@@ -4,7 +4,7 @@
       <div class="kpis">
         <KpiTile label="درآمد در خطر" :value="cp(k.riskMrr).num" :unit="cp(k.riskMrr).unit + ' ' + CURRENCY" :to="{ hash: '#risk' }" info="درآمد ماهانهٔ مشتریانی که امتیاز سلامت زیر ۵۰ یا پرداخت ناموفق دارند" :cmp="fa(k.riskCount) + ' مشتری · ' + pct(k.riskMrr / d.totalMrr) + ' کل MRR'" />
         <KpiTile label="میانگین سلامت" info="میانگین امتیاز سلامت مشتریان پرداخت‌کننده" :value="n(k.avg, 1)" unit="از ۱۰۰" :delta="{ cur: k.avg, prev: k.avg2w, abs: true, fmt: (v) => n(v, 1) }" :cmp="'۲ هفته پیش: ' + n(k.avg2w, 1)" />
-        <KpiTile label="افت ۱۵+ امتیاز در ۲ هفته" :value="n(k.dropsCount)" unit="مشتری" :to="{ hash: '#movers' }" info="مشتری پرداخت‌کننده‌ای که امتیازش در دو هفته دست‌کم ۱۵ واحد پایین آمده" :cmp="money(k.dropsMrr) + ' در ماه'" />
+        <KpiTile label="افت ۱۵+ امتیاز در ۲ هفته" :value="n(k.dropsCount)" unit="مشتری" :to="{ hash: '#movers' }" info="مشتری پرداخت‌کننده‌ای که امتیازش در دو هفته دست‌کم ۱۵ واحد پایین آمده" :cmp="d.hasHistory ? money(k.dropsMrr) + ' در ماه' : 'هنوز سابقهٔ دو هفته‌ای نیست'" />
       </div>
 
       <div class="kpis">
@@ -25,8 +25,8 @@
             <template #footer><span>{{ pct(k.riskMrr / d.totalMrr) }} درآمد ماهانه زیر ۵۰ یا با پرداخت ناموفق است</span><router-link class="nowrap" :to="{ hash: '#risk' }">فهرست در خطر</router-link></template>
           </PanelCard>
           <PanelCard title="تعداد مشتریان زیر ۵۰" hint="۸ هفتهٔ اخیر · پرداخت‌کننده در همان هفته">
-            <LineChart v-if="d.riskN.length" :options="trend" />
-            <div v-else class="note">این بخش هنوز از بک‌اند داده نمی‌گیرد.</div>
+            <LineChart v-if="d.riskN.filter((x) => x != null).length > 1" :options="trend" />
+            <div v-else class="note">{{ historyNote }}</div>
             <template #footer><span>{{ trendFoot }}</span><router-link class="nowrap" :to="{ hash: '#movers' }">چه کسانی افت کردند</router-link></template>
           </PanelCard>
         </div>
@@ -60,14 +60,14 @@
           <div v-if="d.down.length" class="list" style="padding: 0 16px">
             <div v-for="x in d.down" :key="x.id" class="li"><span class="main"><AccountLink :id="x.id" :name="x.name" cls="t" /><span class="d">{{ n(x.health2wAgo) }} ← {{ n(x.health) }} · {{ PLAN_NAME[x.plan] }} · {{ compact(x.mrr) }}</span></span><span class="end"><DeltaChip :cur="x.health" :prev="x.health2wAgo" abs /><div class="muted" style="font-size: 11px">ضعیف: {{ x.weakLabel }}</div></span></div>
           </div>
-          <div v-else class="empty"><b>موردی نیست</b></div>
-          <template #footer><span>{{ fa(k.dropsCount) }} مشتری ۱۵ امتیاز یا بیشتر افت کرده‌اند — پیش از رسیدن به زیر ۵۰ تماس بگیرید</span></template>
+          <div v-else class="empty"><b>{{ d.hasHistory ? 'موردی نیست' : historyNote }}</b></div>
+          <template #footer><span v-if="d.hasHistory">{{ fa(k.dropsCount) }} مشتری ۱۵ امتیاز یا بیشتر افت کرده‌اند — پیش از رسیدن به زیر ۵۰ تماس بگیرید</span></template>
         </PanelCard>
         <PanelCard title="بیشترین بهبود" hint="دو هفتهٔ اخیر" flush>
           <div v-if="d.up.length" class="list" style="padding: 0 16px">
             <div v-for="x in d.up" :key="x.id" class="li"><span class="main"><AccountLink :id="x.id" :name="x.name" cls="t" /><span class="d">{{ n(x.health2wAgo) }} ← {{ n(x.health) }} · {{ PLAN_NAME[x.plan] }} · {{ compact(x.mrr) }}</span></span><span class="end"><DeltaChip :cur="x.health" :prev="x.health2wAgo" abs /><div class="muted" style="font-size: 11px">{{ x.bandLabel }}</div></span></div>
           </div>
-          <div v-else class="empty"><b>موردی نیست</b></div>
+          <div v-else class="empty"><b>{{ d.hasHistory ? 'موردی نیست' : historyNote }}</b></div>
           <template #footer><span>بپرسید چه چیزی کمک کرد؛ همان را به مشتریان مشابه پیشنهاد دهید</span></template>
         </PanelCard>
       </div>
@@ -93,7 +93,7 @@ import Stack100 from 'components/charts/Stack100.vue'
 import { api } from 'src/api'
 import { useAsync } from 'src/composables/useAsync'
 import { useUiStore } from 'stores/ui'
-import { n, fa, pct, compact, compactParts as cp, money, date, inDays, CURRENCY } from 'src/lib/format'
+import { n, fa, pct, compact, compactParts as cp, money, date, daysAgo, inDays, CURRENCY } from 'src/lib/format'
 import { PLAN_ORDER } from 'src/lib/refs'
 import { PLAN_NAME, BAND_COLOR } from 'src/lib/ui'
 
@@ -108,7 +108,8 @@ const trend = computed(() => {
   const wl = []; for (let w = 7; w >= 0; w--) wl.push(w === 0 ? 'امروز' : date(w * 7))
   return { labels: wl, tipLabels: wl.map((l, i) => (i === 7 ? 'امروز' : 'هفتهٔ ' + l)), height: 190, xTicks: 4, series: [{ name: 'مشتری زیر ۵۰', values: d.value.riskN }], yFormat: (v) => n(v) }
 })
-const trendFoot = computed(() => { const r = d.value.riskN; return r.length < 8 ? '' : r[7] > r[5] ? fa(r[7] - r[5]) + ' مشتری بیشتر از دو هفته پیش' : r[7] < r[5] ? fa(r[5] - r[7]) + ' مشتری کمتر از دو هفته پیش' : 'بدون تغییر در دو هفته' })
+const historyNote = computed(() => (d.value.historyFrom ? 'سابقهٔ سلامت از ' + date(daysAgo(d.value.historyFrom)) + ' ذخیره می‌شود؛ مقایسهٔ دوهفته‌ای از دو هفته بعد از آن ممکن است' : 'سابقهٔ سلامت هنوز ذخیره نشده است'))
+const trendFoot = computed(() => { const r = d.value.riskN; return r.length < 8 || r[5] == null ? '' : r[7] > r[5] ? fa(r[7] - r[5]) + ' مشتری بیشتر از دو هفته پیش' : r[7] < r[5] ? fa(r[5] - r[7]) + ' مشتری کمتر از دو هفته پیش' : 'بدون تغییر در دو هفته' })
 
 const views = [
   { key: 'all', label: 'همه', test: null },

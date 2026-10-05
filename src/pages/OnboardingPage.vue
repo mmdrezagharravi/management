@@ -1,16 +1,16 @@
 <template>
   <PageShell title="ثبت‌نام‌های تازه" sub="هر حساب تازه، قدم‌هایی که برداشته و قدم بعدی پیشنهادی — روی هر ردیف بزنید تا نمای سریع باز شود" range v-model:range="range" :sources="['main', 'behavior']" :loading="loading" :error="error">
     <template v-if="d">
-      <div class="kpis">
-        <KpiTile :label="'ثبت‌نام در ' + fa(range) + ' روز'" :to="viewTo('all')" :value="n(k.signups.now)" :delta="{ cur: k.signups.now, prev: k.signups.prev }" :cmp="'قبل: ' + n(k.signups.prev)" :spark="{ values: k.signups.spark, bars: true, w: 76 }" />
-        <KpiTile label="ساختن اولین بیس" :to="viewTo('base')" :value="pct(k.firstBase.rate)" info="سهم ثبت‌نام‌های این بازه که دست‌کم یک بیس ساخته‌اند" :delta="{ cur: k.firstBase.rate, prev: k.firstBase.prev, points: true }" :cmp="fa(k.firstBase.n) + ' حساب'" />
+      <div class="kpis six">
+        <KpiTile :label="'ثبت‌نام در ' + fa(range) + ' روز'" :to="viewTo('all')" :value="n(k.signups.now)" :delta="{ cur: k.signups.now, prev: k.signups.prev }" :cmp="'قبل: ' + n(k.signups.prev) + (k.signups.joinedAsCollaborator ? ' · ' + fa(k.signups.joinedAsCollaborator) + ' حساب همکار جدا شد' : '')" info="فقط کسانی که خودشان ثبت‌نام کرده‌اند؛ حساب‌هایی که با افزودن همکار به بیس ساخته شده‌اند در هیچ عدد این صفحه نیستند" :spark="{ values: k.signups.spark, bars: true, w: 76 }" />
+        <KpiTile label="ساختن اولین بیس" :to="viewTo('base')" :value="pct(k.firstBase.rate)" :info="'سهم ثبت‌نام‌هایی که دست‌کم ' + fa(ACT.days) + ' روز از ثبت‌نامشان گذشته و در همان ' + fa(ACT.days) + ' روز اول بیس ساخته‌اند'" :delta="{ cur: k.firstBase.rate, prev: k.firstBase.prev, points: true }" :cmp="fa(k.firstBase.n) + ' حساب'" />
         <KpiTile label="فعال‌سازی" :to="viewTo('act')" :value="k.activation.rate == null ? '—' : pct(k.activation.rate)"
-          :info="'رسیدن به ' + fa(ACT.records) + ' رکورد در ' + fa(ACT.days) + ' روز اول. فقط حساب‌هایی در مخرج‌اند که دست‌کم ' + fa(ACT.days) + ' روز از ثبت‌نامشان گذشته'"
+          :info="'ساختن بیس و ' + fa(ACT.records) + ' رویداد رکورد (ساخت یا ویرایش) در ' + fa(ACT.days) + ' روز اول. فقط حساب‌هایی در مخرج‌اند که دست‌کم ' + fa(ACT.days) + ' روز از ثبت‌نامشان گذشته'"
           :delta="k.activation.rate == null ? null : { cur: k.activation.rate, prev: k.activation.prev, points: true }"
           :cmp="k.activation.rate == null ? 'هنوز هیچ ثبت‌نامی ' + fa(ACT.days) + ' روزه نشده' : 'فقط ' + fa(k.activation.mature) + ' حساب ' + fa(ACT.days) + ' روزه به بالا'" />
-        <KpiTile label="میانهٔ زمان تا اولین بیس" :to="viewTo('base')" :value="k.firstBaseDays.median == null ? '—' : k.firstBaseDays.median === 0 ? 'همان روز' : n(k.firstBaseDays.median)" :unit="k.firstBaseDays.median ? 'روز' : ''"
-          info="روزهای بین ثبت‌نام و ساختن اولین بیس، برای حساب‌هایی که بیس ساخته‌اند" :cmp="pct(k.firstBaseDays.sameDay) + ' همان روز ثبت‌نام'" />
-        <KpiTile label="گیر کرده" :value="n(k.stuck.n)" :to="viewTo('stuck')" :info="'دست‌کم ۳ روز از ثبت‌نام گذشته و هنوز فعال نشده (بیس ندارد یا به ' + fa(ACT.records) + ' رکورد نرسیده)'"
+        <KpiTile label="میانهٔ زمان تا اولین بیس" :to="viewTo('base')" :value="k.firstBaseDays.median == null ? '—' : k.firstBaseDays.median === 0 ? 'زیر ۱' : n(k.firstBaseDays.median)" :unit="k.firstBaseDays.median == null ? '' : 'روز'"
+          info="روزهای بین ثبت‌نام و ساختن اولین بیس، برای حساب‌هایی که بیس ساخته‌اند" :cmp="pct(k.firstBaseDays.sameDay) + ' در ۲۴ ساعت اول'" />
+        <KpiTile label="گیر کرده" :value="n(k.stuck.n)" :to="viewTo('stuck')" :info="'دست‌کم ۳ روز از ثبت‌نام گذشته و هنوز فعال نشده (بیس ندارد یا به ' + fa(ACT.records) + ' رویداد رکورد نرسیده)'"
           :cmp="fa(k.stuck.n - k.stuck.lost) + ' هنوز سر می‌زنند · ' + fa(k.stuck.lost) + ' ازدست‌رفته'" />
         <KpiTile label="پرپتانسیل ولی گیر کرده" :value="n(k.highPot.stuck)" :to="viewTo('hpStuck')" :info="'پرپتانسیل: ' + d.hpDef" :cmp="'از ' + fa(k.highPot.total) + ' حساب پرپتانسیل · تماس خوشامد'" />
       </div>
@@ -33,7 +33,7 @@
       </div>
 
       <PanelCard id="list" flush style="scroll-margin-top: 70px">
-        <DataTable ref="tbl" :remote="signupsPage" :columns="columns" :views="views" default-view="all" :filters="filters" :search="search" :sort="{ key: 'signup', dir: 'asc' }" url select :export-name="'onboarding-' + range + 'd'" unit="ثبت‌نام" :row-class="(a) => (a.done ? 'onb-done' : '')" :on-row="(a) => ui.openAccount(a.id)">
+        <DataTable ref="tbl" :remote="signupsPage" :columns="columns" :views="views" default-view="all" :filters="filters" :search="search" :sort="{ key: 'signup', dir: 'asc' }" url :export-name="'onboarding-' + range + 'd'" unit="ثبت‌نام" :row-class="(a) => (a.done ? 'onb-done' : '')" :on-row="(a) => ui.openAccount(a.id)">
           <template #col-name="{ row }"><AccountCell :a="row"><template #sub>{{ row.sourceName }}<template v-if="row.city"> · {{ row.city }}</template></template></AccountCell></template>
           <template #col-signup="{ row }"><span class="nowrap">{{ date(signupDaysAgo(row)) }}</span><span class="s">{{ agoDays(signupDaysAgo(row)) }}</span></template>
           <template #col-check="{ row }">
@@ -46,12 +46,12 @@
             <span v-if="row.highPot" class="s">پرپتانسیل</span>
           </template>
           <template #col-done="{ row }">
-            <button v-if="row.done" class="btn sm ghost good" title="برگرداندن به کارهای باز" @click="setDone(row, false)"><AppIcon name="check" />انجام شد</button>
-            <button v-else-if="row.next.key !== 'wait'" class="btn sm" @click="setDone(row, true)"><AppIcon name="check" />انجام شد</button>
+            <button v-if="row.done" class="btn small ghost good" title="برگرداندن به کارهای باز" @click="setDone(row, false)"><AppIcon name="check" />انجام شد</button>
+            <button v-else-if="row.next.key !== 'wait'" class="btn small" @click="setDone(row, true)"><AppIcon name="check" />انجام شد</button>
           </template>
         </DataTable>
       </PanelCard>
-      <div class="note">«پرپتانسیل» یعنی {{ d.hpDef }}. نقطه‌ها به ترتیب: بیس، {{ fa(ACT.records) }} رکورد، دعوت همکار، خودکارسازی، بازگشت در هفتهٔ ۲ — نقطهٔ خط‌چین یعنی هنوز وقتش نرسیده، نقطهٔ کم‌رنگ یعنی داده‌ای برایش نداریم. «انجام شد» فقط در همین مرورگر ذخیره می‌شود.</div>
+      <div class="note">«پرپتانسیل» یعنی {{ d.hpDef }}. نقطه‌ها به ترتیب: بیس، {{ fa(ACT.records) }} رویداد رکورد، دعوت همکار، خودکارسازی، بازگشت در هفتهٔ ۲ — نقطهٔ خط‌چین یعنی هنوز وقتش نرسیده، نقطهٔ کم‌رنگ یعنی داده‌ای برایش نداریم. «انجام شد» فقط در همین مرورگر ذخیره می‌شود.</div>
     </template>
   </PageShell>
 </template>
@@ -89,8 +89,9 @@ const ST = {
   stuck: { label: 'گیر کرده', cls: 'warn', o: 0 },
   act: { label: 'فعال شده', cls: 'good', o: 2 },
   lost: { label: 'ازدست‌رفته', cls: 'crit', o: 3 },
+  member: { label: 'عضو بیس همکار', cls: 'none', o: 4 },
 }
-const BUCKET_LABEL = computed(() => ({ noBase: 'بیس نساخته', under: 'بیس دارد، زیر ' + fa(ACT.value.records) + ' رکورد', noW2: 'فعال شد، هفتهٔ ۲ برنگشت', onTrack: 'در مسیر درست' }))
+const BUCKET_LABEL = computed(() => ({ noBase: 'بیس نساخته', under: 'بیس دارد، زیر ' + fa(ACT.value.records) + ' رویداد رکورد', noW2: 'فعال شد، هفتهٔ ۲ برنگشت', onTrack: 'در مسیر درست' }))
 
 const signupChart = computed(() => ({
   labels: d.value.daily.map((x) => date(x.daysAgo)), tipLabels: d.value.daily.map((x) => weekdayName(x.daysAgo) + ' ' + date(x.daysAgo)), total: 'ثبت‌نام', height: 210,

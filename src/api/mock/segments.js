@@ -2,10 +2,9 @@
 import { DB } from 'src/mock/engine'
 import { C, ok, enrich } from './shared'
 
-export function segments({ seg } = {}) {
+export function segments() {
   const { accounts, agg } = DB
   const segs = agg.segmentCounts()
-  const cur = segs.some((s) => s.key === seg) ? seg : 'upsell'
   const members = {}
   segs.forEach((s) => { members[s.key] = accounts.filter((a) => a.segments.includes(s.key)) })
   const idSets = {}
@@ -28,7 +27,6 @@ export function segments({ seg } = {}) {
   }))
 
   return ok({
-    seg: cur,
     totalAccounts: accounts.length, inAny: accounts.filter((a) => a.segments.length).length, activeN, totalMrr, activeWindow: C.activeWindow,
     segs: segs.map((s) => {
       const list = members[s.key]
@@ -40,6 +38,6 @@ export function segments({ seg } = {}) {
       }
     }),
     cells, top,
-    members: members[cur].map(enrich),
+    membersBy: Object.fromEntries(Object.entries(members).map(([k, list]) => [k, list.map(enrich)])),
   })
 }

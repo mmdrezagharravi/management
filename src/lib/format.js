@@ -105,7 +105,7 @@ export const agoDays = (d) => (d === 0 ? 'امروز' : d === 1 ? 'دیروز' :
 export const inDays = (d) => (d <= 0 ? 'امروز' : d === 1 ? 'فردا' : fa(d) + ' روز دیگر')
 export const clock = (min) => fa(String(Math.floor(min / 60)).padStart(2, '0') + ':' + String(min % 60).padStart(2, '0'))
 export const duration = (d) => (d < 60 ? fa(d) + ' روز' : d < 730 ? fa(Math.round(d / 30.4)) + ' ماه' : n(d / 365, 1) + ' سال')
-export const lagText = (m) => (m < 60 ? fa(m) + ' دقیقه' : m < 1440 * 2 ? fa(Math.round(m / 60)) + ' ساعت' : fa(Math.round(m / 1440)) + ' روز')
+export const lagText = (m) => (m == null ? 'نامعلوم' : m < 60 ? fa(m) + ' دقیقه' : m < 1440 * 2 ? fa(Math.round(m / 60)) + ' ساعت' : fa(Math.round(m / 1440)) + ' روز')
 
 /* ------------------------------------------------------------- text */
 export const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])

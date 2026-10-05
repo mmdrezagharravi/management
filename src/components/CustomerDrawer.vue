@@ -3,7 +3,7 @@
     <aside class="drawer" role="dialog" aria-label="نمای سریع مشتری">
       <template v-if="q && q.account">
         <div class="dh">
-          <span class="avatar lg">{{ initials(a.name) }}</span>
+          <span class="avatar large">{{ initials(a.name) }}</span>
           <div style="flex: 1; min-width: 0">
             <h3>{{ a.name }}</h3>
             <div class="row wrap" style="gap: 8px; font-size: 12px; color: var(--muted)">

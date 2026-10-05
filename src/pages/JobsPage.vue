@@ -5,7 +5,7 @@
         <KpiTile label="در انتظار" :value="n(k.waiting)" unit="کار" info="مجموع کارهای منتظر در همهٔ صف‌ها" :delta="k.waitingThen == null ? null : { cur: k.waiting, prev: k.waitingThen, goodUp: false }" :cmp="k.waitingThen == null ? 'در ' + n(k.queues) + ' صف' : '۶ روز پیش: ' + n(k.waitingThen)" :spark="k.trendSum.length ? { values: k.trendSum, color: 'var(--ink-2)' } : null" />
         <KpiTile label="در حال اجرا" :value="n(k.active)" unit="کار" :cmp="'در ' + n(k.queues) + ' صف'" />
         <KpiTile label="ناموفق در ۲۴ ساعت" :value="n(k.failed24)" unit="کار" :cmp="'بیشترین: ' + k.worstFail.name + ' (' + n(k.worstFail.failed24) + ')'" />
-        <KpiTile label="کران ناموفق" :value="n(k.failedCrons.length)" :unit="'از ' + n(k.cronsTotal)" :to="{ hash: '#crons' }" :cmp="k.failedCrons.length ? k.failedCrons.map((x) => '«' + x + '»').join('، ') : 'همه موفق'" />
+        <KpiTile label="کران نیازمند توجه" :value="n(k.failedCrons.length)" :unit="'از ' + n(k.cronsTotal)" :to="{ hash: '#crons' }" info="کرانی که متوقف شده، کندتر از ساعتی است و آخرین اجرایش شکست خورده، یا سه بار پشت سر هم شکست خورده" :cmp="k.failedCrons.length ? k.failedCrons.map((x) => '«' + x + '»').join('، ') : 'همه طبق برنامه اجرا می‌شوند'" />
         <KpiTile v-if="k.maxDelay" label="بیشترین تأخیر" :value="n(k.maxDelay.delay)" unit="ثانیه" info="زمان انتظار قدیمی‌ترین کار در صف" :cmp="k.maxDelay.name + ' · ' + (k.maxDelay.late ? 'بیش از حد مجاز' : 'در حد مجاز این صف (' + secs(k.maxDelay.sla) + ')')" />
       </div>
 
@@ -19,19 +19,19 @@
         </div>
       </div>
 
-      <div class="grid g-main">
+      <div :class="d.hourly.length ? 'grid g-main' : 'stack'">
         <PanelCard title="صف‌های Bull" :hint="d.queues.some((q) => q.trend.length) ? 'روند = کارهای در انتظار در ۷ روز اخیر' : 'شمارنده‌های لحظه‌ای Redis'" flush>
           <div class="tbl-wrap"><table class="tbl compact">
-            <thead><tr><th>صف</th><th>روند ۷ روز</th><th class="num">در انتظار</th><th class="num">در حال اجرا</th><th class="num">توان در روز</th><th class="num">تأخیر</th><th class="num">ناموفق ۲۴ ساعت</th><th>وضعیت</th></tr></thead>
+            <thead><tr><th>صف</th><th v-if="hasTrend">روند ۷ روز</th><th class="num">در انتظار</th><th class="num">در حال اجرا</th><template v-if="hasPerf"><th class="num">توان در روز</th><th class="num">تأخیر</th></template><th class="num">ناموفق ۲۴ ساعت</th><th>وضعیت</th></tr></thead>
             <tbody>
               <template v-for="q in d.queues" :key="q.key">
                 <tr>
                   <td><b class="mono">{{ q.name }}</b></td>
-                  <td><SparkLine v-if="q.trend.length" :values="q.trend" :w="76" :h="22" :color="q.status === 'good' ? 'var(--series-1)' : 'var(--ink-2)'" /><span v-else class="faint">—</span></td>
+                  <td v-if="hasTrend"><SparkLine v-if="q.trend.length" :values="q.trend" :w="76" :h="22" :color="q.status === 'good' ? 'var(--series-1)' : 'var(--ink-2)'" /><span v-else class="faint">—</span></td>
                   <td class="num"><b>{{ n(q.waiting) }}</b></td>
                   <td class="num">{{ n(q.active) }}</td>
-                  <td class="num">{{ compact(q.throughput) }}</td>
-                  <td class="num"><template v-if="q.throughput == null"><span class="faint">—</span></template><template v-else><b v-if="q.delay > q.sla">{{ secs(q.delay) }}</b><template v-else>{{ secs(q.delay) }}</template><span class="s">مجاز: {{ secs(q.sla) }}</span></template></td>
+                  <td v-if="hasPerf" class="num">{{ compact(q.throughput) }}</td>
+                  <td v-if="hasPerf" class="num"><template v-if="q.throughput == null"><span class="faint">—</span></template><template v-else><b v-if="q.delay > q.sla">{{ secs(q.delay) }}</b><template v-else>{{ secs(q.delay) }}</template><span class="s">مجاز: {{ secs(q.sla) }}</span></template></td>
                   <td class="num"><b v-if="q.failed24">{{ n(q.failed24) }}</b><span v-else class="faint">۰</span></td>
                   <td><StatusBadge :status="q.status" :label="Q_LABEL[q.status]" /></td>
                 </tr>
@@ -41,7 +41,7 @@
           </table></div>
           <template #footer><span>بحرانی: {{ n(d.thresholds.critWaiting) }}+ در انتظار یا {{ n(d.thresholds.critFailed) }}+ شکست · هشدار: {{ n(d.thresholds.warnWaiting) }}+ در انتظار، {{ n(d.thresholds.warnFailed) }}+ شکست یا تأخیر بیش از حد مجاز</span></template>
         </PanelCard>
-        <PanelCard title="اجرای خودکارسازی در ۲۴ ساعت" hint="ساعتی">
+        <PanelCard v-if="d.hourly.length" title="اجرای خودکارسازی در ۲۴ ساعت" hint="ساعتی">
           <div v-if="!d.hourly.length" class="note">این بخش هنوز از بک‌اند داده نمی‌گیرد.</div>
           <ColumnChart v-else :options="runsChart" />
           <div class="legend" style="margin-top: 8px"><span class="k"><i class="sw" style="background: var(--series-1)" />موفق</span><span class="k"><i class="sw" style="background: var(--critical)" />ناموفق</span></div>
@@ -53,7 +53,7 @@
         </PanelCard>
       </div>
 
-      <PanelCard id="crons" title="کارهای زمان‌بندی‌شده" hint="node-cron داخل server.ts" flush style="scroll-margin-top: 70px">
+      <PanelCard id="crons" title="کارهای زمان‌بندی‌شده" :hint="'همهٔ کران‌های سرور · ' + n(d.crons.length) + ' کار'" flush style="scroll-margin-top: 70px">
         <div class="tbl-wrap"><table class="tbl">
           <thead><tr><th>کار</th><th>وضعیت</th><th>آخرین اجرا</th><th>مدت</th><th>زمان‌بندی</th><th>اجرای بعدی</th></tr></thead>
           <tbody>
@@ -62,17 +62,17 @@
                 <td><b>{{ c.name }}</b><template v-if="c.isNew"> <span class="tag">جدید</span></template></td>
                 <td>
                   <span class="row" style="gap: 8px; flex-wrap: nowrap">
-                    <StatusBadge v-if="c.queued" status="info" label="در صف اجرا" />
-                    <StatusBadge v-else-if="c.status === 'fail'" status="crit" label="ناموفق" />
+                    <StatusBadge v-if="c.running || busy === c.key" status="info" label="در حال اجرا" />
+                    <StatusBadge v-else-if="c.status === 'fail'" status="crit" :label="c.consecutiveFails > 1 ? 'ناموفق · ' + fa(c.consecutiveFails) + ' بار پیاپی' : 'ناموفق'" />
+                    <StatusBadge v-else-if="c.status === 'stale'" status="warn" label="متوقف — طبق برنامه اجرا نشده" />
                     <span v-else-if="c.lastT == null" class="faint">—</span>
                     <StatusBadge v-else status="good" label="موفق" />
-                    <button v-if="c.queued" class="btn sm ghost" @click="cancel(c)">لغو</button>
-                    <button v-else-if="c.canRun !== false" class="btn sm" :class="{ primary: c.status === 'fail' }" @click="rerun(c)"><AppIcon name="refresh" />اجرای دوباره</button>
+                    <button v-if="c.canRun !== false && !c.running && busy !== c.key" class="btn small" :class="{ primary: c.status === 'fail' }" @click="rerun(c)"><AppIcon name="refresh" />اجرای دوباره</button>
                   </span>
                 </td>
                 <td class="nowrap"><template v-if="c.lastT == null"><span class="faint">هنوز اجرا نشده</span></template><template v-else>{{ agoDays(c.lastT) }} {{ c.lastAt }}</template></td>
                 <td class="nowrap">{{ c.duration }}</td>
-                <td class="nowrap">{{ c.schedule }}</td>
+                <td class="nowrap">{{ c.schedule }}<span v-if="c.runs24" class="s">{{ fa(c.runs24) }} اجرا در ۲۴ ساعت<template v-if="c.fails24"> · {{ fa(c.fails24) }} ناموفق</template></span></td>
                 <td class="nowrap"><template v-if="c.next">{{ c.next.day ? 'فردا ' : 'امروز ' }}{{ clock(c.next.min) }}<span class="s">{{ waitText(c.next.wait) }}</span></template><span v-else class="faint">—</span></td>
               </tr>
               <tr v-if="c.status === 'fail' && c.error">
@@ -83,18 +83,13 @@
         </table></div>
       </PanelCard>
 
-      <PanelCard title="یادداشت فنی" hint="برای تیم بک‌اند">
-        <div class="prose">
-          <p v-if="d.expire"><b>علت شکست «{{ d.expire.name }}»:</b> <span class="mono">{{ d.expire.error }}</span> — کرسر Mongo در یک حلقهٔ طولانی منقضی می‌شود. اشتراک‌ها را در دسته‌های کوچک (مثلاً بر اساس <span class="mono">_id</span>) پردازش کنید تا هیچ کرسری باز نماند.</p>
-          <p><b>پیشنهاد:</b> کران‌ها را از <span class="mono">node-cron</span> به <span class="mono">Bull repeatable jobs</span> ببرید. آن‌وقت هر اجرا (شروع، پایان، وضعیت، خطا) در Redis ثبت می‌شود، تلاش مجدد خودکار دارد و جدول بالا به‌جای حدس از داده‌ی واقعی پر می‌شود. امروز نتیجهٔ کران‌ها فقط در <span class="mono">console.error</span> می‌ماند و کسی خبردار نمی‌شود.</p>
-        </div>
-      </PanelCard>
     </template>
   </PageShell>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import { Dialog } from 'quasar'
 import PageShell from 'components/PageShell.vue'
 import PanelCard from 'components/PanelCard.vue'
 import KpiTile from 'components/KpiTile.vue'
@@ -128,12 +123,19 @@ const runsChart = computed(() => {
   }
 })
 
-async function rerun(c) {
-  await api.runCron(c.key); ui.bump()
-  toast('«' + c.name + '» در صف اجرا قرار گرفت', async () => { await api.cancelCron(c.key); ui.bump() })
-}
-async function cancel(c) {
-  await api.cancelCron(c.key); ui.bump()
-  toast('اجرای دوبارهٔ «' + c.name + '» لغو شد')
+const busy = ref(null)
+const hasPerf = computed(() => d.value.queues.some((q) => q.throughput != null))
+const hasTrend = computed(() => d.value.queues.some((q) => q.trend.length))
+function rerun(c) {
+  Dialog.create({
+    title: 'اجرای دوبارهٔ «' + c.name + '»',
+    message: c.key === 'management-nightly'
+      ? 'رویدادهای روزهای ناتمام از Splunk دوباره خوانده و شمار رکورد همهٔ بیس‌ها بازنویسی می‌شود؛ حدود یک دقیقه طول می‌کشد و در این مدت نمی‌شود دوباره اجرایش کرد. ادامه می‌دهید؟'
+      : 'این کار همین حالا روی سرور اجرا می‌شود. ادامه می‌دهید؟',
+    cancel: { label: 'انصراف', flat: true }, ok: { label: 'اجرا', color: 'primary', unelevated: true }, persistent: true,
+  }).onOk(async () => {
+    busy.value = c.key
+    try { await api.runCron(c.key); toast('«' + c.name + '» انجام شد') } catch (e) { toast('«' + c.name + '» اجرا نشد: ' + e.message) } finally { busy.value = null; ui.bump() }
+  })
 }
 </script>

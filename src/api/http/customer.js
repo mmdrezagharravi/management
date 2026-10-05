@@ -5,7 +5,6 @@ import { fa, money, ago, daysAgo, date, dateTime } from 'src/lib/format'
 import { HEALTH_COMPONENTS } from 'src/lib/refs'
 import { PLAN_NAME } from 'src/lib/ui'
 
-const CYCLE_MONTHS = { monthly: 1, quarterly: 3, semiannual: 6, yearly: 12 }
 // Invoice.status: Paid | Pending | Processing | Overdue | Failed — an abandoned checkout stays Pending
 const INV_STATUS = { Paid: 'paid', Pending: 'pending', Processing: 'pending', Overdue: 'failed', Failed: 'failed' }
 const peCls = (k) => (k === 'churn' ? 'crit' : k === 'contraction' ? 'warn' : 'good')
@@ -56,7 +55,7 @@ export async function customer(id) {
   const a = accountOf(s)
   const invoices = (s.invoices || []).slice().reverse().map((inv, i) => {
     const cycle = inv.plan ? CYCLE_MAP[inv.cycle || 'monthly'] : null // PlanInvoiceService defaults to monthly
-    return { id: i, t: daysAgo(inv.paidAt || inv.createdAt), at: inv.paidAt || inv.createdAt, type: inv.type, status: INV_STATUS[inv.status] || 'failed', amount: inv.amount, plan: inv.plan ? planKey(inv.plan) : null, cycle, seats: inv.seats ?? a.seats, mrr: Math.round(inv.amount / (CYCLE_MONTHS[cycle] || 1)), retries: 0 }
+    return { id: i, t: daysAgo(inv.paidAt || inv.createdAt), at: inv.paidAt || inv.createdAt, type: inv.type, status: INV_STATUS[inv.status] || 'failed', amount: inv.amount, plan: inv.plan ? planKey(inv.plan) : null, cycle, seats: inv.seats ?? a.seats, mrr: inv.mrr ?? 0, retries: 0 }
   })
   const paid = invoices.filter((i) => i.status === 'paid')
   const bases = (s.basesList || []).map((b) => ({ id: b.id, name: b.name, slug: b.id.slice(-8), tables: b.tables, records: b.records, automations: b.automations, portals: b.portals ?? 0, collaborators: b.collaborators, lastActive: b.lastSeenDays ?? 9999, created: daysAgo(b.createdAt) ?? a.age, role: b.role || 'creator', creatorId: b.creator ? b.creator.id : null, creatorName: b.creator ? b.creator.name || fa(b.creator.mobile || '') : null }))
@@ -93,7 +92,9 @@ const ACTION_LABEL = { Record: 'کار با رکورد', Cell: 'ویرایش س�
 const topActions = (byType) => Object.entries(byType || {}).filter(([k, v]) => ACTION_LABEL[k] && v > 0).sort((p, q) => q[1] - p[1]).slice(0, 3).map(([k, v]) => fa(v) + ' ' + ACTION_LABEL[k]).join('، ')
 const named = (d) => d.name || (d.mobile ? fa(d.mobile) : 'یک کاربر')
 const JOURNEY_STEP = {
-  signup: (d) => ({ cls: 'mut', title: 'ثبت‌نام', desc: d.referrer ? 'با دعوت ' + named(d.referrer) : 'ورود مستقیم' }),
+  signup: (d) => (d.invitedBy
+    ? { cls: 'mut', title: 'ساخت حساب با دعوت همکار', desc: named(d.invitedBy) + ' او را به بیس خودش اضافه کرد و حساب همان لحظه ساخته شد؛ خودش ثبت‌نام نکرده' }
+    : { cls: 'mut', title: 'ثبت‌نام', desc: d.referrer ? 'با دعوت ' + named(d.referrer) : 'ثبت‌نام مستقیم' }),
   base: (d) => ({ title: 'اولین بیس', desc: '«' + d.name + '» · ' + (d.afterDays ? fa(d.afterDays) + ' روز بعد از ثبت‌نام' : 'همان روز ثبت‌نام') }),
   table: (d) => ({ title: 'اولین جدول', desc: '«' + d.name + '»' + (d.base ? ' در بیس «' + d.base + '»' : '') }),
   excelImport: () => ({ title: 'اولین ورود داده از Excel', desc: 'یک جدول را از فایل Excel ساخت' }),

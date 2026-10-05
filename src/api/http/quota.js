@@ -1,17 +1,17 @@
 /* GET /management/quota + the customer list → accounts near their plan limits.
-   Only two resources exist on the server (records, automation runs); no supplier budgets. */
+   Three resources exist on the server (records, automation runs, collaborator seats); no supplier budgets. */
 import { get } from './client'
 import { customersAll, notesOf } from './account'
 import { PLAN_NAME } from 'src/lib/ui'
 
-const RES_KEYS = ['records', 'runs']
+const RES_KEYS = ['records', 'runs', 'seats']
 const low = (a) => a.plan === 'basic'
 const usageOf = (a, k) => a.usage.find((u) => u.key === k)
 const ratioOf = (a, k) => { const u = usageOf(a, k); return u && u.limit ? u.ratio : 0 }
 const maxOf = (a) => RES_KEYS.map((k) => usageOf(a, k)).filter(Boolean).sort((p, q) => q.ratio - p.ratio)[0]
 
 export async function quota() {
-  const [q, accounts] = await Promise.all([get('/quota').catch(() => ({ bases: [] })), customersAll()])
+  const [q, accounts] = await Promise.all([get('/quota'), customersAll()])
   const RES = RES_KEYS.map((k) => { const u = usageOf(accounts[0] || { usage: [] }, k); return { key: k, label: u ? u.label : k } })
   const resLabel = (k) => (RES.find((r) => r.key === k) || {}).label || k
   const rows = accounts.filter((a) => RES_KEYS.some((k) => ratioOf(a, k) >= 0.8))

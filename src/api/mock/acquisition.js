@@ -4,7 +4,6 @@ import { dayDate } from 'src/lib/format'
 import { C, ok } from './shared'
 
 const WEEKS = 12, MONTHS = 12
-const NEW_SHARE = 0.72 // mock only: share of sessions from first-time visitors
 const dayKey = (daysAgo) => dayDate(daysAgo).toISOString().slice(0, 10)
 const bySource = (from, len) => {
   const out = {}
@@ -17,7 +16,7 @@ export function acquisition({ range: R = 30 } = {}) {
   const signedUp = (from, len) => accounts.filter((a) => a.age >= from && a.age < from + len)
   const visits = agg.visits(1, R), visitsPrev = agg.visits(R + 1, R)
   const channels = C.sources
-    .map((s) => { const sessions = agg.visits(1, R, s.key); return { channel: s.key, sessions, newUsers: Math.round(sessions * NEW_SHARE), prevSessions: agg.visits(R + 1, R, s.key) } })
+    .map((s) => { const sessions = agg.visits(1, R, s.key); return { channel: s.key, sessions, newUsers: Math.round(sessions * C.newVisitorShare), prevSessions: agg.visits(R + 1, R, s.key) } })
     .filter((c) => c.sessions || c.prevSessions)
     .sort((p, q) => q.sessions - p.sessions)
   const now = new Date().toISOString()
@@ -27,7 +26,7 @@ export function acquisition({ range: R = 30 } = {}) {
     configured: true,
     sync: { lastRunAt: now, ok: true, error: null, lastSuccessAt: now },
     kpis: {
-      visits, visitsPrev, newUsers: Math.round(visits * NEW_SHARE), newUsersPrev: Math.round(visitsPrev * NEW_SHARE),
+      visits, visitsPrev, newUsers: Math.round(visits * C.newVisitorShare), newUsersPrev: Math.round(visitsPrev * C.newVisitorShare),
       signups: signedUp(1, R).length, signupsPrev: signedUp(R + 1, R).length, inviteSignups: signedUp(1, R).filter((a) => a.source === 'invite').length,
     },
     channels,

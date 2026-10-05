@@ -6,10 +6,11 @@
       </PanelCard>
 
       <template v-else>
+        <div v-if="d.covered === false" class="banner warn"><AppIcon name="alert" /><div>از Google Analytics برای این بازه بازدیدی نرسیده<template v-if="d.lastDataDay"> — آخرین روز با داده: <b>{{ date(daysAgo(d.lastDataDay), { year: true }) }}</b></template>. همگام‌سازی کار می‌کند ولی GA خالی برمی‌گرداند؛ احتمالاً تگ GA روی سایت غیرفعال شده. تا وقتی برنگردد، بازدید و نرخ ثبت‌نام «—» می‌مانند.</div></div>
         <div class="kpis">
           <KpiTile label="بازدید سایت" :value="n(k.visits)" :delta="{ cur: k.visits, prev: k.visitsPrev }" :cmp="'قبل: ' + n(k.visitsPrev)" :info="'جلسه‌های سایت در ' + fa(range) + ' روز تا دیروز'" />
           <KpiTile label="بازدیدکنندهٔ تازه" :value="n(k.newUsers)" :delta="{ cur: k.newUsers, prev: k.newUsersPrev }" :cmp="'قبل: ' + n(k.newUsersPrev)" info="کسانی که اولین بار به سایت آمده‌اند" />
-          <KpiTile label="ثبت‌نام" :value="n(k.signups)" to="/onboarding" :delta="{ cur: k.signups, prev: k.signupsPrev }" :cmp="'از لینک دعوت: ' + n(k.inviteSignups)" />
+          <KpiTile label="ثبت‌نام" :value="n(k.signups)" to="/onboarding" :delta="{ cur: k.signups, prev: k.signupsPrev }" :cmp="'از لینک دعوت: ' + n(k.inviteSignups) + (k.joinedAsCollaborator ? ' · ' + n(k.joinedAsCollaborator) + ' حساب همکار جدا شد' : '')" info="فقط کسانی که خودشان ثبت‌نام کرده‌اند؛ حساب‌هایی که با افزودن همکار به بیس ساخته شده‌اند از سایت نیامده‌اند و شمرده نمی‌شوند" />
           <KpiTile label="نرخ ثبت‌نام" :value="pct(sr, 1)" info="ثبت‌نام ÷ بازدید" :delta="{ cur: sr, prev: srP, points: true }" :cmp="'قبل: ' + pct(srP, 1)" />
         </div>
 
@@ -52,6 +53,7 @@ import PanelCard from 'components/PanelCard.vue'
 import KpiTile from 'components/KpiTile.vue'
 import DataTable from 'components/DataTable.vue'
 import ColumnChart from 'components/charts/ColumnChart.vue'
+import AppIcon from 'components/AppIcon.vue'
 import { api } from 'src/api'
 import { useAsync } from 'src/composables/useAsync'
 import { useRange } from 'src/composables/useRange'

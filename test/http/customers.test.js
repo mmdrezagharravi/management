@@ -29,9 +29,9 @@ const detail = () => ({
     { id: 'c'.repeat(24), name: 'مشترک', createdAt: iso(20), records: 5, tables: 1, automations: 0, collaborators: 3, lastSeenDays: 2, role: 'owner', creator: { id: 'd'.repeat(24), name: 'ابوالفضل', mobile: '0912' } }],
   members: [{ id: 'm2', name: null, mobile: '09351112233', lastSeenDays: 30 }],
   invoices: [
-    { id: 'i3', type: 'PlanInvoice', status: 'Failed', amount: 6000000, createdAt: iso(2), paidAt: null, plan: 'team', cycle: '12m', seats: 5 },
-    { id: 'i2', type: 'PlanInvoice', status: 'Paid', amount: 6000000, createdAt: iso(100), paidAt: iso(100), plan: 'team', cycle: '12m', seats: 5 },
-    { id: 'i1', type: 'PlanInvoice', status: 'Paid', amount: 3000000, createdAt: iso(150), paidAt: iso(150), plan: 'team', cycle: '12m', seats: 2 },
+    { id: 'i3', type: 'PlanInvoice', status: 'Failed', amount: 6000000, mrr: 500000, createdAt: iso(2), paidAt: null, plan: 'team', cycle: '12m', seats: 5 },
+    { id: 'i2', type: 'PlanInvoice', status: 'Paid', amount: 6000000, mrr: 500000, createdAt: iso(100), paidAt: iso(100), plan: 'team', cycle: '12m', seats: 5 },
+    { id: 'i1', type: 'PlanInvoice', status: 'Paid', amount: 3000000, mrr: 250000, createdAt: iso(150), paidAt: iso(150), plan: 'team', cycle: '12m', seats: 2 },
   ],
   contract: null,
   activity: Array.from({ length: 90 }, (_, i) => ({ day: day(89 - i), events: i })),
@@ -65,7 +65,7 @@ describe('http customers adapter', () => {
 
     get.mockResolvedValueOnce({ items: [{ id: 'b1', name: 'crm', creator: { id: 'a1', name: 'x', plan: 'team' }, records: 5, lastSeenDays: 2 }], total: 1, counts: { all: 1 } })
     const b = await basesPage({ view: 'active', page: 0, size: 25 })
-    expect(get).toHaveBeenLastCalledWith('/bases', { view: 'active', page: 0, size: 25 })
+    expect(get).toHaveBeenLastCalledWith('/bases', { templates: false, view: 'active', page: 0, size: 25 })
     expect(b.rows[0]).toMatchObject({ id: 'b1', name: 'crm', la: 2, plan: 'team' })
   })
   it('search() hits both lists', async () => {
@@ -76,13 +76,18 @@ describe('http customers adapter', () => {
     expect(await search('  ')).toEqual({ customers: [], bases: [] })
   })
   it('alerts()/navBadges()/freshness() from customers + jobs + data-health', async () => {
-    get.mockImplementation((p) => Promise.resolve(p === '/jobs' ? { crons: [{ key: 'k', name: 'شبانه', lastStatus: 'fail', lastRunAt: iso(1), lastError: 'boom' }], sync: {} } : { lagDays: 3 }))
+    get.mockImplementation((p) => Promise.resolve(p === '/jobs' ? { crons: [{ key: 'k', name: 'شبانه', schedule: '30 1 * * *', lastStatus: 'fail', lastRunAt: iso(1), lastError: 'boom', consecutiveFails: 1, intervalMs: 864e5 }], sync: {} } : { lagMinutes: 8 * 60 }))
     const al = await alerts()
     expect(al.map((x) => x.to)).toEqual(['/jobs', '/data-health', '/sales?tab=pastdue', '/health'])
     expect(al[2].mrr).toBe(500000)
     for (const x of al) expect(Object.keys(x)).toEqual(expect.arrayContaining(['lvl', 't', 'd', 'to']))
     expect(await navBadges()).toEqual({ today: null, health: { n: 1, warn: true }, jobs: { n: 1, warn: true }, 'data-health': { n: 1, warn: true } })
-    expect(await freshness(['main'])).toEqual({ key: 'behavior', name: 'index=behavior', desc: 'رویدادهای رفتاری', lagMin: 3 * 1440, status: 'warn' })
+    expect(await freshness(['main'])).toEqual({ key: 'behavior', name: 'index=behavior', desc: 'رویدادهای رفتاری', lagMin: 8 * 60, status: 'crit' })
+  })
+
+  it('treats a missing data-health report as unknown, not fresh', async () => {
+    get.mockImplementation((p) => (p === '/data-health' ? Promise.reject(new Error('down')) : Promise.resolve(p === '/jobs' ? { crons: [] } : { items: [], total: 0 })))
+    expect(await freshness(['main'])).toMatchObject({ lagMin: null, status: 'unknown' })
   })
 })
 
@@ -137,5 +142,18 @@ describe('http customer adapter', () => {
     const q = await quickView('a1')
     expect(Object.keys(q)).toEqual(['account', 'tasks', 'notes', 'interactions', 'profile'])
     expect(q.notes).toHaveLength(1)
+  })
+})
+
+describe('accounts created by adding a collaborator', () => {
+  it('are sourced "invite" and say who invited them on the journey', async () => {
+    const { toAccount } = await import('src/api/http/account')
+    expect(toAccount(summary({ invitedBy: 'b'.repeat(24) })).source).toBe('invite')
+    expect(toAccount(summary({ invitedBy: null, referredBy: null })).source).toBe('direct')
+    get.mockImplementation(() => Promise.resolve({ steps: [{ key: 'signup', at: '2026-09-01T10:00:00Z', precision: 'time', detail: { referrer: null, invitedBy: { id: 'b'.repeat(24), name: 'علی', mobile: null } } }] }))
+    const j = await customerJourney('a1')
+    const step = (j.steps || j)[0]
+    expect(step.title).toBe('ساخت حساب با دعوت همکار')
+    expect(step.desc).toContain('علی')
   })
 })

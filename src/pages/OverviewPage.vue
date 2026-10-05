@@ -8,10 +8,10 @@
           <KpiTile label="رکورد بیس‌های فعال" :value="n(d.inventory.records.active)" unit="رکورد" :cmp="n(d.inventory.records.deleted) + ' رکورد در بیس‌های حذف‌شده'" info="شمارش از موتور داده پس از dedup و حذف رکوردهای deleted" to="/bases" />
         </div>
       </PanelCard>
-      <div class="kpis">
+      <div class="kpis six">
         <KpiTile label="درآمد ماهانهٔ تکرارشونده" :value="cp(k.mrr.now).num" :unit="cp(k.mrr.now).unit + ' ' + CURRENCY" to="/revenue" info="MRR: جمع اشتراک‌های فعال به ماه (سالانه‌ها تقسیم بر ۱۲)" :delta="{ cur: k.mrr.now, prev: k.mrr.prev }" :cmp="'قبل: ' + compact(k.mrr.prev)" :spark="{ values: k.mrr.spark, area: true }" />
         <KpiTile label="مشتری پرداخت‌کننده" :value="n(k.paying.now)" to="/customers" :delta="{ cur: k.paying.now, prev: k.paying.prev }" :cmp="'قبل: ' + n(k.paying.prev)" :spark="{ values: k.paying.spark }" />
-        <KpiTile label="حساب فعال در ۷ روز" :value="n(k.wau.now)" info="حسابی که در ۷ روز اخیر دست‌کم یک رویداد داشته" :delta="{ cur: k.wau.now, prev: k.wau.prev }" :cmp="k.wau.users == null ? null : n(k.wau.users) + ' کاربر فعال'" :spark="{ values: k.wau.spark }" />
+        <KpiTile :label="'حساب فعال در ' + fa(range) + ' روز'" :value="n(k.active.now)" info="حسابی که در این بازه دست‌کم یک رویداد داشته" :delta="{ cur: k.active.now, prev: k.active.prev }" :cmp="'قبل: ' + n(k.active.prev)" :spark="{ values: k.active.spark }" />
         <KpiTile :label="'ثبت‌نام در ' + fa(range) + ' روز'" :value="n(k.signups.now)" to="/onboarding" :delta="{ cur: k.signups.now, prev: k.signups.prev }" :cmp="'قبل: ' + n(k.signups.prev)" :spark="{ values: k.signups.spark }" />
         <KpiTile label="نرخ فعال‌سازی" :value="pct(k.activation.now)" to="/funnel" :info="'سهم ثبت‌نام‌هایی که در ۷ روز اول به ' + k.activation.records + ' رکورد رسیده‌اند (کوهورت‌های بالغ)'" :delta="{ cur: k.activation.now, prev: k.activation.prev, points: true }" :cmp="'قبل: ' + pct(k.activation.prev)" />
         <KpiTile label="درآمد در خطر" :value="cp(k.riskMrr.now).num" :unit="cp(k.riskMrr.now).unit + ' ' + CURRENCY" to="/health" info="MRR مشتریانی که امتیاز سلامت زیر ۵۰ یا پرداخت ناموفق دارند" :delta="{ cur: k.riskMrr.now, prev: k.riskMrr.prev, goodUp: false }" :cmp="fa(k.riskMrr.count) + ' مشتری · ' + pct(k.riskMrr.share) + ' از کل'" />
@@ -19,7 +19,7 @@
 
       <div class="grid g-main">
         <PanelCard title="درآمد ماهانه (MRR)" hint="۱۲ ماه اخیر · تومان">
-          <template #actions><router-link class="btn sm ghost" to="/revenue">جزئیات درآمد<AppIcon name="chevronL" /></router-link></template>
+          <template #actions><router-link class="btn small ghost" to="/revenue">جزئیات درآمد<AppIcon name="chevronL" /></router-link></template>
           <LineChart v-if="d.months.length" :options="mrrChart" />
           <div v-else class="note">این بخش هنوز از بک‌اند داده نمی‌گیرد.</div>
           <div class="row wrap" style="gap: 8px; margin-top: 12px">
@@ -59,18 +59,16 @@
         </PanelCard>
       </div>
 
-      <div class="grid g2">
-        <PanelCard title="بزرگ‌ترین فرصت‌های ارتقا" hint="به سقف خورده‌اند و قیمت را دیده‌اند" flush>
-          <div class="tbl-wrap"><table class="tbl compact">
-            <thead><tr><th>مشتری</th><th>سیگنال</th><th class="num">ارزش ارتقا / ماه</th></tr></thead>
-            <tbody><tr v-for="a in d.upsell.top" :key="a.id">
-              <td><AccountCell :a="a"><template #sub>{{ PLAN_NAME[a.plan] }} · {{ a.maxUsage.label }} {{ pct(a.maxUsage.ratio) }}</template></AccountCell></td>
-              <td><SignalChips :a="a" /></td><td class="num"><b>+{{ compact(a.upgradeValue) }}</b></td>
-            </tr></tbody>
-          </table></div>
-          <template #footer><span>{{ fa(d.upsell.total) }} حساب آمادهٔ ارتقا</span><router-link to="/customers?view=upsell">فهرست کامل</router-link></template>
-        </PanelCard>
-      </div>
+      <PanelCard title="بزرگ‌ترین فرصت‌های ارتقا" hint="پلن پایه، سقف رکورد پر شده، فعال در ۱۴ روز اخیر" flush>
+        <div class="tbl-wrap"><table class="tbl compact">
+          <thead><tr><th>مشتری</th><th class="num">رویداد ۳۰ روز</th><th class="num">ارزش ارتقا / ماه</th></tr></thead>
+          <tbody><tr v-for="a in d.upsell.top" :key="a.id">
+            <td><AccountCell :a="a"><template #sub>{{ PLAN_NAME[a.plan] }} · {{ a.maxUsage.label }} {{ pct(a.maxUsage.ratio) }}</template></AccountCell></td>
+            <td class="num">{{ n(a.events30) }}</td><td class="num"><b>+{{ compact(a.upgradeValue) }}</b></td>
+          </tr></tbody>
+        </table></div>
+        <template #footer><span>{{ fa(d.upsell.total) }} حساب آمادهٔ ارتقا</span><router-link to="/customers?view=upsell">فهرست کامل</router-link></template>
+      </PanelCard>
     </template>
   </PageShell>
 </template>
@@ -84,7 +82,6 @@ import AppIcon from 'components/AppIcon.vue'
 import AccountCell from 'components/AccountCell.vue'
 import AccountLink from 'components/AccountLink.vue'
 import HealthScore from 'components/HealthScore.vue'
-import SignalChips from 'components/SignalChips.vue'
 import LineChart from 'components/charts/LineChart.vue'
 import ColumnChart from 'components/charts/ColumnChart.vue'
 import Stack100 from 'components/charts/Stack100.vue'

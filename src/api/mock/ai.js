@@ -107,7 +107,7 @@ export function aiBrief() {
     title: [acc(a), ' — علت افت را بپرسید'], why: 'سلامت از ' + fa(a.health2wAgo) + ' به ' + fa(a.health) + ' در دو هفته' }))
   upsSorted.slice(0, 5).forEach((a) => cand.push({ key: 'upsell:' + a.id, a, risk: false, value: DB.upgradeValue(a),
     title: [acc(a), ' — پیشنهاد ارتقا'], why: fa(a.limitHits30) + ' بار سقف ' + a.maxUsage.label + ' · ' + fa(a.pricingVisits30) + ' بار صفحهٔ قیمت · پلن ' + C.plans[a.plan].name }))
-  paying.filter((a) => a.plan !== 'basic' && a.memberCount >= a.seats && a.activeMembers7 >= a.seats).forEach((a) => cand.push({ key: 'seats:' + a.id, a, risk: false, value: C.plans[a.plan].seatPrice * 2,
+  paying.filter((a) => a.plan !== 'team' && a.memberCount >= a.seats && a.activeMembers7 >= a.seats).forEach((a) => cand.push({ key: 'seats:' + a.id, a, risk: false, value: C.plans[a.plan].seatPrice * 2,
     title: [acc(a), ' — پیشنهاد همکار بیشتر'], why: fa(a.memberCount) + ' عضو از سقف ' + fa(a.seats) + ' همکار، همه این هفته فعال' }))
   // one line per customer: keep its biggest reason
   const byAcc = new Map()

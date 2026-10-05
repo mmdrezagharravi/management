@@ -9,16 +9,16 @@
         <option value="">{{ f.label }}: همه</option>
         <option v-for="op in f.options" :key="op.v" :value="String(op.v)">{{ op.l }}</option>
       </select>
-      <button v-if="st.q || Object.values(st.f).some(Boolean)" class="btn ghost sm" @click="clear">پاک کردن فیلترها</button>
+      <button v-if="st.q || Object.values(st.f).some(Boolean)" class="btn ghost small" @click="clear">پاک کردن فیلترها</button>
       <span class="count"><b>{{ fa(total) }}</b> {{ unit }}<span v-if="rs.loading" class="faint"> · در حال بارگذاری…</span></span>
       <slot name="toolbar" />
-      <button v-if="exportName" class="btn sm" @click="exportCsv"><AppIcon name="download" />خروجی CSV<q-tooltip>خروجی CSV از همین ردیف‌های فیلترشده</q-tooltip></button>
+      <button v-if="exportName" class="btn small" @click="exportCsv"><AppIcon name="download" />خروجی CSV<q-tooltip>خروجی CSV از همین ردیف‌های فیلترشده</q-tooltip></button>
     </div>
     <div v-if="select && st.sel.size" style="padding: 0 16px 10px">
       <div class="bulkbar">
         <b>{{ fa(st.sel.size) }} انتخاب شده</b>
         <slot name="bulk" :rows="selectedRows" :done="clearSel" />
-        <button class="btn ghost sm" @click="clearSel">لغو انتخاب</button>
+        <button class="btn ghost small" @click="clearSel">لغو انتخاب</button>
       </div>
     </div>
     <div v-if="rs.error" class="banner crit" style="margin: 0 16px 10px"><AppIcon name="alert" /><div>{{ rs.error }}</div></div>
@@ -37,7 +37,8 @@
           <tr v-for="(r, i) in slice" :key="r.id ?? i" :class="[onRow ? 'click' : '', st.sel.has(r.id) ? 'sel' : '', i === st.focus ? 'kfocus' : '', rowClass ? rowClass(r) : '']" @click="rowClick(r, i, $event)">
             <td v-if="select" class="chkcol"><input type="checkbox" :checked="st.sel.has(r.id)" aria-label="انتخاب" @click.stop @change="toggleSel(r.id, $event.target.checked)" /></td>
             <td v-for="c in columns" :key="c.key" :class="[c.num ? 'num' : '', c.cls]">
-              <slot :name="'col-' + c.key" :row="r" :value="r[c.key]">{{ c.format ? c.format(r) : r[c.key] }}</slot>
+              <slot v-if="$slots['col-' + c.key]" :name="'col-' + c.key" :row="r" :value="r[c.key]" />
+              <template v-else>{{ c.format ? c.format(r) : r[c.key] }}</template>
             </td>
           </tr>
           <tr v-if="!slice.length">

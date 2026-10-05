@@ -2,7 +2,7 @@
   <div class="meter" :class="cls">
     <div class="top">
       <span>{{ label }}</span>
-      <span><b>{{ f(used) }}</b> <span class="muted">از {{ limit ? f(limit) : 'نامحدود' }}</span><template v-if="limit"> · <b>{{ pct(Math.min(r, 9.99)) }}</b></template></span>
+      <span dir="rtl"><bdi><b>{{ f(used) }}</b></bdi> <span class="muted">از <bdi>{{ limit ? f(limit) : 'نامحدود' }}</bdi></span><template v-if="limit"> · <bdi><b>{{ pct(Math.min(r, 9.99)) }}</b></bdi></template></span>
     </div>
     <div class="bar"><i :style="{ width: Math.min(100, r * 100) + '%' }" /></div>
   </div>

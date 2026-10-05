@@ -103,6 +103,18 @@ describe('features', () => {
     expect(d.top).toBe('Automation'); expect(d.grow).toBe('Record')
     expect(d.imp).toEqual([]); expect(d.planHeat).toBeNull(); expect(d.active).toBe(40)
   })
+
+  it('builds the per-plan heatmap from activeByPlan / usersByPlan', async () => {
+    const F = SERVER['/features']
+    SERVER['/features'] = { ...F, activeByPlan: { basic: 30, team: 10, business: 0, enterprise: 0, partner: 0 },
+      features: F.features.map((x) => ({ ...x, usersByPlan: x.type === 'Automation' ? { basic: 3, team: 7 } : { basic: 0, team: 0 } })) }
+    try {
+      const { planHeat } = await features({ range: 30 })
+      expect(planHeat.plans.map((p) => [p.key, p.name, p.n])).toEqual([['basic', 'پایه', 30], ['team', 'تیم', 10], ['business', 'کسب و کار', 0], ['enterprise', 'سازمانی', 0], ['partner', 'شریک توسعه', 0]])
+      expect(planHeat.rows.map((r) => r.label)).toEqual(['رکورد', 'خودکارسازی', 'Zed'])
+      expect(planHeat.rows[1]).toEqual({ label: 'خودکارسازی', counts: [3, 7, 0, 0, 0], cells: [0.1, 0.7, null, null, null] })
+    } finally { SERVER['/features'] = F }
+  })
 })
 
 describe('journey with Google Analytics', () => {
@@ -145,4 +157,29 @@ describe('acquisition', () => {
     hasKeys(d.daily[0], ['day', 'sessions']); hasKeys(d.weekly[0], ['from', 'to', 'sessions']); hasKeys(d.monthly[0], ['month', 'y', 'm', 'sessions'])
     expect(d.kpis.visits).toBe(10)
   })
+})
+
+describe('growth pages without GA data or a previous period', () => {
+  const invited = cust(6, { age: 6, invitedBy: 'y'.repeat(24), everPaid: false, paying: false, mrr: 0, plan: 'basic', firstBaseDays: null, activated: null })
+  const swap = async (path, value, run) => { const prev = SERVER[path]; SERVER[path] = value; try { return await run() } finally { SERVER[path] = prev } }
+
+  it('funnel: a silent GA is unknown, not zero, and collaborator accounts stay out', () =>
+    swap('/customers', { items: [...customers, invited], total: 6 }, () =>
+      swap('/funnel', { ...SERVER['/funnel'], visits: { sessions: null, newUsers: null, channels: [], covered: false, lastDataDay: '2026-01-30' }, cohort: { from: '2026-05-01', to: '2026-07-01', windowFrom: '2026-05-01', size: 5 } }, async () => {
+        const d = await funnel({ range: 30 })
+        expect(d.visits).toBeNull()
+        expect(d.gaGap).toEqual({ lastDataDay: '2026-01-30' })
+        expect(d.steps[0].n).toBeNull()
+        expect(d.stuck).toMatchObject({ pool: 2, noBase: 1, notAct: 1 })
+        expect(d.paidAny).toBe(1)
+        expect(d.cohort).toMatchObject({ clipped: false })
+      })))
+
+  it('features: no previous window means no change and no "biggest growth"', () =>
+    swap('/features', { ...SERVER['/features'], activeCustomers: { value: 40, prev: null }, features: SERVER['/features'].features.map((f) => ({ ...f, prevRate: null, prevUsers: null })) }, async () => {
+      const d = await features({ range: 30 })
+      expect(d.rows.every((r) => r.ch === null)).toBe(true)
+      expect(d.grow).toBeNull()
+      expect(d.activePrev).toBeNull()
+    }))
 })

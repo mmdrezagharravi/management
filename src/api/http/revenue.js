@@ -1,6 +1,6 @@
 /* GET /management/revenue?months=12 + /overview?range + the customer list → the shape mock/revenue.js returns. */
 import { get } from './client'
-import { customersAll, notesOf, planKey, CYCLE_MAP } from './account'
+import { customersAll, definitions, notesOf, planKey, yearlyDiscount, CYCLE_MAP } from './account'
 import { jalali } from 'src/lib/format'
 import { PLAN_ORDER } from 'src/lib/refs'
 
@@ -18,10 +18,10 @@ export function lastMonths(n) {
   return out.reverse()
 }
 
-/** Past-due row: no invoice detail on the server (retries / failed invoice), only the latest local follow-up note. */
-export const pastDueRow = (a) => { const note = notesOf(a.id)[0]; return { ...a, retries: 0, invT: null, invAmount: null, lastNote: note ? note.text : null } }
-/** Churn row: the server keeps no MRR for a lapsed account, so lostMrr is unknown; tenure = first payment → lapse. */
-export const churnRow = (a) => ({ ...a, lostMrr: null, lostPlan: a.plan, tenure: a.milestones.paid == null ? null : Math.max(0, a.age - a.milestones.paid - a.churnedAt) })
+/** Past-due row: the account + its latest local follow-up note. */
+export const pastDueRow = (a) => { const note = notesOf(a.id)[0]; return { ...a, lastNote: note ? note.text : null } }
+/** Churn row: lostMrr = the MRR of the account's last paid period (server lastMrr); tenure = first payment → lapse. */
+export const churnRow = (a) => ({ ...a, lostMrr: a.lastMrr, lostPlan: a.plan, tenure: a.milestones.paid == null ? null : Math.max(0, a.age - a.milestones.paid - a.churnedAt) })
 
 /** Renewal due dates within `horizon` days, one per cycle step (monthly plans repeat), fed to `add(d, a)`. */
 export function eachDue(paying, horizon, add) {
@@ -32,13 +32,13 @@ export function eachDue(paying, horizon, add) {
 }
 
 export async function revenue({ range: R = 30 } = {}) {
-  const [rev, ov, accounts] = await Promise.all([get('/revenue', { months: 12 }), get('/overview', { range: R }), customersAll()])
+  const [rev, ov, accounts, D] = await Promise.all([get('/revenue', { months: 12 }), get('/overview', { range: R }), customersAll(), definitions()])
+  const disc = yearlyDiscount(D)
   const paying = accounts.filter((a) => a.paying)
   const k = ov.kpis || {}
   const mrrNow = rev.mrr || 0, payNow = rev.paying || 0
   const mrrPrev = k.mrrNow ? k.mrrNow.prev : null // backend: /overview kpis.mrrNow { value, prev }
   const payPrev = k.payingNow ? k.payingNow.prev : null // needs backend: /overview kpis.payingNow { value, prev }
-  const mv = ov.movements // needs backend: /overview movements for the range
   const byKey = new Map((rev.mrrMonths || []).map((m) => [m.month, m])) // needs backend: /revenue mrrMonths
   const months = lastMonths(12).map((mo) => {
     const m = byKey.get(mo.key) || {}
@@ -58,32 +58,26 @@ export async function revenue({ range: R = 30 } = {}) {
   const paidByKey = new Map((rev.months || []).map((m) => [m.month, m]))
   const cash = lastMonths(12).map((mo) => { const m = paidByKey.get(mo.key); return { y: mo.y, m: mo.m, end: mo.end, amount: m ? m.total : 0, n: m ? m.count : 0 } })
 
-  const buckets = [{ lo: 1, hi: 30 }, { lo: 31, hi: 60 }, { lo: 61, hi: 90 }].map((b) => Object.assign(b, { ok: 0, risk: 0, nOk: 0, nRisk: 0 }))
-  eachDue(paying, 90, (d, a) => {
-    const b = buckets.find((x) => d >= x.lo && d <= x.hi); if (!b) return
-    if (a.health < 50) { b.risk += a.mrr; b.nRisk++ } else { b.ok += a.mrr; b.nOk++ }
+  const RISK = D.atRiskBelow ?? 50
+  const W = 13, okW = new Array(W).fill(0), riskW = new Array(W).fill(0), nRisk = new Array(W).fill(0)
+  eachDue(paying, W * 7, (d, a) => {
+    const w = Math.floor((d - 1) / 7); if (w < 0 || w >= W) return
+    if (a.health < RISK) { riskW[w] += a.mrr; nRisk[w]++ } else okW[w] += a.mrr
   })
 
-  const churned = accounts.filter((a) => a.churnedAt !== undefined && a.churnedAt < R)
-  const reasons = {}; churned.forEach((a) => { reasons[a.churnReason] = (reasons[a.churnReason] || 0) + 1 })
-  const topReason = Object.entries(reasons).sort((p, q) => q[1] - p[1])[0] || null
-
   return {
-    range: R,
+    range: R, risk: RISK,
     kpis: {
       mrr: { now: mrrNow, prev: mrrPrev, spark: months.map((m) => m.mrr) },
-      net: { now: mv ? mv.new + mv.expansion + neg(mv.contraction) + neg(mv.churn) : mrrPrev == null ? null : mrrNow - mrrPrev, prev: null },
       nrr: rev.nrr || { now: null, prev: null }, // needs backend: /revenue nrr
       arpa: { now: payNow ? mrrNow / payNow : 0, prev: payPrev ? (mrrPrev || 0) / payPrev : null },
       paying: { now: payNow, prev: payPrev, spark: months.map((m) => m.paying) },
     },
     months, tot12,
     planMix, cycMix,
-    basicUp: paying.filter((a) => a.segments.includes('upsell')).length,
-    cycleDiscount: null, // no discount table on the server
-    cash, buckets, riskDue: sum(buckets, (b) => b.risk),
-    pastDue: accounts.filter((a) => a.pastDue).map(pastDueRow),
-    churned: churned.map(churnRow),
-    topReason: topReason ? { reason: topReason[0], n: topReason[1] } : null,
+    basicUp: accounts.filter((a) => a.segments.includes('upsell')).length,
+    cycleDiscount: disc == null ? null : { yearly: disc },
+    cash,
+    calendar: { weeks: W, ok: okW, risk: riskW, nRisk, riskTotal: sum(riskW, (x) => x), nRiskTotal: sum(nRisk, (x) => x) },
   }
 }

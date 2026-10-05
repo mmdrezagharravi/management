@@ -14,7 +14,7 @@ export const HEALTH_COMPONENTS = [
   { key: 'trend', label: 'روند', desc: 'فعالیت ۱۴ روز اخیر نسبت به ۱۴ روز قبل (از −۵۰٪ تا +۵۰٪)' },
   { key: 'depth', label: 'عمق', desc: 'قابلیت‌های کلیدی استفاده‌شده (۴ قابلیت یا بیشتر = کامل)' },
   { key: 'team', label: 'تیم', desc: 'اعضای فعال ۷ روز اخیر نسبت به کل اعضا — حساب تک‌نفره جریمه نمی‌شود' },
-  { key: 'commercial', label: 'تجاری', desc: 'پرداخت ناموفق −۱۰ · برخورد مکرر با سقف −۵ · تیکت باز −۵' },
+  { key: 'commercial', label: 'تجاری', desc: 'پرداخت ناموفق یا نیمه‌کاره در ۳۰ روز اخیر −۱۰ · سقف رکورد پر −۵' },
 ]
 export const SEGMENT_LABEL = { new: 'تازه‌وارد', stuck: 'فعال‌نشده', builders: 'سازندگان', automators: 'خودکارساز', teams: 'تیمی', upsell: 'آمادهٔ ارتقا', risk: 'در خطر ریزش', champions: 'وفادار', dormant: 'خاموش' }
 export const TASK_TYPES = {

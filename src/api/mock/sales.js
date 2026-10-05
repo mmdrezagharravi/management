@@ -1,5 +1,5 @@
-/* GET /management/sales — the sales desk: KPIs, 13-week renewal calendar, this week's risky renewals
-   and the five work lists (renew, upsell, winback, pastdue, champions). */
+/* GET /management/sales — the sales desk: one KPI per work list and the five lists
+   (renew, upsell, winback, pastdue, champions). */
 import { DB } from 'src/mock/engine'
 import { ok, C, enrich } from './shared'
 import { pastDueRow, churnRow, lostMrr } from './revenue'
@@ -20,31 +20,16 @@ export function sales() {
     pastdue: accounts.filter((a) => a.pastDue),
     champions: accounts.filter((a) => a.segments.includes('champions')),
   }
-  const r30 = paying.filter((a) => a.renewIn <= 30), r30risk = r30.filter((a) => a.health < RISK)
+  const r30 = paying.filter((a) => a.renewIn <= 30)
   const renewRisk = raw.renew.filter((a) => a.health < RISK)
-
-  // renewal calendar (13 weeks) — every due date counts, so monthly plans appear each month
-  const W = 13, okW = new Array(W).fill(0), riskW = new Array(W).fill(0), nRisk = new Array(W).fill(0)
-  for (const a of paying) {
-    const step = C.cycles[a.cycle].days
-    for (let d = a.renewIn; d <= W * 7; d += step) {
-      const k = Math.floor((d - 1) / 7); if (k < 0 || k >= W) continue
-      if (a.health < RISK) { riskW[k] += a.mrr; nRisk[k]++ } else okW[k] += a.mrr
-    }
-  }
-  const week = paying.filter((a) => a.renewIn <= 7 && a.health < RISK).sort((p, q) => q.mrr - p.mrr)
+  const upsell = { n: raw.upsell.length, value: sum(raw.upsell, DB.upgradeValue) }
+  const winback = { n: raw.winback.length, lostMrr: sum(raw.winback, lostMrr) }
+  const pastdue = { n: raw.pastdue.length, mrr: sum(raw.pastdue, (a) => a.mrr) }
+  const champions = { n: raw.champions.length, monthly: raw.champions.filter((a) => a.cycle === 'monthly').length }
 
   return ok({
     risk: RISK, yearlyDiscount: C.cycles.yearly.discount,
-    kpis: {
-      r30: { n: r30.length, mrr: sum(r30, (a) => a.mrr) },
-      r30risk: { n: r30risk.length, mrr: sum(r30risk, (a) => a.mrr), share: r30.length ? r30risk.length / r30.length : 0 },
-      upsell: { n: raw.upsell.length, value: sum(raw.upsell, DB.upgradeValue) },
-      winback: { n: raw.winback.length, lostMrr: sum(raw.winback, lostMrr) },
-      pastdue: { n: raw.pastdue.length, mrr: sum(raw.pastdue, (a) => a.mrr) },
-    },
-    calendar: { weeks: W, ok: okW, risk: riskW, nRisk, riskTotal: riskW.reduce((t, x) => t + x, 0), nRiskTotal: nRisk.reduce((t, x) => t + x, 0) },
-    week: { rows: week.map(row), n: week.length, mrr: sum(week, (a) => a.mrr) },
+    kpis: { renew: { n: r30.length, mrr: sum(r30, (a) => a.mrr), risk: r30.filter((a) => a.health < RISK).length }, upsell, winback, pastdue, champions },
     lists: {
       renew: raw.renew.map(row),
       upsell: raw.upsell.map(row),
@@ -52,13 +37,6 @@ export function sales() {
       pastdue: raw.pastdue.map(pastDueRow),
       champions: raw.champions.map(row),
     },
-    // numbers the tab notes quote
-    stats: {
-      renew: { n: raw.renew.length, risk: renewRisk.length, riskMrr: sum(renewRisk, (a) => a.mrr) },
-      upsell: { n: raw.upsell.length, value: sum(raw.upsell, DB.upgradeValue) },
-      winback: { n: raw.winback.length, lostMrr: sum(raw.winback, lostMrr) },
-      pastdue: { n: raw.pastdue.length, mrr: sum(raw.pastdue, (a) => a.mrr) },
-      champions: { n: raw.champions.length, monthly: raw.champions.filter((a) => a.cycle === 'monthly').length },
-    },
+    stats: { renew: { n: raw.renew.length, risk: renewRisk.length, riskMrr: sum(renewRisk, (a) => a.mrr) }, upsell, winback, pastdue, champions },
   })
 }

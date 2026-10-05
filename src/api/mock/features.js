@@ -39,7 +39,7 @@ export function features({ range: R = 30 } = {}) {
   imp.forEach((x) => { x.opp = x.lift >= medLift && x.rate <= medRate })
 
   // active pro/enterprise customers (every feature is open to them) who have not touched a sticky feature yet
-  const top2 = pay.filter((a) => a.plan === 'pro' || a.plan === 'ent')
+  const top2 = pay.filter((a) => a.plan === 'business' || a.plan === 'enterprise')
   const gaps = imp.filter((x) => x.opp).map((x) => ({ key: x.key, label: x.label, lift: x.lift, n: top2.filter((a) => !a.feat[x.key]).length }))
 
   const plans = C.planOrder.map((k) => ({ k, list: active.filter((a) => a.plan === k) }))

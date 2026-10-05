@@ -33,7 +33,7 @@ export function toAccount(s) {
   const lapsed = !s.paying && s.plan !== 'basic' && s.renewIn != null && s.renewIn < 0
   const history = Array.isArray(s.healthHistory) ? s.healthHistory : []
   return {
-    id, name, slug: id.slice(-8), industry: null, industryName: '', city: '', source: s.referredBy ? 'invite' : 'direct',
+    id, name, slug: id.slice(-8), industry: null, industryName: '', city: '', source: s.invitedBy || s.referredBy ? 'invite' : 'direct',
     age: s.age ?? 0, contact: { first: s.name || '', last: '', mobile: s.mobile || '', email: s.email || null },
     plan: planKey(s.plan), cycle: CYCLE_MAP[s.cycle] || null, seats: s.seats ?? null, collaborators, seatsUsed, collaboratorLimit, mrr: s.mrr || 0, paying: !!s.paying, everPaid: !!s.everPaid,
     health: s.health ?? 0, band: s.band || 'crit', components: s.components || { activity: 0, trend: 0, depth: 0, team: 0, commercial: 0 },
@@ -41,17 +41,18 @@ export function toAccount(s) {
     lastSeenDays, lastSeenMin, online: s.online === true || lastSeenMin <= 5,
     memberCount: s.memberCount ?? 1, activeMembers7: s.activeMembers7 ?? 0, activeDays28: s.activeDays28 ?? 0, activeDays7: s.activeDays7 ?? 0,
     events30: s.events30 ?? 0, records30: null, records: s.records ?? 0, trendPct: s.trendPct ?? 0,
-    renewIn: s.renewIn ?? 0, churnedAt: lapsed ? -s.renewIn : undefined, churnReason: lapsed ? 'تمدید نشد' : null,
+    renewIn: s.renewIn ?? 0, churnedAt: lapsed ? -s.renewIn : undefined, churnReason: lapsed ? 'منقضی شد' : null,
     pastDue: !!s.pastDue, tenureDays: s.payingDays ?? 0,
     limitHits30: 0, pricingVisits30: 0, tickets: 0, nps: null,
     segments: s.segments || [], maxUsage, usage, bases: s.bases ?? 0, coOwnedBases: s.coOwnedBases ?? 0, sharedBases: s.sharedBases ?? 0, automations: s.automations ?? 0,
-    upgradeValue: 0, last30: Array.isArray(s.last30) ? s.last30 : [], milestones: milestonesOf(s), feat: {},
+    upgradeValue: s.upgradeValue ?? 0, last30: Array.isArray(s.last30) ? s.last30 : [], milestones: milestonesOf(s), feat: {},
     invitesSent: 0, wk: [], decline: null,
     // backend-only extras, kept for adapters that need them
-    blocked: !!s.blocked, referredBy: s.referredBy || null, signedUpAt: s.signedUpAt || null, lifetimeRevenue: s.lifetimeRevenue || 0,
+    blocked: !!s.blocked, referredBy: s.referredBy || null, invitedBy: s.invitedBy || null, signedUpAt: s.signedUpAt || null, lifetimeRevenue: s.lifetimeRevenue || 0,
     activated: s.activated ?? null, habit: s.habit ?? null, firstBaseDays: s.firstBaseDays ?? null, runs: s.runs || 0, runsLimit: s.runsLimit || 0,
-    atLimit: !!s.atLimit, nearLimit: !!s.nearLimit || recordMax / recLimit >= 0.8,
-    rawPlan: s.plan,
+    lastMrr: s.lastMrr ?? null, atLimit: !!s.atLimit, nearLimit: !!s.nearLimit || recordMax / recLimit >= 0.8,
+    rawPlan: s.plan, rawCycle: s.cycle || null,
+    purchaseViews: s.purchaseViews ?? null, purchaseLastAt: s.purchaseLastAt ?? null,
   }
 }
 /** Mock-style milestones (day offsets from signup, undefined = not reached). */
@@ -71,6 +72,8 @@ export const customersAll = memo(async () => (await all('/customers')).map(toAcc
 export const customersRaw = memo(() => all('/customers'), 0)
 export const basesAll = memo(() => all('/bases'), 0)
 export const definitions = memo(() => get('/definitions'), 10 * 60_000)
+/** Yearly discount of the team plan against twelve monthly payments, from /definitions planPrices (null when unpriced). */
+export const yearlyDiscount = (D) => { const t = D && D.planPrices && D.planPrices.team; return t && t.monthly ? 1 - t.yearly / (12 * t.monthly) : null }
 
 export const accountById = async (id) => (await customersAll()).find((a) => a.id === String(id)) || null
 export const clearCaches = () => { customersAll.clear(); customersRaw.clear(); basesAll.clear() }

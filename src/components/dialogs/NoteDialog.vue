@@ -1,7 +1,7 @@
 <template>
   <q-dialog v-model="open" @hide="$emit('closed')">
     <div class="modal">
-      <div class="mh"><span>یادداشت — {{ account.name }}</span><button class="btn ghost sm icon" aria-label="بستن" @click="open = false"><AppIcon name="x" /></button></div>
+      <div class="mh"><span>یادداشت — {{ account.name }}</span><button class="btn ghost small icon" aria-label="بستن" @click="open = false"><AppIcon name="x" /></button></div>
       <div class="mb"><textarea class="input" v-model="text" rows="4" placeholder="یادداشت برای همکاران…" autofocus /></div>
       <div class="mf"><button class="btn primary" :disabled="!text.trim()" @click="save">ذخیره</button><button class="btn ghost" @click="open = false">انصراف</button></div>
     </div>

@@ -23,17 +23,18 @@ export async function overview({ range: R = 30 } = {}) {
   // activated is null (unknown) for signups before the first behavior sync (dataSince): not counted either way
   const actRate = (from, len) => { const c = cohort(from, len).filter((a) => a.activated != null); return c.length ? c.filter((a) => a.activated).length / c.length : null }
   const wk = (f) => { const o = []; for (let w = 11; w >= 0; w--) o.push(f(w * 7)); return o }
-  const active7 = (a) => a.lastSeenDays < 7
 
   const paying = accounts.filter((a) => a.paying)
   const mrrNow = k.mrrNow ? k.mrrNow.value : num(k.mrr) // backend: kpis.mrrNow { value, prev } (kpis.mrr is the plain number)
   const mrrPrev = k.mrrNow ? k.mrrNow.prev : null
   const payingNow = k.payingNow ? k.payingNow.value : num(k.paying) // needs backend: kpis.payingNow { value, prev }
-  const risk = paying.filter((a) => a.health < 50 || a.pastDue)
+  const earning = paying.filter((a) => a.mrr > 0)
+  const risk = earning.filter((a) => a.health < 50 || a.pastDue)
   const riskMrr = sum(risk, (a) => a.mrr)
-  const idx = 7 - Math.min(7, Math.round(R / 7))
-  const withHist = paying.filter((a) => a.healthHistory.length) // needs backend: healthHistory on /customers
-  const riskPrevMrr = withHist.length ? sum(withHist.filter((a) => a.healthHistory[idx] != null && a.healthHistory[idx] < 50), (a) => a.mrr) : null
+  // healthHistory: one score per week, the last one now; ranges past the oldest week have no previous value
+  const scoreThen = (a) => a.healthHistory[a.healthHistory.length - 1 - Math.round(R / 7)]
+  const scored = earning.filter((a) => scoreThen(a) != null)
+  const riskPrevMrr = scored.length ? sum(scored.filter((a) => scoreThen(a) < 50), (a) => a.mrr) : null
 
   const mrrMonths = rev.mrrMonths || [] // needs backend: /revenue mrrMonths
   // the series covers complete days only (ends yesterday); an unsynced day is null (a gap), not zero
@@ -53,7 +54,7 @@ export async function overview({ range: R = 30 } = {}) {
     kpis: {
       mrr: { now: mrrNow, prev: mrrPrev, spark: mrrMonths.map((m) => m.mrr) },
       paying: { now: payingNow, prev: k.payingNow ? k.payingNow.prev : null, spark: mrrMonths.map((m) => m.paying) },
-      wau: { now: accounts.filter(active7).length, prev: null, users: null, spark: [] },
+      active: { now: k.activeCustomers ? k.activeCustomers.value : null, prev: k.activeCustomers ? k.activeCustomers.prev : null, spark: (ov.series || []).map((s) => s.activeCustomers).filter((x) => x != null) },
       signups: { now: num(k.signups && k.signups.value), prev: k.signups ? k.signups.prev : null, spark: wk((d) => cohort(d, 7).length) },
       activation: { now: actRate(7, R), prev: actRate(7 + R, R), records: (def.activation && def.activation.recordEvents) || 0 },
       riskMrr: { now: riskMrr, prev: riskPrevMrr, count: risk.length, share: mrrNow ? riskMrr / mrrNow : 0 },

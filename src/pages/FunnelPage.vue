@@ -9,13 +9,15 @@
     <template v-if="d">
       <div v-if="d.source" class="banner info"><AppIcon name="filter" /><div>فقط ثبت‌نام‌های منبع <b>{{ d.sourceName }}</b> — <a href="#" @click.prevent="setSrc(null)">نمایش همهٔ منابع</a></div></div>
 
-      <div class="kpis">
+      <div v-if="d.gaGap" class="banner warn"><AppIcon name="alert" /><div>بازدید سایت برای این بازه از Google Analytics نرسیده<template v-if="d.gaGap.lastDataDay"> — آخرین روز با داده: <b>{{ date(daysAgo(d.gaGap.lastDataDay), { year: true }) }}</b></template>. احتمالاً تگ GA روی سایت غیرفعال است؛ برای همین بازدید و نرخ ثبت‌نام نمایش داده نمی‌شود.</div></div>
+
+      <div class="kpis" :class="{ six: V.n != null }">
         <KpiTile v-if="V.n != null" label="بازدید سایت" :value="n(V.n)" :info="fa(V.def)" to="/acquisition" :delta="{ cur: V.n, prev: KP.visit.n }" :cmp="prevCmp(n(KP.visit.n))" />
         <KpiTile label="ثبت‌نام" :value="n(S.n)" :info="S.def" to="/onboarding" :delta="{ cur: S.n, prev: KP.signup.n }" :cmp="prevCmp(n(KP.signup.n))" />
         <KpiTile v-if="V.n != null" label="نرخ ثبت‌نام" :value="pct(rate(S.n, V.n), 1)" info="ثبت‌نام ÷ بازدید سایت" :delta="{ cur: rate(S.n, V.n), prev: rate(KP.signup.n, KP.visit.n), points: true }" :cmp="prevCmp(pct(rate(KP.signup.n, KP.visit.n), 1))" />
         <KpiTile label="نرخ فعال‌سازی" :value="pct(A.fromStart)" :info="fa(A.def) + ' — سهم از ثبت‌نام‌ها'" :delta="{ cur: A.fromStart, prev: KP.activated.fromStart, points: true }" :cmp="prevCmp(pct(KP.activated.fromStart))" />
-        <KpiTile label="نرخ پرداخت" :value="pct(P.fromStart, 1)" info="پرداخت‌کننده ÷ ثبت‌نام. کوهورت قبلی زمان بیشتری برای پرداخت داشته، پس مقایسهٔ مستقیم منصفانه نیست" :cmp="prevCmp(pct(KP.paid.fromStart, 1))" />
-        <KpiTile label="زمان میانه تا فعال‌سازی" :value="A.medianDays == null ? '—' : fa(A.medianDays)" unit="روز" info="روز پس از ثبت‌نام، میانهٔ حساب‌هایی که به پله رسیده‌اند">
+        <KpiTile label="نرخ پرداخت" :value="pct(d.paidAny ?? P.fromStart, 1)" info="هر ثبت‌نام کوهورت که دست‌کم یک بار پرداخت کرده ÷ ثبت‌نام؛ پلهٔ «پرداخت» قیف فقط کسانی را می‌شمارد که اول به عادت رسیده‌اند" :cmp="prevCmp(pct(KP.paid.fromStart, 1))" />
+        <KpiTile label="زمان میانه تا اولین بیس" :value="K.firstBase.medianDays == null ? '—' : fa(K.firstBase.medianDays)" :unit="K.firstBase.medianDays == null ? '' : 'روز'" info="روز پس از ثبت‌نام، میانهٔ حساب‌های کوهورت که بیس ساخته‌اند">
           <template #cmp>تا پرداخت: <b style="color: var(--ink)">{{ days(P.medianDays) }}</b></template>
         </KpiTile>
       </div>
@@ -91,7 +93,7 @@ import { api } from 'src/api'
 import { useAsync } from 'src/composables/useAsync'
 import { useRange } from 'src/composables/useRange'
 import { useQueryParam } from 'src/composables/useUrlState'
-import { n, fa, pct, date } from 'src/lib/format'
+import { n, fa, pct, date, daysAgo } from 'src/lib/format'
 import { SOURCES } from 'src/lib/refs'
 
 const range = useRange()
@@ -99,11 +101,12 @@ const src = useQueryParam('src')
 const { data: d, loading, error } = useAsync(() => api.funnel({ range: range.value, source: src.value || undefined }), [range, src])
 const setSrc = (v) => { src.value = v || null }
 
-const rate = (x, y) => (y ? x / y : 0)
+const rate = (x, y) => (y ? x / y : null)
 const days = (v) => (v == null ? '—' : fa(v) + ' روز')
 const prevCmp = (v) => (d.value.prev.length ? 'کوهورت قبلی: ' + v : undefined)
 const MATURE = computed(() => (d.value ? d.value.mature : 30))
-const sub = computed(() => { const R = range.value, M = MATURE.value; return 'کوهورت بالغ: حساب‌هایی که ' + fa(M) + ' تا ' + fa(M + R) + ' روز پیش ثبت‌نام کرده‌اند (' + date(M + R - 1) + ' تا ' + date(M) + ') — همه دست‌کم یک ماه فرصت داشته‌اند به هر پله برسند' })
+const sub = computed(() => { const c = d.value && d.value.cohort; if (c) return 'کوهورت بالغ: ثبت‌نام‌های ' + date(daysAgo(c.from)) + ' تا ' + date(daysAgo(c.to) + 1) + (c.clipped ? ' (از شروع دادهٔ رفتاری؛ قبل از آن فعالیت ثبت نشده)' : '') + ' — دست‌کم ' + fa(MATURE.value) + ' روز فرصت داشته‌اند به هر پله برسند؛ حساب‌های ساخته‌شده با دعوت همکار شمرده نمی‌شوند'
+  const R = range.value, M = MATURE.value; return 'کوهورت بالغ: حساب‌هایی که ' + fa(M) + ' تا ' + fa(M + R) + ' روز پیش ثبت‌نام کرده‌اند (' + date(M + R - 1) + ' تا ' + date(M) + ') — همه دست‌کم یک ماه فرصت داشته‌اند به هر پله برسند' })
 
 const byKey = (list) => { const o = {}; list.forEach((s) => { o[s.key] = s }); return o }
 const K = computed(() => byKey(d.value.steps))
@@ -124,10 +127,10 @@ const PLAY = computed(() => ({
 const play = computed(() => PLAY.value[worst.value.key])
 
 const ALL_COLS = [
-  { k: 'visits', label: 'بازدید', fm: n }, { k: 'signups', label: 'ثبت‌نام', fm: n }, { k: 'sr', label: 'نرخ ثبت‌نام', fm: (v) => pct(v, 1) },
+  { k: 'signups', label: 'ثبت‌نام', fm: n },
   { k: 'fb', label: 'اولین بیس', fm: (v) => pct(v) }, { k: 'act', label: 'فعال‌سازی', fm: (v) => pct(v) }, { k: 'habit', label: 'عادت', fm: (v) => pct(v) }, { k: 'paid', label: 'پرداخت', fm: (v) => pct(v, 1) },
 ]
-const cols = computed(() => (V.value.n == null ? ALL_COLS.filter((c) => c.k !== 'visits' && c.k !== 'sr') : ALL_COLS))
+const cols = computed(() => ALL_COLS) // GA visits are per channel, signups per source: the two never line up per row
 const best = computed(() => { const b = {}; cols.value.forEach((c) => { b[c.k] = Math.max(...d.value.bySource.map((r) => r[c.k])) }); return b })
 
 const actChart = computed(() => ({

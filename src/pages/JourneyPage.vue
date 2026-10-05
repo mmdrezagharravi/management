@@ -1,6 +1,8 @@
 <template>
   <PageShell title="نقشهٔ مسیر مشتری" :sub="'از آگاهی تا تمدید — عددها زنده‌اند و با «قیف تبدیل» یکی‌اند (ثبت‌نام‌های ' + fa(MATURE) + ' تا ' + fa(MATURE + range) + ' روز پیش)؛ متن‌ها هر فصل بازبینی می‌شوند'" range v-model:range="range" :sources="['clarity', 'main', 'behavior', 'wallet']" :loading="loading" :error="error">
+    <template #actions><button class="btn small" :class="{ primary: sample }" :aria-pressed="String(!!sample)" @click="sample = sample ? '' : '1'"><AppIcon name="sparkle" />{{ sample ? 'بازگشت به دادهٔ واقعی' : 'نمایش نمونه' }}</button></template>
     <template v-if="d">
+      <div v-if="sample" class="banner info"><AppIcon name="sparkle" /><div><b>دادهٔ نمونه:</b> عددهای این صفحه ساختگی‌اند و فقط برای فهمیدن صفحه آمده‌اند. برای دیدن دادهٔ واقعی دکمهٔ «بازگشت به دادهٔ واقعی» را بزنید.</div></div>
       <PanelCard title="نقشهٔ مسیر" hint="ردیف‌های «زنده» از داده پر می‌شوند · روی موبایل افقی بکشید" flush>
         <div class="tbl-wrap">
           <table class="tbl jm">
@@ -65,15 +67,19 @@
 import { computed } from 'vue'
 import PageShell from 'components/PageShell.vue'
 import PanelCard from 'components/PanelCard.vue'
+import AppIcon from 'components/AppIcon.vue'
 import { api } from 'src/api'
 import { useAsync } from 'src/composables/useAsync'
 import { useRange } from 'src/composables/useRange'
+import { useQueryParam } from 'src/composables/useUrlState'
 import { n, fa, pct } from 'src/lib/format'
 import { GA_CHANNEL_NAME } from 'src/lib/refs'
 
 const MATURE = 30
 const range = useRange()
-const { data: d, loading, error } = useAsync(() => api.journey({ range: range.value }), [range])
+const sample = useQueryParam('sample', '')
+const load = () => (sample.value ? import('src/api/mock/journey').then((m) => m.journey({ range: range.value })) : api.journey({ range: range.value }))
+const { data: d, loading, error } = useAsync(load, [range, sample])
 const K = computed(() => { const o = {}; d.value.funnel.forEach((s) => { o[s.key] = s }); return o })
 const stage = (key) => d.value.stages.find((s) => s.key === key)
 const live = computed(() => {
@@ -91,7 +97,7 @@ const live = computed(() => {
 </script>
 
 <style scoped>
-.jm { table-layout: fixed; min-width: 1120px; }
+.jm { table-layout: fixed; min-width: 1040px; }
 .jm.ways { min-width: 900px; }
 .jm th.rh, .jm td.rh { width: 118px; position: sticky; inset-inline-start: 0; background: var(--surface); z-index: 2; border-inline-end: 1px solid var(--grid); }
 .jm thead th { white-space: normal; color: var(--ink); font-size: 12.5px; }

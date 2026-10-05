@@ -58,7 +58,7 @@ export function settingsPreview(v) {
   const paying = accounts.filter((a) => a.paying)
   const bandN = (k) => paying.filter((a) => (k === 'good' ? a.health >= v.good : k === 'warn' ? a.health >= v.warn && a.health < v.good : k === 'ser' ? a.health >= v.ser && a.health < v.warn : a.health < v.ser)).length
   return ok({
-    upsell: { n: accounts.filter((a) => (a.plan === 'free' || a.plan === 'basic') && a.limitHits30 >= v.upHits && a.pricingVisits30 >= v.upPricing && a.lastSeenDays <= v.upSeen).length, today: accounts.filter((a) => a.segments.includes('upsell')).length },
+    upsell: { n: accounts.filter((a) => (a.plan === 'basic' || a.plan === 'team') && a.limitHits30 >= v.upHits && a.pricingVisits30 >= v.upPricing && a.lastSeenDays <= v.upSeen).length, today: accounts.filter((a) => a.segments.includes('upsell')).length },
     bands: C.health.bands.map((b) => ({ key: b.key, label: b.label, n: bandN(b.key), today: paying.filter((a) => a.band.key === b.key).length })),
   })
 }

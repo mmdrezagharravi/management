@@ -1,6 +1,6 @@
 <template>
   <PageShell title="دسته‌بندی‌ها" :sub="d ? n(d.segs.length) + ' دستهٔ رفتاری · ' + n(d.inAny) + ' حساب در دست‌کم یک دسته — دسته‌ها هم‌پوشانی دارند؛ روی هر دسته بزنید تا اعضایش را ببینید' : ''" :sources="['main', 'behavior']" :loading="loading && !d" :error="error">
-    <template #actions><router-link class="btn sm" to="/settings"><AppIcon name="gear" />قواعد و آستانه‌ها</router-link></template>
+    <template #actions><router-link class="btn small" to="/settings"><AppIcon name="gear" />قواعد و آستانه‌ها</router-link></template>
     <template v-if="d">
       <div class="grid g3">
         <section v-for="s in d.segs" :key="s.key" class="card" :class="{ 'tint-accent': s.key === cur }">
@@ -25,7 +25,7 @@
           </div>
           <div class="card-f">
             <span>{{ fa(s.active) }} عضو فعال در ۷ روز</span>
-            <button class="btn sm" :class="{ primary: s.key === cur }" @click="pick(s.key, true)"><AppIcon name="users" />فهرست اعضا</button>
+            <button class="btn small" :class="{ primary: s.key === cur }" @click="pick(s.key, true)"><AppIcon name="users" />فهرست اعضا</button>
           </div>
         </section>
       </div>
@@ -35,7 +35,7 @@
         <template #actions>
           <label class="row" style="gap: 6px; font-size: 12px; color: var(--muted)">دسته<select class="select" style="height: 28px; font-size: 12px" :value="cur" @change="pick($event.target.value, false)"><option v-for="s in d.segs" :key="s.key" :value="s.key">{{ s.label }} ({{ fa(s.n) }})</option></select></label>
         </template>
-        <DataTable :key="cur" :rows="d.members" :columns="columns" :filters="filters" :search="search" :sort="SEG_SORT[cur] || { key: 'mrr', dir: 'desc' }" url select :export-name="'segment-' + cur" unit="حساب" :on-row="(a) => ui.openAccount(a.id)">
+        <DataTable :key="cur" :rows="members" :columns="columns" :filters="filters" :search="search" :sort="SEG_SORT[cur] || { key: 'mrr', dir: 'desc' }" url :export-name="'segment-' + cur" unit="حساب" :on-row="(a) => ui.openAccount(a.id)">
           <template #col-name="{ row }"><AccountCell :a="row" /></template>
           <template #col-plan="{ row }"><PlanBadge :plan="row.plan" /></template>
           <template #col-mrr="{ row }"><template v-if="row.mrr">{{ compact(row.mrr) }}</template><span v-else class="faint">—</span></template>
@@ -59,7 +59,7 @@
         </PanelCard>
       </div>
 
-      <div class="note">قواعد و آستانه‌های هر دسته در <router-link to="/settings" style="color: var(--accent-ink); font-weight: 600">تعریف‌ها و دسترسی</router-link> تنظیم می‌شوند و همهٔ صفحه‌ها همان تعریف را می‌خوانند.</div>
+      <div class="note">قاعدهٔ هر دسته در سرور ثابت است و همهٔ صفحه‌ها همان را می‌خوانند؛ فهرست کامل تعریف‌ها در <router-link to="/settings" style="color: var(--accent-ink); font-weight: 600">تعریف‌ها و دسترسی</router-link> آمده است.</div>
     </template>
   </PageShell>
 </template>
@@ -91,8 +91,9 @@ const SEG_SORT = { upsell: { key: 'signal', dir: 'desc' }, new: { key: 'lastSeen
 
 const ui = useUiStore(), route = useRoute(), router = useRouter()
 const seg = useQueryParam('seg', 'upsell')
-const { data: d, loading, error } = useAsync(() => api.segments({ seg: seg.value }), [seg])
-const cur = computed(() => d.value.seg) // validated key
+const { data: d, loading, error } = useAsync(() => api.segments(), [])
+const cur = computed(() => (d.value.segs.some((s) => s.key === seg.value) ? seg.value : 'upsell'))
+const members = computed(() => d.value.membersBy[cur.value] || [])
 const curSeg = computed(() => d.value.segs.find((s) => s.key === cur.value))
 
 const p = (x) => pct(x, x < 0.1 ? 1 : 0)

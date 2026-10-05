@@ -1,7 +1,7 @@
 <template>
   <q-dialog v-model="ui.shortcutsOpen">
     <div class="modal">
-      <div class="mh"><span>میان‌برهای صفحه‌کلید</span><button class="btn ghost sm icon" aria-label="بستن" @click="ui.shortcutsOpen = false"><AppIcon name="x" /></button></div>
+      <div class="mh"><span>میان‌برهای صفحه‌کلید</span><button class="btn ghost small icon" aria-label="بستن" @click="ui.shortcutsOpen = false"><AppIcon name="x" /></button></div>
       <div class="mb">
         <div v-for="[k, d] in KEYS" :key="k" class="kv"><span class="k">{{ d }}</span><span class="v"><span class="kbd">{{ k }}</span></span></div>
       </div>

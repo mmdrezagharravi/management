@@ -62,7 +62,7 @@ export async function settings() {
       cycles: [],
       components: HEALTH_COMPONENTS,
       bands: BANDS.map((b) => ({ ...b, min: DEFAULTS[b.key] ?? b.min, n: paying.filter((a) => a.band === b.key).length })),
-      plans: (D.plans || Object.keys(RECORD_LIMITS)).map((p) => ({ key: planKey(p), name: PLAN_NAME[planKey(p)] || p, price: null, seatsIncluded: null, seatPrice: null, limits: { records: RECORD_LIMITS[p] || 0, runs: RUN_LIMITS[p] || 0, seats: planKey(p) === 'basic' ? 5 : null, sms: 0, ai: 0, storage: 0 } })),
+      plans: (D.plans || Object.keys(RECORD_LIMITS)).map((p) => ({ key: planKey(p), name: PLAN_NAME[planKey(p)] || p, price: p === 'basic' ? 0 : (D.planPrices && D.planPrices[p] ? D.planPrices[p].monthly : null), seatsIncluded: null, seatPrice: null, limits: { records: RECORD_LIMITS[p] || 0, runs: RUN_LIMITS[p] || 0, seats: planKey(p) === 'basic' ? 5 : null, sms: 0, ai: 0, storage: 0 } })),
       segments: (D.segments || Object.keys(SEGMENT_RULES)).map((key) => ({ key, label: SEGMENT_LABEL[key] || key, n: accounts.filter((a) => a.segments.includes(key)).length, rule: (SEGMENT_RULES[key] || [])[0] || '', desc: (SEGMENT_RULES[key] || [])[1] || '' })),
     },
     perms: PERMS, roles: ROLES,

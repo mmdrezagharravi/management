@@ -1,7 +1,7 @@
 /* GET /management/health + the customer list → the shape mock/health.js returns. */
 import { get } from './client'
 import { customersAll, toAccount } from './account'
-import { fa } from 'src/lib/format'
+import { fa, daysAgo } from 'src/lib/format'
 import { HEALTH_COMPONENTS as COMPS } from 'src/lib/refs'
 import { BANDS, band as bandOf } from 'src/lib/ui'
 
@@ -10,26 +10,34 @@ const ACTION = {
   trend: 'بررسی تغییر در تیم یا فرایند مشتری',
   depth: 'معرفی خودکارسازی و فرم در یک جلسهٔ کوتاه',
   team: 'جلسه با مدیر حساب برای فعال کردن اعضا',
-  commercial: 'پیگیری پرداخت یا تیکت باز',
 }
+const actionOf = (a, key) => (key !== 'commercial' ? ACTION[key] : a.pastDue ? 'پیگیری پرداخت ناموفق یا نیمه‌کاره' : 'پیشنهاد ارتقای پلن — سقف رکورد پر شده')
 const sum = (list, f) => list.reduce((t, a) => t + f(a), 0)
 const avgOf = (list, f) => (list.length ? sum(list, f) / list.length : 0)
 const weakest = (a) => COMPS.reduce((m, c) => (a.components[c.key] < a.components[m.key] ? c : m), COMPS[0])
 const bandRange = (b, i) => (i === 0 ? fa(b.min) + ' به بالا' : b.min === 0 ? 'زیر ' + fa(BANDS[i - 1].min) : fa(b.min) + '–' + fa(BANDS[i - 1].min - 1))
-const withWeak = (a) => { const w = weakest(a); return { ...a, weak: { key: w.key, label: w.label, value: a.components[w.key] }, action: ACTION[w.key] } }
+const withWeak = (a) => { const w = weakest(a); return { ...a, weak: { key: w.key, label: w.label, value: a.components[w.key] }, action: actionOf(a, w.key) } }
 const mover = (a, d) => ({ ...a, d, weakLabel: weakest(a).label, bandLabel: bandOf(a.health).label })
+
+/** Paying accounts under 50 at each weekly point of healthHistory (last = now); null where no snapshot exists yet. */
+const weeklyAtRisk = (paying) => Array.from({ length: 8 }, (_, i) => {
+  const scored = paying.filter((a) => a.healthHistory[a.healthHistory.length - 8 + i] != null)
+  return scored.length ? scored.filter((a) => a.healthHistory[a.healthHistory.length - 8 + i] < 50).length : null
+})
 
 export async function health() {
   const [h, accounts] = await Promise.all([get('/health'), customersAll()])
   const paying = accounts.filter((a) => a.paying)
   const totalMrr = sum(paying, (a) => a.mrr)
   const atRisk = paying.filter((a) => a.health < 50 || a.pastDue)
-  const had2w = paying.filter((a) => a.health2wAgo != null) // needs backend: health2wAgo on /customers
+  const had2w = paying.filter((a) => a.health2wAgo != null)
   const movers = (h.movers || []).filter((m) => m.customer.paying) // drops ≥ 15 in two weeks, biggest first; the server lists free accounts too
+  // snapshots are nightly; until one is two weeks old there is nothing to compare against, which is not the same as "no change"
+  const hasHistory = !!h.historyFrom && daysAgo(h.historyFrom) >= 14
 
   const bands = BANDS.map((b, i) => {
     const list = paying.filter((a) => a.band === b.key)
-    return { key: b.key, label: b.label, min: b.min, range: bandRange(b, i), n: list.length, prev: had2w.filter((a) => bandOf(a.health2wAgo).key === b.key).length, mrr: sum(list, (a) => a.mrr) }
+    return { key: b.key, label: b.label, min: b.min, range: bandRange(b, i), n: list.length, prev: hasHistory ? had2w.filter((a) => bandOf(a.health2wAgo).key === b.key).length : null, mrr: sum(list, (a) => a.mrr) }
   })
   const compAvg = COMPS.map((c) => ({ key: c.key, label: c.label, desc: c.desc, v: avgOf(paying, (a) => a.components[c.key]) }))
 
@@ -38,9 +46,10 @@ export async function health() {
 
   return {
     payingCount: paying.length, totalMrr,
-    kpis: { riskMrr: sum(atRisk, (a) => a.mrr), riskCount: atRisk.length, avg: avgOf(paying, (a) => a.health), avg2w: had2w.length ? avgOf(had2w, (a) => a.health2wAgo) : null, dropsCount: movers.length, dropsMrr: sum(movers, (m) => m.customer.mrr || 0) },
+    kpis: { riskMrr: sum(atRisk, (a) => a.mrr), riskCount: atRisk.length, avg: avgOf(paying, (a) => a.health), avg2w: had2w.length ? avgOf(had2w, (a) => a.health2wAgo) : null, dropsCount: hasHistory ? movers.length : null, dropsMrr: hasHistory ? sum(movers, (m) => m.customer.mrr || 0) : null },
+    historyFrom: h.historyFrom || null, hasHistory,
     bands, compAvg, weakAvg: compAvg.slice().sort((p, q) => p.v - q.v)[0],
-    riskN: [], // no weekly snapshot series endpoint yet; the page shows a note instead of the chart
+    riskN: weeklyAtRisk(paying),
     atRisk: atRisk.map(withWeak),
     down, up,
   }
