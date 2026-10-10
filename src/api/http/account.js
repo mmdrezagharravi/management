@@ -2,6 +2,7 @@
    Fields the backend does not have yet are null/0/[] — components must tolerate that. */
 import { all, get, memo } from './client'
 import { useLocalStore } from 'stores/local'
+import { CHURN_REASON_NAME, INDUSTRY_NAME } from 'src/lib/refs'
 
 /** Keep the exact plan keys owned by cloud-back. */
 export const PLANS = ['basic', 'team', 'business', 'enterprise', 'partner']
@@ -33,7 +34,8 @@ export function toAccount(s) {
   const lapsed = !s.paying && s.plan !== 'basic' && s.renewIn != null && s.renewIn < 0
   const history = Array.isArray(s.healthHistory) ? s.healthHistory : []
   return {
-    id, name, slug: id.slice(-8), industry: null, industryName: '', city: '', source: s.invitedBy || s.referredBy ? 'invite' : 'direct',
+    id, name, slug: id.slice(-8), industry: s.industry || null, industryName: INDUSTRY_NAME[s.industry] || '', city: '', source: s.invitedBy || s.referredBy || s.channel === 'invite' ? 'invite' : 'direct',
+    channel: s.channel || 'unknown', signupSource: s.signupSource || null, companySize: s.companySize || null, jobRole: s.jobRole || null, profileAnswered: !!s.profileAnswered,
     age: s.age ?? 0, contact: { first: s.name || '', last: '', mobile: s.mobile || '', email: s.email || null },
     plan: planKey(s.plan), cycle: CYCLE_MAP[s.cycle] || null, seats: s.seats ?? null, collaborators, seatsUsed, collaboratorLimit, mrr: s.mrr || 0, paying: !!s.paying, everPaid: !!s.everPaid,
     health: s.health ?? 0, band: s.band || 'crit', components: s.components || { activity: 0, trend: 0, depth: 0, team: 0, commercial: 0 },
@@ -41,9 +43,11 @@ export function toAccount(s) {
     lastSeenDays, lastSeenMin, online: s.online === true || lastSeenMin <= 5,
     memberCount: s.memberCount ?? 1, activeMembers7: s.activeMembers7 ?? 0, activeDays28: s.activeDays28 ?? 0, activeDays7: s.activeDays7 ?? 0,
     events30: s.events30 ?? 0, records30: null, records: s.records ?? 0, trendPct: s.trendPct ?? 0,
-    renewIn: s.renewIn ?? 0, churnedAt: lapsed ? -s.renewIn : undefined, churnReason: lapsed ? 'منقضی شد' : null,
+    renewIn: s.renewIn ?? 0, churnedAt: lapsed ? -s.renewIn : undefined, churnReason: s.churnReason ? CHURN_REASON_NAME[s.churnReason.reason] || s.churnReason.reason : lapsed ? 'منقضی شد' : null,
+    churnReasonKey: s.churnReason ? s.churnReason.reason : null, churnNote: s.churnReason ? s.churnReason.note : null,
     pastDue: !!s.pastDue, tenureDays: s.payingDays ?? 0,
-    limitHits30: 0, pricingVisits30: 0, tickets: 0, nps: null,
+    limitHits30: s.intent30 ? s.intent30.limit_hit : 0, pricingVisits30: s.intent30 ? s.intent30.pricing_view : 0,
+    intent30: s.intent30 || null, buyingIntentAt: s.buyingIntentAt || null, buyingIntentDays: s.buyingIntentDays ?? null, tickets: 0, nps: null,
     segments: s.segments || [], maxUsage, usage, bases: s.bases ?? 0, coOwnedBases: s.coOwnedBases ?? 0, sharedBases: s.sharedBases ?? 0, automations: s.automations ?? 0,
     upgradeValue: s.upgradeValue ?? 0, last30: Array.isArray(s.last30) ? s.last30 : [], milestones: milestonesOf(s), feat: {},
     invitesSent: 0, wk: [], decline: null,

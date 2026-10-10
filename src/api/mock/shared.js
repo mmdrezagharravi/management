@@ -32,6 +32,26 @@ export function config() {
 }
 export const CONFIG = config
 
+const MOCK_SIZES = ['1', '2-10', '11-50', '51-200', '201-1000', '1000+']
+const MOCK_ROLES = ['founder', 'manager', 'operations', 'sales', 'finance', 'it', 'freelancer', 'other']
+const MOCK_CHANNEL = { invite: 'collaborator' }
+const MOCK_CAMPAIGNS = ['autumn-sale', 'crm-launch', 'webinar-mehr']
+/** The marketing fields cloud-back adds to a summary (channel, profile answers, purchase intent), derived from the mock account. */
+function marketingOf(a) {
+  const buyingIntentDays = a.pricingVisits30 ? Math.min(a.lastSeenDays, 29) : null
+  const answered = a.id % 3 !== 0
+  return {
+    channel: MOCK_CHANNEL[a.source] || a.source,
+    signupSource: a.source === 'ads' ? { source: 'google', medium: 'cpc', campaign: MOCK_CAMPAIGNS[a.id % 3], landing: '/pricing' } : a.source === 'direct' ? { landing: '/' } : { source: a.source, landing: '/' },
+    companySize: answered ? MOCK_SIZES[a.id % MOCK_SIZES.length] : null,
+    jobRole: answered ? MOCK_ROLES[a.id % MOCK_ROLES.length] : null,
+    profileAnswered: answered,
+    intent30: { pricing_view: a.pricingVisits30, upgrade_click: Math.floor(a.pricingVisits30 / 2), limit_hit: a.limitHits30, checkout_view: a.pricingVisits30 >= 3 ? 1 : 0, checkout_submit: 0 },
+    buyingIntentDays,
+    buyingIntentAt: buyingIntentDays == null ? null : new Date(Date.now() - buyingIntentDays * 864e5).toISOString(),
+  }
+}
+
 /** Plain summary of an account for lists, drawers and tables. */
 export function enrich(a) {
   const last30 = []; for (let d = 29; d >= 0; d--) last30.push(a.ev[d])
@@ -48,6 +68,7 @@ export function enrich(a) {
     segments: a.segments, maxUsage: a.maxUsage, usage: a.usage, bases: a.bases.length, automations: a.automations,
     upgradeValue: DB.upgradeValue(a), last30, milestones: a.milestones, feat: a.feat,
     invitesSent: a.invitesSent, wk: Array.from(a.wk), decline: a.decline || null,
+    ...marketingOf(a),
   }
 }
 export const accountById = (id) => DB.byId.get(+id)

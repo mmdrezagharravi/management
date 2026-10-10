@@ -1,7 +1,7 @@
 <template>
   <PageShell :title="d ? a.name : 'پروفایل مشتری'" :sources="['main', 'behavior', 'wallet']" :banner="false" :loading="loading" :error="error">
     <template #crumbs><router-link to="/customers">مشتریان</router-link> › <span v-if="d && d.fallback" class="faint">نمونه: بیشترین درآمد در خطر</span></template>
-    <template v-if="d" #sub><PlanBadge :plan="a.plan" /><template v-if="a.industryName"> · {{ a.industryName }}</template><template v-if="a.city"> · {{ a.city }}</template> · عضو از {{ date(signupDaysAgo(a), { year: true }) }} ({{ sourceName(a.source) }})</template>
+    <template v-if="d" #sub><PlanBadge :plan="a.plan" /><template v-if="a.industryName"> · {{ a.industryName }}</template><template v-if="a.city"> · {{ a.city }}</template> · عضو از {{ date(signupDaysAgo(a), { year: true }) }} ({{ channelLabel(a) }})</template>
     <template v-if="d" #actions>
       <button class="btn" @click="dialogs.addNote(a)"><AppIcon name="note" />یادداشت</button>
       <button class="btn primary" @click="dialogs.logCall(a)"><AppIcon name="phone" />ثبت تماس</button>
@@ -81,6 +81,23 @@
             <div v-if="p.invitedBy" class="kv"><span class="k">دعوت‌کننده</span><span class="v"><router-link :to="'/customers/' + p.invitedBy.id">{{ p.invitedBy.name || fa(p.invitedBy.mobile || '') }}</router-link><span class="faint"> · حساب با افزودن همکار ساخته شد</span></span></div>
             <div v-else class="kv"><span class="k">معرف</span><span class="v"><router-link v-if="p.referredBy" :to="'/customers/' + p.referredBy.id">{{ p.referredBy.name || fa(p.referredBy.mobile || '') }}</router-link><span v-else class="faint">ثبت‌نام مستقیم</span></span></div>
             <div class="kv"><span class="k">معرفی کرده</span><span class="v">{{ p.referrals ? fa(p.referrals) + ' نفر' : '—' }}<span v-if="p.referralCode" class="faint ltr"> · کد {{ p.referralCode }}</span></span></div>
+
+            <div class="sub-h">جذب و پروفایل</div>
+            <div class="kv"><span class="k">کانال ثبت‌نام</span><span class="v">{{ SIGNUP_CHANNEL_NAME[p.channel] || p.channel || '—' }}</span></div>
+            <template v-if="p.signupSource">
+              <div v-if="p.signupSource.source || p.signupSource.medium" class="kv"><span class="k">utm</span><span class="v ltr">{{ [p.signupSource.source, p.signupSource.medium, p.signupSource.campaign].filter(Boolean).join(' / ') }}</span></div>
+              <div v-if="p.signupSource.referral" class="kv"><span class="k">کد لینک دعوت</span><span class="v ltr">{{ p.signupSource.referral }}</span></div>
+              <div v-if="p.signupSource.referrer" class="kv"><span class="k">از سایت</span><span class="v ltr" style="white-space: normal">{{ p.signupSource.referrer }}</span></div>
+              <div v-if="p.signupSource.landing" class="kv"><span class="k">صفحهٔ ورود</span><span class="v ltr" style="white-space: normal">{{ p.signupSource.landing }}</span></div>
+            </template>
+            <div class="kv"><span class="k">صنعت · اندازه · نقش</span><span class="v"><template v-if="p.industry || p.companySize || p.jobRole">{{ [INDUSTRY_NAME[p.industry], COMPANY_SIZE_NAME[p.companySize], JOB_ROLE_NAME[p.jobRole]].filter(Boolean).join(' · ') }}</template><span v-else class="faint">پاسخ نداده</span></span></div>
+            <div v-for="(r, i) in p.churnReasons || []" :key="'cr' + i" class="kv"><span class="k">دلیل تمدید نکردن · {{ dateTime(r.at) }}</span><span class="v" style="white-space: normal">{{ CHURN_REASON_NAME[r.reason] || r.reason }}<span v-if="r.note" class="faint"> — {{ r.note }}</span></span></div>
+
+            <template v-if="p.intentEvents && p.intentEvents.length">
+              <div class="sub-h">نشانه‌های قصد خرید <span class="faint" style="font-weight: 400">· {{ fa(p.intentEvents.length) }} مورد آخر</span></div>
+              <div v-for="(x, i) in p.intentEvents" :key="'ie' + i" class="kv"><span class="k">{{ INTENT_NAME[x.type] || x.type }}<span v-if="x.context" class="faint"> · {{ intentContextName(x.context) }}</span><span v-if="x.plan" class="faint"> · {{ PLAN_NAME[x.plan] || x.plan }}</span></span><span class="v">{{ dateTime(x.at) }}</span></div>
+            </template>
+
             <div class="kv"><span class="k">موجودی کیف پول</span><span class="v"><template v-if="p.wallet != null">{{ money(p.wallet) }}</template><span v-else class="faint">در دسترس نیست</span></span></div>
             <div class="kv"><span class="k">اعتبار باقی‌مانده</span><span class="v">{{ n(p.credits.aiTokens) }} توکن هوش مصنوعی · {{ n(p.credits.sms) }} پیامک · {{ n(p.credits.email) }} ایمیل</span></div>
             <div class="kv"><span class="k">اتصال به بله</span><span class="v">{{ p.baleConnected ? 'وصل است' : 'وصل نیست' }}</span></div>
@@ -93,6 +110,7 @@
             <div class="kv"><span class="k">وضعیت پرداخت</span><span class="v"><span v-if="a.pastDue" class="sig due">پرداخت ناموفق</span><span v-else class="faint">بدون خطا</span></span></div>
             <div class="kv"><span class="k">تیکت پشتیبانی باز</span><span class="v"><span v-if="a.tickets" class="sig due">{{ fa(a.tickets) }}</span><template v-else>—</template></span></div>
             <div class="kv"><span class="k">آخرین نظرسنجی NPS</span><span class="v"><template v-if="a.nps != null">{{ fa(a.nps) }} از ۱۰ <StatusBadge v-if="a.nps >= 9" status="good" label="مروج" /><StatusBadge v-else-if="a.nps >= 7" status="warn" label="خنثی" /><StatusBadge v-else status="crit" label="منتقد" /></template><span v-else class="faint">پاسخ نداده</span></span></div>
+            <div class="kv"><span class="k">قصد خرید ۳۰ روز</span><span class="v"><template v-if="a.intent30 && (a.intent30.pricing_view || a.intent30.upgrade_click || a.intent30.checkout_view || a.intent30.checkout_submit)"><span class="sig price">{{ ['pricing_view', 'upgrade_click', 'checkout_view', 'checkout_submit'].filter((t) => a.intent30[t]).map((t) => fa(a.intent30[t]) + ' بار ' + INTENT_NAME[t]).join(' · ') }}</span></template><span v-else class="faint">—</span></span></div>
             <div class="kv"><span class="k">دسته‌ها</span><span class="v"><template v-if="a.segments.length"><router-link v-for="k in a.segments" :key="k" class="tag" :to="'/segments?seg=' + k" style="margin-inline-start: 4px">{{ SEGMENT_LABEL[k] }}</router-link></template><template v-else>—</template></span></div>
           </PanelCard>
           <PanelCard title="مصرف پلن" :hint="'پلن ' + PLAN_NAME[a.plan]">
@@ -210,7 +228,7 @@ import { useQueryParam } from 'src/composables/useUrlState'
 import { useDialogs } from 'src/composables/useDialogs'
 import { useUiStore } from 'stores/ui'
 import { n, fa, pct, compact, compactParts as cp, money, date, dateTime, ago, agoDays, inDays, clock, initials, daysAgo, signupDaysAgo, CURRENCY } from 'src/lib/format'
-import { CYCLE_NAME, SEGMENT_LABEL, sourceName } from 'src/lib/refs'
+import { CYCLE_NAME, SEGMENT_LABEL, SIGNUP_CHANNEL_NAME, INDUSTRY_NAME, COMPANY_SIZE_NAME, JOB_ROLE_NAME, CHURN_REASON_NAME, INTENT_NAME, channelLabel, intentContextName } from 'src/lib/refs'
 import { PLAN_NAME, band, toast } from 'src/lib/ui'
 
 const route = useRoute(), router = useRouter(), ui = useUiStore(), dialogs = useDialogs()

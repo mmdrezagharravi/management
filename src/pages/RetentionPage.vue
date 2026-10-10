@@ -69,14 +69,18 @@
             <template #col-tenure="{ row }">{{ months(row.tenure) }}</template>
           </DataTable>
         </PanelCard>
-        <PanelCard :title="ch.reasons.length ? 'دلیل لغو اشتراک' : 'خلاصهٔ ریزش'" :hint="n(ch.total) + ' مشتری در ۱۸۰ روز'">
-          <HBars v-if="ch.reasons.length" :items="ch.reasons.map((r) => ({ label: r.reason, sub: compact(r.mrr) + ' MRR', value: r.n, note: pct(ch.total ? r.n / ch.total : 0) }))" :label-width="108" :format="(v) => n(v)" />
+        <PanelCard :title="ch.reasons.length ? 'دلیل لغو اشتراک' : 'خلاصهٔ ریزش'" :hint="ch.reasons.length ? n(ch.answered) + ' پاسخ در ۱۸۰ روز · ' + n(ch.total) + ' مشتری ازدست‌رفته' : n(ch.total) + ' مشتری در ۱۸۰ روز'">
+          <HBars v-if="ch.reasons.length" :items="ch.reasons.map((r) => ({ label: r.reason, sub: compact(r.mrr) + ' MRR', value: r.n, note: pct(ch.answered ? r.n / ch.answered : 0) }))" :label-width="140" :format="(v) => n(v)" />
+          <div v-else class="note">هنوز دلیلی ثبت نشده. از این پس پنجرهٔ «پایان اشتراک» از مالک می‌پرسد چرا تمدید نمی‌کند.</div>
+          <div v-if="ch.notes && ch.notes.length" style="margin-top: 10px">
+            <div v-for="x in ch.notes" :key="x.id + x.at" class="kv"><span class="k"><a href="#" @click.prevent="ui.openAccount(x.id)">{{ x.name || 'مشتری' }}</a> · {{ date(daysAgo(x.at)) }}</span><span class="v" style="white-space: normal">{{ x.note }}</span></div>
+          </div>
           <div style="margin-top: 12px; border-top: 1px solid var(--grid); padding-top: 6px">
             <div class="kv"><span class="k">MRR ازدست‌رفته در ۱۸۰ روز</span><span class="v">{{ money(ch.lostMrr) }}</span></div>
             <div class="kv"><span class="k">میانهٔ مدت اشتراک پیش از لغو</span><span class="v">{{ months(ch.medianTenure) }}</span></div>
             <div class="kv"><span class="k">لغو در سه ماه اول</span><span class="v">{{ n(ch.early) }} مشتری · {{ pct(ch.total ? ch.early / ch.total : 0) }}</span></div>
           </div>
-          <template #footer><span>دلیلی که مشتری هنگام لغو انتخاب کرده</span><router-link to="/health">مشتریان در خطر</router-link></template>
+          <template #footer><span>دلیلی که مالک در پنجرهٔ «پایان اشتراک» انتخاب کرده</span><router-link to="/health">مشتریان در خطر</router-link></template>
         </PanelCard>
       </div>
     </template>

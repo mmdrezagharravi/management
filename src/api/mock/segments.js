@@ -2,6 +2,23 @@
 import { DB } from 'src/mock/engine'
 import { C, ok, enrich } from './shared'
 
+const conversion = (list) => ({ accounts: list.length, activated: list.filter((a) => a.milestones.activated !== undefined).length, paying: list.filter((a) => a.paying).length, everPaid: list.filter((a) => a.everPaid).length, mrr: list.reduce((t, a) => t + a.mrr, 0) })
+const breakdown = (list, keyOf, nameOf) => {
+  const m = new Map()
+  for (const a of list) { const key = keyOf(a); if (key) m.set(key, [...(m.get(key) || []), a]) }
+  return [...m].map(([key, l]) => ({ key, name: nameOf ? nameOf(l[0]) : undefined, ...conversion(l) })).sort((p, q) => q.mrr - p.mrr || q.accounts - p.accounts)
+}
+function profiles(accounts) {
+  const self = accounts.map(enrich).filter((a) => a.channel !== 'collaborator')
+  const answered = self.filter((a) => a.profileAnswered)
+  return {
+    total: self.length, answered: answered.length,
+    industry: breakdown(answered, (a) => a.industry, (a) => a.industryName),
+    companySize: breakdown(answered, (a) => a.companySize),
+    jobRole: breakdown(answered, (a) => a.jobRole),
+  }
+}
+
 export function segments() {
   const { accounts, agg } = DB
   const segs = agg.segmentCounts()
@@ -38,5 +55,6 @@ export function segments() {
       }
     }),
     cells, top,
+    profiles: profiles(accounts),
   })
 }

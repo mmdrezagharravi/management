@@ -1,7 +1,7 @@
 <template>
   <PageShell title="میز فروش" sub="مشتری‌هایی که امروز باید با آن‌ها تماس بگیرید — روی هر ردیف بزنید تا نمای سریع باز شود" :sources="['wallet', 'main']" :loading="loading" :error="error">
     <template v-if="d">
-      <div class="kpis">
+      <div class="kpis" :class="{ six: KEYS.length === 6 }">
         <KpiTile v-for="key in KEYS" :key="key" :label="TABS[key].tile" :value="n(k[key].n)" :unit="TABS[key].unit" :info="TABS[key].info" :cmp="TABS[key].cmp()" :to="tabTo(key)" />
       </div>
 
@@ -35,7 +35,9 @@
           <template #col-lost="{ row }"><b>{{ compact(row.lostMrr) }}</b></template>
           <template #col-since="{ row }"><span class="nowrap">{{ agoDays(row.churnedAt) }}</span><span class="s">{{ date(row.churnedAt) }}</span></template>
           <template #col-follow="{ row }"><span v-if="row.lastNote" class="s" style="max-width: 220px; white-space: normal">{{ row.lastNote }}</span><span v-else class="faint">ثبت نشده</span></template>
-          <template #col-act="{ row }"><button class="btn small" @click="logCall(row, 'pastdue:' + row.id)"><AppIcon name="phone" />ثبت پیگیری</button></template>
+          <template #col-intent="{ row }"><span class="s" style="max-width: 240px; white-space: normal">{{ intentText(row) || '—' }}</span></template>
+          <template #col-lastIntent="{ row }"><span class="nowrap">{{ row.buyingIntentDays == null ? '—' : agoDays(row.buyingIntentDays) }}</span></template>
+          <template #col-act="{ row }"><button class="btn small" @click="logCall(row, cur + ':' + row.id)"><AppIcon name="phone" />ثبت پیگیری</button></template>
         </DataTable>
       </section>
     </template>
@@ -57,7 +59,7 @@ import { useQueryParam } from 'src/composables/useUrlState'
 import { useDialogs } from 'src/composables/useDialogs'
 import { useUiStore } from 'stores/ui'
 import { n, fa, pct, compact, money, date, inDays, ago, agoDays, duration } from 'src/lib/format'
-import { PLAN_ORDER, CYCLE_NAME } from 'src/lib/refs'
+import { PLAN_ORDER, CYCLE_NAME, INTENT_NAME } from 'src/lib/refs'
 import { PLAN_NAME } from 'src/lib/ui'
 
 const ui = useUiStore()
@@ -70,6 +72,7 @@ const cur = computed(() => (TABS[tab.value] ? tab.value : 'renew'))
 const s = computed(() => d.value.stats[cur.value])
 const tabTo = (key) => ({ path: '/sales', query: key === 'renew' ? {} : { tab: key }, hash: '#ws' })
 const UPGRADE_TO = { basic: 'به تیم', team: 'به کسب و کار' }
+const intentText = (a) => Object.entries(a.intent30 || {}).filter(([key, v]) => v && key !== 'limit_hit').map(([key, v]) => fa(v) + ' بار ' + INTENT_NAME[key]).join(' · ')
 
 const col = {
   acc: { key: 'name', label: 'مشتری', csv: (a) => a.name },
@@ -78,6 +81,20 @@ const col = {
   health: { key: 'health', label: 'سلامت', num: true, csv: (a) => a.health },
 }
 const TABS = {
+  hot: {
+    label: 'سرنخ داغ', tile: 'سرنخ داغ', unit: 'حساب',
+    cmp: () => fa(k.value.hot.checkout) + ' نفر تا صفحهٔ پرداخت رفته‌اند',
+    info: 'پرداخت نمی‌کند ولی در ۷ روز اخیر قیمت‌ها را دیده، روی ارتقا زده یا وارد صفحهٔ پرداخت شده',
+    note: () => fa(s.value.n) + ' حساب در هفتهٔ اخیر قصد خرید نشان داده‌اند و هنوز نخریده‌اند. همین امروز تماس بگیرید؛ ' + fa(s.value.checkout) + ' نفرشان تا صفحهٔ پرداخت رفته‌اند.',
+    sort: { key: 'lastIntent', dir: 'asc' },
+    views: [{ key: 'all', label: 'همه', test: null }, { key: 'checkout', label: 'تا صفحهٔ پرداخت', test: (a) => a.intent30 && (a.intent30.checkout_view > 0 || a.intent30.checkout_submit > 0) }],
+    columns: [col.acc, col.plan,
+      { key: 'intent', label: 'چه کرده (۳۰ روز)', sort: (a) => a.intent30 ? a.intent30.pricing_view + a.intent30.upgrade_click + 3 * (a.intent30.checkout_view + a.intent30.checkout_submit) : 0, desc: true, csv: (a) => intentText(a) },
+      { key: 'lastIntent', label: 'آخرین قصد خرید', num: true, sort: (a) => a.buyingIntentDays, csv: (a) => a.buyingIntentDays },
+      { key: 'usage', label: 'پرمصرف‌ترین سهمیه', num: true, sort: (a) => a.maxUsage.ratio, csv: (a) => a.maxUsage.label + ' ' + Math.round(a.maxUsage.ratio * 100) + '%' },
+      col.health,
+      { key: 'act', label: '', sort: false, csv: false }],
+  },
   renew: {
     label: 'تمدید', tile: 'تمدید در ۳۰ روز آینده', unit: 'مشتری',
     cmp: () => money(k.value.renew.mrr) + ' در ماه · ' + fa(k.value.renew.risk) + ' در خطر',

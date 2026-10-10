@@ -11,6 +11,7 @@ const META = {
   automators: { rule: 'automations >= 1 AND last_seen <= 30', desc: 'دست‌کم یک خودکارسازی ساخته‌اند — چسبنده‌ترین گروه' },
   teams: { rule: 'active_members_7d >= 2', desc: 'بیش از یک نفر در هفتهٔ اخیر کار کرده' },
   upsell: { rule: 'plan = basic AND at_limit AND last_seen <= 14', desc: 'در پلن پایه به سقف خورده‌اند و همین دو هفته فعال بوده‌اند' },
+  hot: { rule: 'NOT paying AND buying_intent <= 7d', desc: 'پرداخت نمی‌کنند ولی در هفتهٔ اخیر قیمت‌ها را دیده‌اند، روی ارتقا زده‌اند یا وارد صفحهٔ پرداخت شده‌اند' },
   risk: { rule: 'paying AND health < 50', desc: 'پرداخت‌کننده با امتیاز سلامت زیر ۵۰' },
   champions: { rule: 'paying AND first_payment >= 180d ago AND health >= 80', desc: 'اکنون پرداخت‌کننده، اولین پرداختشان بیش از ۶ ماه پیش و سالم — مرجع معرفی' },
   dormant: { rule: 'signup_age >= 30 AND last_seen > 30', desc: 'دست‌کم یک ماه از ثبت‌نامشان گذشته و یک ماه است فعالیتی نداشته‌اند' },

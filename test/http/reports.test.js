@@ -20,7 +20,8 @@ const customers = [
 const SERVER = {
   '/funnel': { range: 30, matureDays: 30, dataSince: '2026-05-01', cohort: { from: '', to: '', size: 100 }, steps: stepsOf(100), paidAny: 5, biggestDrop: 'paid', bySource: { referral: stepsOf(20), direct: stepsOf(80) } },
   '/retention': { dataSince: '2026-05-01', weeks: 12, cohorts: [{ month: '1405-03', size: 30, cells: cells(30) }, { month: '1405-04', size: 20, cells: cells(20) }, { month: '1405-06', size: 5, cells: cells(0) }],
-    curves: { all: cells(50), withAutomation: cells(20), withoutAutomation: cells(30), team: cells(10) } },
+    curves: { all: cells(50), withAutomation: cells(20), withoutAutomation: cells(30), team: cells(10) },
+    churnReasons: { days: 180, answered: 3, reasons: [{ reason: 'price', n: 2, mrr: 900 }, { reason: 'mystery', n: 1, mrr: 0 }], notes: [{ id: 'u1', name: 'الف', reason: 'other', note: 'کند بود', at: '2026-09-01' }] } },
   '/features': { range: 30, dataSince: '2026-05-01', activeCustomers: { value: 40, prev: 35 }, features: [
     { type: 'Record', key: false, users: 30, events: 900, rate: 0.75, prevUsers: 20, prevRate: 0.57, paidRate: 0.9, freeRate: 0.5 },
     { type: 'Automation', key: true, users: 10, events: 50, rate: 0.25, prevUsers: 5, prevRate: 0.14, paidRate: 0.5, freeRate: 0.1 },
@@ -91,6 +92,10 @@ describe('retention', () => {
     hasKeys(d.churn, ['total', 'lostMrr', 'early', 'medianTenure', 'reasons', 'reasonList', 'rows'])
     expect(d.churn.total).toBe(1); expect(d.churn.rows[0]).toMatchObject({ churnedAt: 20, tenure: 71, lastMrr: null })
     expect(d.kpis.logo).toEqual({ n: 1, base: 3, r: 1 / 3 })
+    expect(d.churn.answered).toBe(3)
+    expect(d.churn.reasons).toEqual([{ reason: 'گران است', n: 2, mrr: 900 }, { reason: 'mystery', n: 1, mrr: 0 }])
+    expect(d.churn.reasonList).toEqual(['گران است', 'mystery'])
+    expect(d.churn.notes[0]).toMatchObject({ reason: 'دلیل دیگر', note: 'کند بود' })
   })
 })
 

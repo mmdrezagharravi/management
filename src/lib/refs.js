@@ -9,6 +9,17 @@ export const SOURCES = [
 export const sourceName = (k) => (SOURCES.find((s) => s.key === k) || {}).name || k
 /** Visit channels from Google Analytics 4 — cloud-back ga4.ts GA_CHANNELS. */
 export const GA_CHANNEL_NAME = { instagram: 'اینستاگرام', google: 'گوگل', telegram: 'تلگرام', bale: 'بله', ads: 'تبلیغات', invite: 'دعوت', direct: 'مستقیم', other: 'سایر' }
+/** How the account signed up — cloud-back ga4.ts SIGNUP_CHANNELS (GA channels + three of its own). */
+export const SIGNUP_CHANNEL_NAME = { ...GA_CHANNEL_NAME, invite: 'لینک دعوت', portal: 'پورتال همکار', collaborator: 'دعوت همکار در بیس', unknown: 'ثبت نشده (قبل از ردیابی)' }
+/** Answers of the post-signup question and the renewal-dialog question — cloud-back modules/marketing/options.ts. */
+export const INDUSTRY_NAME = { retail: 'فروشگاه و بازرگانی', manufacturing: 'تولید و صنعت', services: 'خدمات', construction: 'ساختمان و پیمانکاری', education: 'آموزش', health: 'سلامت و درمان', finance: 'مالی و بیمه', it: 'فناوری و نرم‌افزار', media: 'رسانه و تبلیغات', logistics: 'حمل‌ونقل و لجستیک', government: 'دولتی و عمومی', nonprofit: 'خیریه و غیرانتفاعی', other: 'سایر' }
+export const COMPANY_SIZE_NAME = { 1: 'فقط خودم', '2-10': '۲ تا ۱۰ نفر', '11-50': '۱۱ تا ۵۰ نفر', '51-200': '۵۱ تا ۲۰۰ نفر', '201-1000': '۲۰۱ تا ۱۰۰۰ نفر', '1000+': 'بیش از ۱۰۰۰ نفر' }
+export const JOB_ROLE_NAME = { founder: 'مدیرعامل یا مالک', manager: 'مدیر', operations: 'عملیات و اجرا', sales: 'فروش و بازاریابی', finance: 'مالی و حسابداری', hr: 'منابع انسانی', it: 'فنی و IT', freelancer: 'فریلنسر', student: 'دانشجو', other: 'سایر' }
+export const CHURN_REASON_NAME = { price: 'گران است', missing_feature: 'قابلیتی که لازم داشت نبود', hard_to_use: 'کار با آن سخت بود', project_ended: 'پروژه یا نیازش تمام شد', other_tool: 'سراغ ابزار دیگری رفت', temporary: 'فعلاً لازم ندارد', payment_problem: 'مشکل پرداخت', other: 'دلیل دیگر' }
+export const INTENT_NAME = { pricing_view: 'دیدن قیمت‌ها', upgrade_click: 'کلیک ارتقا', limit_hit: 'رسیدن به سقف', checkout_view: 'ورود به صفحهٔ پرداخت', checkout_submit: 'رفتن به درگاه' }
+export const INTENT_CONTEXT_NAME = { pricing_page: 'صفحهٔ قیمت‌ها', plans_modal: 'پنجرهٔ پلن‌ها', sidebar: 'دکمهٔ خرید منوی کناری', subscription_button: 'دکمهٔ ارتقای حساب', renew_dialog: 'پنجرهٔ تمدید', invoice: 'صفحهٔ فاکتور', records: 'سقف رکورد', automation: 'سقف خودکارسازی', 'limit:generic': 'پنجرهٔ سقف پلن', 'limit:token': 'سقف توکن هوش مصنوعی' }
+export const channelLabel = (a) => (a.channel && a.channel !== 'unknown' ? SIGNUP_CHANNEL_NAME[a.channel] || a.channel : sourceName(a.source))
+export const intentContextName = (c) => (c ? INTENT_CONTEXT_NAME[c] || c : '')
 export const HEALTH_COMPONENTS = [
   { key: 'activity', label: 'فعالیت', desc: 'روزهای فعال در ۲۸ روز اخیر (۱۶ روز یا بیشتر = کامل)' },
   { key: 'trend', label: 'روند', desc: 'فعالیت ۱۴ روز اخیر نسبت به ۱۴ روز قبل (از −۵۰٪ تا +۵۰٪)' },
@@ -16,7 +27,7 @@ export const HEALTH_COMPONENTS = [
   { key: 'team', label: 'تیم', desc: 'اعضای فعال ۷ روز اخیر نسبت به کل اعضا — حساب تک‌نفره جریمه نمی‌شود' },
   { key: 'commercial', label: 'تجاری', desc: 'پرداخت ناموفق یا نیمه‌کاره در ۳۰ روز اخیر −۱۰ · سقف رکورد پر −۵' },
 ]
-export const SEGMENT_LABEL = { new: 'تازه‌وارد', stuck: 'فعال‌نشده', builders: 'سازندگان', automators: 'خودکارساز', teams: 'تیمی', upsell: 'آمادهٔ ارتقا', risk: 'در خطر ریزش', champions: 'وفادار', dormant: 'خاموش' }
+export const SEGMENT_LABEL = { new: 'تازه‌وارد', stuck: 'فعال‌نشده', builders: 'سازندگان', automators: 'خودکارساز', teams: 'تیمی', upsell: 'آمادهٔ ارتقا', hot: 'سرنخ داغ', risk: 'در خطر ریزش', champions: 'وفادار', dormant: 'خاموش' }
 export const TASK_TYPES = {
   pastdue: { label: 'پرداخت ناموفق', icon: 'card', prio: 1 },
   renew: { label: 'تمدید پیش رو', icon: 'repeat', prio: 2 },

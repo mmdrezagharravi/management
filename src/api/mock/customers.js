@@ -10,7 +10,7 @@ export function customers() {
 }
 
 const VIEWS = {
-  all: () => true, paying: (a) => a.paying, risk: (a) => a.paying && a.health < 50, upsell: (a) => a.segments.includes('upsell'),
+  all: () => true, paying: (a) => a.paying, risk: (a) => a.paying && a.health < 50, upsell: (a) => a.segments.includes('upsell'), hot: (a) => a.segments.includes('hot'),
   pastdue: (a) => a.pastDue, new: (a) => a.age <= 14, active: (a) => a.lastSeenDays <= 30, online: (a) => a.online,
 }
 const SORTS = {

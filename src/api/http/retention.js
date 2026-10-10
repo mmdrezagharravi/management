@@ -1,9 +1,10 @@
 /* GET /management/retention?months=12 (+ /renewals, /revenue) — same shape as mock/retention.js.
    Server cohorts are Jalali signup months with 12 WEEKLY cells; the page labels columns as weeks.
-   Gaps: no cohort filter (cohortFilters: false), no churn reasons, no per-customer MRR after churn. */
+   Gaps: no cohort filter (cohortFilters: false), no per-customer MRR after churn. Churn reasons = the renewal-dialog answers. */
 import { get } from './client'
 import { customersAll, toAccount } from './account'
 import { churnRow } from './revenue'
+import { CHURN_REASON_NAME } from 'src/lib/refs'
 
 const WEEKS = 12
 const CHURN_DAYS = 180
@@ -69,6 +70,9 @@ export async function retention() {
   const grrMonth = revMonths.filter((m) => m.end !== 0).at(-1) || null
 
   const rows = lapsed.map(churnRow)
+  const cr = r.churnReasons || { answered: 0, reasons: [], notes: [] }
+  const reasonLabel = (key) => CHURN_REASON_NAME[key] || key
+  const reasons = cr.reasons.map((x) => ({ ...x, reason: reasonLabel(x.reason) }))
   const tenures = rows.map((a) => a.tenure).filter((t) => t != null)
   return {
     kpis: { m1: weekK(3), m3: weekK(WEEKS - 1), logo, logoPrev: { n: null, base: null, r: null }, rev90: rev90(nrr.now), rev90Prev: rev90(nrr.prev), grrMonth },
@@ -82,6 +86,6 @@ export async function retention() {
       payNoAuto: paying.filter((a) => a.automations === 0).length,
     },
     revMonths,
-    churn: { total: rows.length, lostMrr: rows.reduce((t, a) => t + (a.lostMrr || 0), 0), early: tenures.filter((t) => t < 92).length, medianTenure: median(tenures), reasons: [], reasonList: [], rows },
+    churn: { total: rows.length, lostMrr: rows.reduce((t, a) => t + (a.lostMrr || 0), 0), early: tenures.filter((t) => t < 92).length, medianTenure: median(tenures), reasons, reasonList: reasons.map((x) => x.reason), answered: cr.answered, notes: cr.notes.map((x) => ({ ...x, reason: reasonLabel(x.reason) })), rows },
   }
 }

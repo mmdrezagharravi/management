@@ -2,7 +2,7 @@
   <span class="acct">
     <span class="top">
       <router-link class="nm" :to="'/customers/' + a.id" @click.stop>{{ a.name }}</router-link>
-      <span v-if="a.source === 'invite'" class="badge st-info inv" title="این حساب با افزودن همکار به یک بیس ساخته شده؛ خود شخص ثبت‌نام نکرده">دعوت همکار</span>
+      <span v-if="a.channel ? a.channel === 'collaborator' : a.source === 'invite'" class="badge st-info inv" title="این حساب با افزودن همکار به یک بیس ساخته شده؛ خود شخص ثبت‌نام نکرده">دعوت همکار</span>
     </span>
     <span class="s"><slot name="sub">{{ sub }}</slot></span>
   </span>

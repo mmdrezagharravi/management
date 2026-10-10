@@ -20,7 +20,12 @@ export function quickView(id) {
 /** Contact and account block (GET /management/customers/:id → profile). */
 function profileOf(a) {
   const c = a.contact
+  const m = enrich(a)
+  const intentEvents = Object.entries(m.intent30).filter(([type, k]) => k && type !== 'limit_hit').map(([type], i) => ({ type, context: type === 'pricing_view' ? 'plans_modal' : 'invoice', plan: 'team', at: new Date(Date.now() - ((m.buyingIntentDays ?? 0) + i) * 864e5).toISOString() }))
   return {
+    channel: m.channel, signupSource: m.signupSource, industry: a.industry, companySize: m.companySize, jobRole: m.jobRole,
+    churnReasons: a.churnReason ? [{ reason: 'other', note: a.churnReason, plan: a.plan, at: new Date(Date.now() - (a.churnedAt || 0) * 864e5).toISOString() }] : [],
+    intent30: m.intent30, intentEvents,
     name: c.first + ' ' + c.last, mobile: c.mobile, email: c.email, username: null,
     signedUpAt: new Date(Date.now() - a.age * 864e5).toISOString(), planFrom: null,
     planUntil: a.paying ? new Date(Date.now() + a.renewIn * 864e5).toISOString() : null,

@@ -39,7 +39,25 @@
             <template #col-prev="{ row }">{{ n(row.prev) }}</template>
             <template #col-change="{ row }"><span v-if="row.change == null" class="faint">تازه</span><template v-else>{{ signedPct(row.change) }}</template></template>
           </DataTable>
-          <template #footer><span>منبع ثبت‌نام فقط برای دعوت ثبت می‌شود؛ برای همین نرخ ثبت‌نام هر کانال جدا حساب نمی‌شود</span><router-link to="/funnel">قیف تبدیل</router-link></template>
+          <template #footer><span>بازدید از Google Analytics؛ ثبت‌نام و درآمد هر کانال در کارت پایین</span><router-link to="/funnel">قیف تبدیل</router-link></template>
+        </PanelCard>
+      </template>
+
+      <template v-if="att">
+        <PanelCard title="ثبت‌نام و درآمد بر اساس کانال" :hint="'منبع ' + n(att.tracked) + ' از ' + n(att.selfSignups) + ' ثبت‌نام ثبت شده'" flush>
+          <DataTable :rows="channelRows" :columns="channelColumns" export-name="signup-channels" unit="کانال" :page-sizes="false" compact :sort="{ key: 'mrr', dir: 'desc' }">
+            <template #col-mrr="{ row }"><b>{{ money(row.mrr) }}</b></template>
+            <template #col-conv="{ row }">{{ row.accounts ? pct(row.paying / row.accounts, 1) : '—' }}</template>
+          </DataTable>
+          <template #footer><span>«ثبت‌نام» و «فعال‌شده» برای {{ fa(range) }} روز اخیر؛ «پرداخت‌کننده» و درآمد برای همهٔ ثبت‌نام‌های آن کانال. منبع از اولین بازدید (utm، لینک دعوت یا سایت ارجاع‌دهنده) هنگام ثبت‌نام ذخیره می‌شود.</span></template>
+        </PanelCard>
+
+        <PanelCard v-if="att.campaigns.length" title="کمپین‌ها" hint="بر اساس utm_campaign · همهٔ زمان‌ها" flush>
+          <DataTable :rows="campaignRows" :columns="campaignColumns" export-name="campaigns" unit="کمپین" :page-sizes="false" compact :sort="{ key: 'mrr', dir: 'desc' }">
+            <template #col-name="{ row }"><span class="ltr">{{ row.name }}</span></template>
+            <template #col-mrr="{ row }"><b>{{ money(row.mrr) }}</b></template>
+            <template #col-conv="{ row }">{{ row.accounts ? pct(row.paying / row.accounts, 1) : '—' }}</template>
+          </DataTable>
         </PanelCard>
       </template>
     </template>
@@ -57,8 +75,8 @@ import AppIcon from 'components/AppIcon.vue'
 import { api } from 'src/api'
 import { useAsync } from 'src/composables/useAsync'
 import { useRange } from 'src/composables/useRange'
-import { n, fa, pct, signedPct, date, daysAgo, dateTime, monthLabel } from 'src/lib/format'
-import { GA_CHANNEL_NAME } from 'src/lib/refs'
+import { n, fa, pct, signedPct, money, date, daysAgo, dateTime, monthLabel } from 'src/lib/format'
+import { GA_CHANNEL_NAME, SIGNUP_CHANNEL_NAME } from 'src/lib/refs'
 
 const TOP_CHANNELS = 4
 const GRAINS = [{ key: 'day', label: 'روزانه' }, { key: 'week', label: 'هفتگی' }, { key: 'month', label: 'ماهانه' }]
@@ -108,4 +126,29 @@ const columns = [
   { key: 'prev', label: 'بازهٔ قبل', num: true },
   { key: 'change', label: 'تغییر', num: true, sort: (r) => (r.change == null ? Infinity : r.change), csv: (r) => (r.change == null ? '' : (r.change * 100).toFixed(1)) },
 ]
+
+const att = computed(() => d.value.attribution || null)
+const channelRows = computed(() => {
+  const recent = new Map(att.value.signupsByChannel.map((r) => [r.channel, r]))
+  const keys = new Set([...att.value.revenueByChannel.map((r) => r.channel), ...recent.keys()])
+  return [...keys].map((c) => {
+    const all = att.value.revenueByChannel.find((r) => r.channel === c) || { accounts: 0, paying: 0, mrr: 0 }
+    const r = recent.get(c) || { accounts: 0, activated: 0 }
+    return { id: c, name: SIGNUP_CHANNEL_NAME[c] || c, signups: r.accounts, activated: r.activated, accounts: all.accounts, paying: all.paying, mrr: all.mrr }
+  })
+})
+const conversionColumns = [
+  { key: 'accounts', label: 'کل ثبت‌نام', num: true, format: (r) => n(r.accounts) },
+  { key: 'paying', label: 'پرداخت‌کننده', num: true, format: (r) => n(r.paying) },
+  { key: 'conv', label: 'نرخ پرداخت', num: true, sort: (r) => (r.accounts ? r.paying / r.accounts : 0), csv: (r) => (r.accounts ? ((r.paying / r.accounts) * 100).toFixed(1) : '') },
+  { key: 'mrr', label: 'درآمد ماهانه', num: true },
+]
+const channelColumns = [
+  { key: 'name', label: 'کانال', csv: (r) => r.name },
+  { key: 'signups', label: 'ثبت‌نام در بازه', num: true, format: (r) => n(r.signups) },
+  { key: 'activated', label: 'فعال‌شده در بازه', num: true, format: (r) => n(r.activated) },
+  ...conversionColumns,
+]
+const campaignRows = computed(() => att.value.campaigns.map((c) => ({ id: c.key, name: c.key, accounts: c.accounts, paying: c.paying, mrr: c.mrr })))
+const campaignColumns = [{ key: 'name', label: 'کمپین', csv: (r) => r.name }, ...conversionColumns]
 </script>

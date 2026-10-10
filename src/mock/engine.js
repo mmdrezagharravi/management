@@ -82,6 +82,7 @@ const CONFIG = {
     { key: 'automators',label: 'خودکارساز',          rule: 'automations >= 1 AND last_seen <= 30',                                 desc: 'خودکارسازی فعال دارند — چسبنده‌ترین گروه' },
     { key: 'teams',     label: 'تیمی',               rule: 'active_members_7d >= 2',                             desc: 'بیش از یک نفر در هفتهٔ اخیر کار کرده' },
     { key: 'upsell',    label: 'آمادهٔ ارتقا',        rule: 'plan IN (free, basic) AND limit_hits_30d >= 2 AND pricing_visits_30d >= 1 AND last_seen <= 14', desc: 'به سقف پلن خورده‌اند و صفحهٔ قیمت را دیده‌اند' },
+    { key: 'hot',       label: 'سرنخ داغ',           rule: 'NOT paying AND pricing_visits_30d >= 1 AND last_seen <= 7',             desc: 'پرداخت نمی‌کنند ولی در هفتهٔ اخیر قیمت‌ها را دیده‌اند' },
     { key: 'risk',      label: 'در خطر ریزش',        rule: 'paying AND health < 50',                             desc: 'پرداخت‌کننده با امتیاز سلامت زیر ۵۰' },
     { key: 'champions', label: 'وفادار',             rule: 'paying AND tenure >= 180 AND health >= 80',          desc: 'بیش از ۶ ماه پرداخت پیاپی و سالم — مرجع معرفی' },
     { key: 'dormant',   label: 'خاموش',              rule: 'last_seen > 30',                                     desc: 'یک ماه است هیچ فعالیتی نداشته‌اند' },
@@ -524,6 +525,7 @@ function inSegment(a, key) {
     case 'automators': return a.automations >= 1 && a.lastSeenDays <= 30;
     case 'teams': return a.activeMembers7 >= 2;
     case 'upsell': return (a.plan === 'basic' || a.plan === 'team') && a.limitHits30 >= 2 && a.pricingVisits30 >= 1 && a.lastSeenDays <= 14;
+    case 'hot': return !a.paying && a.pricingVisits30 >= 1 && a.lastSeenDays <= 7;
     case 'risk': return a.paying && a.health < 50;
     case 'champions': return a.paying && a.tenureDays >= 180 && a.health >= 80;
     case 'dormant': return a.lastSeenDays > CONFIG.dormantDays;

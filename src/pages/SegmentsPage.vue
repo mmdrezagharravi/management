@@ -59,6 +59,16 @@
         </PanelCard>
       </div>
 
+      <template v-if="d.profiles">
+        <div class="grid g3">
+          <PanelCard v-for="dim in PROFILE_DIMS" :key="dim.key" :title="dim.title" :hint="n(d.profiles.answered) + ' از ' + n(d.profiles.total) + ' نفر پاسخ داده‌اند'">
+            <HBars v-if="d.profiles[dim.key].length" :items="d.profiles[dim.key].map((r) => ({ label: r.name || dim.names[r.key] || r.key, sub: n(r.paying) + ' پرداخت‌کننده · ' + (r.mrr ? compact(r.mrr) : '—'), value: r.accounts, note: pct(r.accounts ? r.paying / r.accounts : 0) + ' پرداخت' }))" :label-width="120" :format="(v) => n(v)" />
+            <div v-else class="muted" style="padding: 18px 0; text-align: center">هنوز کسی پاسخ نداده است.</div>
+          </PanelCard>
+        </div>
+        <div class="note">پاسخ پرسش کوتاه بعد از اولین ورود به خانهٔ Airsheet؛ هر کاربر یک بار می‌بیند و می‌تواند «بعداً» بزند. درصد = پرداخت‌کننده ÷ پاسخ‌دهندگان آن گروه.</div>
+      </template>
+
       <div class="note">قاعدهٔ هر دسته در سرور ثابت است و همهٔ صفحه‌ها همان را می‌خوانند؛ فهرست کامل تعریف‌ها در <router-link to="/settings" style="color: var(--accent-ink); font-weight: 600">تعریف‌ها و دسترسی</router-link> آمده است.</div>
     </template>
   </PageShell>
@@ -83,8 +93,14 @@ import { useAsync } from 'src/composables/useAsync'
 import { useQueryParam } from 'src/composables/useUrlState'
 import { useUiStore } from 'stores/ui'
 import { n, fa, pct, compact, compactParts as cp, money } from 'src/lib/format'
-import { PLAN_ORDER } from 'src/lib/refs'
+import { PLAN_ORDER, INDUSTRY_NAME, COMPANY_SIZE_NAME, JOB_ROLE_NAME } from 'src/lib/refs'
 import { PLAN_NAME, BAND_COLOR, band, toast } from 'src/lib/ui'
+
+const PROFILE_DIMS = [
+  { key: 'industry', title: 'مشتریان بر اساس صنعت', names: INDUSTRY_NAME },
+  { key: 'companySize', title: 'بر اساس اندازهٔ تیم', names: COMPANY_SIZE_NAME },
+  { key: 'jobRole', title: 'بر اساس نقش', names: JOB_ROLE_NAME },
+]
 
 // the default sort of the member list follows what a rep does with that group
 const SEG_SORT = { upsell: { key: 'signal', dir: 'desc' }, new: { key: 'lastSeen', dir: 'desc' }, stuck: { key: 'lastSeen', dir: 'desc' } }
