@@ -34,9 +34,17 @@ const lagWords = (m) => (m < 60 ? fa(m) + ' دقیقه' : m < 2880 ? fa(Math.rou
 const PAID_PLANS = ['team', 'business', 'enterprise', 'partner']
 
 /* ----------------------------------------------------------------- alerts */
+const SALES_ALERT = {
+  bigChurn: (x) => ({ t: fa(x.accounts.length) + ' مشتری بزرگ تمدید نکرد', d: x.accounts.slice(0, 3).map((a) => a.name || 'بی‌نام').join('، ') + ' · ' + fa(x.days) + ' روز اخیر', mrr: x.mrr, to: '/sales?tab=winback' }),
+  signupDrop: (x) => ({ t: 'افت ناگهانی ثبت‌نام', d: 'این هفته ' + fa(x.last) + ' · میانگین ' + fa(x.weeks) + ' هفتهٔ قبل ' + fa(Math.round(x.avg)), to: '/funnel' }),
+  firstPaymentDrop: (x) => ({ t: 'افت ناگهانی پرداخت اول', d: 'این هفته ' + fa(x.last) + ' · میانگین ' + fa(x.weeks) + ' هفتهٔ قبل ' + fa(Math.round(x.avg)), to: '/revenue' }),
+  gateway: (x) => ({ t: 'خطای درگاه پرداخت', d: fa(x.failed) + ' پرداخت ناموفق و ' + fa(x.paid) + ' موفق در ' + fa(x.hours) + ' ساعت اخیر', to: '/sales?tab=pastdue' }),
+}
+const salesAlerts = (list) => list.filter((x) => SALES_ALERT[x.type]).map((x) => ({ lvl: x.level, ...SALES_ALERT[x.type](x) }))
+
 export async function alerts() {
-  const [rows, j, h] = await Promise.all([customersAll(), jobs(), dataHealth()])
-  const out = []
+  const [rows, j, h, sales] = await Promise.all([customersAll(), jobs(), dataHealth(), get('/alerts')])
+  const out = salesAlerts(sales)
   failedCrons(j).forEach((c) => out.push({ lvl: 'crit', t: 'کران «' + c.name + '» ' + (c.stale ? 'متوقف شده' : 'اجرا نشد'), d: (c.lastT != null ? fa(c.lastT) + ' روز پیش' : '') + (c.consecutiveFails > 1 ? ' · ' + fa(c.consecutiveFails) + ' بار پشت سر هم' : '') + (c.error ? ' · ' + c.error : ''), to: '/jobs' }))
   const lag = lagOf(h), ls = lagStatus(lag)
   if (ls === 'crit') out.push({ lvl: 'crit', t: 'تأخیر در رویدادهای رفتاری', d: 'آخرین همگام‌سازی ' + lagWords(lag) + ' پیش', to: '/data-health' })

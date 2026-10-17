@@ -41,7 +41,7 @@ export function toAccount(s) {
     health: s.health ?? 0, band: s.band || 'crit', components: s.components || { activity: 0, trend: 0, depth: 0, team: 0, commercial: 0 },
     health2wAgo: s.health2wAgo ?? null, healthHistory: history,
     lastSeenDays, lastSeenMin, online: s.online === true || lastSeenMin <= 5,
-    memberCount: s.memberCount ?? 1, activeMembers7: s.activeMembers7 ?? 0, activeDays28: s.activeDays28 ?? 0, activeDays7: s.activeDays7 ?? 0,
+    memberCount: s.memberCount ?? 1, activeMembers7: s.activeMembers7 ?? 0, membersAdded30: s.membersAdded30 ?? 0, activeDays28: s.activeDays28 ?? 0, activeDays7: s.activeDays7 ?? 0,
     events30: s.events30 ?? 0, records30: null, records: s.records ?? 0, trendPct: s.trendPct ?? 0,
     renewIn: s.renewIn ?? 0, churnedAt: lapsed ? -s.renewIn : undefined, churnReason: s.churnReason ? CHURN_REASON_NAME[s.churnReason.reason] || s.churnReason.reason : lapsed ? 'منقضی شد' : null,
     churnReasonKey: s.churnReason ? s.churnReason.reason : null, churnNote: s.churnReason ? s.churnReason.note : null,

@@ -23,6 +23,7 @@ const freeUp = summary({ id: 'n2', plan: 'basic', paying: false, everPaid: false
 const ACCOUNTS = [summary(), lapsed, champion, fresh, freeUp]
 const key = (i) => lastMonths(12)[i].key
 const REVENUE = {
+  ltv: { payers: 3, revenuePerPayer: 2000000, churnRate: 0.1, churnDays: 30, arpa: 500000, predicted: 5000000 },
   mrr: 1000000, paying: 2, arpa: 500000, lifetime: 5000000,
   months: [{ month: key(11), total: 900000, count: 2, payers: 2, newRevenue: 0, recurringRevenue: 900000, byType: {} }],
   renewals: { d30: { n: 1, mrr: 500000 }, d60: { n: 0, mrr: 0 }, d90: { n: 0, mrr: 0 } },
@@ -40,7 +41,8 @@ describe('http revenue adapter', () => {
   it('has every key of mock/revenue.js', async () => {
     const d = await revenue({ range: 30 })
     for (const k of ['range', 'risk', 'kpis', 'months', 'tot12', 'planMix', 'cycMix', 'basicUp', 'cycleDiscount', 'cash', 'calendar']) expect(d).toHaveProperty(k)
-    expect(Object.keys(d.kpis).sort()).toEqual(['arpa', 'mrr', 'nrr', 'paying'])
+    expect(Object.keys(d.kpis).sort()).toEqual(['arpa', 'ltv', 'mrr', 'nrr', 'paying'])
+    expect(d.kpis.ltv).toMatchObject({ predicted: 5000000, churnRate: 0.1 })
     expect(d.kpis.mrr).toMatchObject({ now: 1000000, prev: 900000 }); expect(d.kpis.mrr.spark).toHaveLength(12)
     expect(d.kpis.nrr.now).toBe(1.05)
     expect(d.months).toHaveLength(12); expect(d.months[11]).toMatchObject({ end: 0, mrr: 1000000, churn: -100000, churnCount: 1 }); expect(d.months[10].contraction).toBe(-50000)

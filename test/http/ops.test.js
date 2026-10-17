@@ -50,6 +50,7 @@ const routes = {
   '/revenue': () => ({ mrrMonths: [] }),
   '/funnel': () => ({ steps: [] }),
   '/inventory': () => ({ users: 3 }),
+  '/alerts': () => [],
 }
 const route = (path) => { const f = routes[path]; if (!f) return Promise.reject(new Error('404 ' + path)); return Promise.resolve(f()) }
 get.mockImplementation(route); all.mockImplementation(route)

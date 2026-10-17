@@ -3,6 +3,7 @@
 import { get } from './client'
 import { customersAll } from './account'
 import { daysAgo, signupDaysAgo } from 'src/lib/format'
+import { FEATURE_LABEL } from './features'
 
 const ACTIVATION_RECORDS = 10 // cloud-back metrics.ts ACTIVATION.recordEvents
 const STEP = {
@@ -14,6 +15,9 @@ const STEP = {
   habit: ['عادت', 'فعال در ۳ هفته از ۴ هفتهٔ اول'],
   paid: ['پرداخت', 'پرداخت پس از رسیدن به عادت'],
 }
+const BEHAVIOR_LABEL = { ...FEATURE_LABEL, Invite: 'دعوت هم‌تیمی' }
+const firstWeekPayment = (w) => w ? { ...w, behaviors: w.behaviors.map((b) => ({ ...b, label: BEHAVIOR_LABEL[b.type] || b.type })) } : null
+
 export const FUNNEL_SOURCES = [{ key: 'invite', name: 'لینک دعوت', server: 'referral' }, { key: 'direct', name: 'مستقیم', server: 'direct' }]
 
 const step = (s, median = {}) => ({ key: s.key, label: STEP[s.key] ? STEP[s.key][0] : s.key, n: s.n, def: STEP[s.key] ? STEP[s.key][1] : '', fromPrev: s.fromPrev ?? null, fromStart: s.fromStart ?? null, medianDays: median[s.key] ?? null })
@@ -70,6 +74,7 @@ export async function funnel({ range: R = 30, source } = {}) {
   return {
     range: R, mature: f.matureDays, source: src ? src.key : null, sourceName: src ? src.name : null, activationRecords: ACTIVATION_RECORDS, dataSince: f.dataSince || null,
     steps: own, prev, worst: worst ? worst.key : null, stuck, bySource, total, weekly, visits, gaGap, paidAny, medianDays,
+    firstWeekPayment: firstWeekPayment(f.firstWeekPayment),
     cohort: c.from ? { from: c.from, to: c.to, clipped: c.windowFrom != null && c.from > c.windowFrom, size: c.size } : null,
   }
 }

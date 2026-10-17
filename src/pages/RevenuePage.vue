@@ -5,6 +5,7 @@
         <KpiTile label="درآمد ماهانه (MRR)" :value="cp(k.mrr.now).num" :unit="cp(k.mrr.now).unit + ' ' + CURRENCY" info="جمع اشتراک‌های فعال به ماه؛ سه‌ماهه و سالانه تقسیم بر تعداد ماه" :delta="{ cur: k.mrr.now, prev: k.mrr.prev }" :cmp="'سالانه (ARR): ' + compact(k.mrr.now * 12)" :spark="{ values: k.mrr.spark, area: true }" />
         <KpiTile label="مشتری پرداخت‌کننده" :value="n(k.paying.now)" to="/customers" :delta="{ cur: k.paying.now, prev: k.paying.prev }" :cmp="'قبل: ' + n(k.paying.prev)" :spark="{ values: k.paying.spark }" />
         <KpiTile label="میانگین درآمد هر مشتری" :value="cp(k.arpa.now).num" :unit="cp(k.arpa.now).unit + ' ' + CURRENCY" info="MRR ÷ مشتریان پرداخت‌کننده" :delta="{ cur: k.arpa.now, prev: k.arpa.prev }" :cmp="'قبل: ' + compact(k.arpa.prev)" />
+        <KpiTile v-if="k.ltv" label="ارزش طول عمر مشتری (LTV)" :value="k.ltv.predicted == null ? '—' : cp(k.ltv.predicted).num" :unit="k.ltv.predicted == null ? '' : cp(k.ltv.predicted).unit + ' ' + CURRENCY" :info="'میانگین درآمد هر مشتری ÷ نرخ ریزش ماهانه. نرخ ریزش = مشتریانی که ' + fa(k.ltv.churnDays) + ' روز پیش پرداخت می‌کردند و امروز نه. CAC در سیستم نیست، چون هزینهٔ تبلیغات ثبت نمی‌شود.'" :cmp="ltvCmp" />
         <KpiTile label="نگهداشت درآمد (NRR)" :value="pct(k.nrr.now, 1)" info="مشتریانی که ۹۰ روز پیش پرداخت می‌کردند: درآمد امروزشان ÷ درآمد آن روزشان. ارتقا بالا می‌بردش، کاهش و ریزش پایین؛ مشتری جدید حساب نمی‌شود." :delta="{ cur: k.nrr.now, prev: k.nrr.prev, points: true }" :cmp="'۹۰ روز اخیر · قبل: ' + pct(k.nrr.prev, 1)" />
       </div>
 
@@ -86,6 +87,12 @@ import { PLAN_NAME } from 'src/lib/ui'
 const range = useRange()
 const { data: d, loading, error } = useAsync(() => api.revenue({ range: range.value }), [range])
 const k = computed(() => d.value.kpis)
+const ltvCmp = computed(() => {
+  const l = k.value.ltv
+  const parts = [l.churnRate == null ? 'ریزش ماهانه: نامعلوم' : 'ریزش ماهانه ' + pct(l.churnRate, 1)]
+  if (l.revenuePerPayer != null) parts.push('تاکنون هر مشتری ' + compact(l.revenuePerPayer))
+  return parts.join(' · ')
+})
 const cycColor = (c) => 'var(--series-' + (Object.keys(CYCLE_NAME).indexOf(c) + 1) + ')'
 const cyc = (c) => d.value.cycMix.rows.find((r) => r.k === c)
 const topPlan = computed(() => d.value.planMix.rows.slice().sort((p, q) => q.mrr - p.mrr)[0])

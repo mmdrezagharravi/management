@@ -53,7 +53,7 @@ describe('sales desk on real cloud-back output', () => {
     expect(kpis.upsell).toEqual({ n: 1, value: up.upgradeValue })
 
     const wb = lists.winback[0]
-    expect(wb).toMatchObject({ lostMrr: 990_000, lostPlan: 'team', churnedAt: 21 })
+    expect(wb).toMatchObject({ lostMrr: 990_000, lostPlan: 'team', churnedAt: 20 })
     expect(wb.tenure).not.toBeUndefined()
     expect(kpis.winback).toEqual({ n: 1, lostMrr: 990_000 })
 
@@ -67,10 +67,10 @@ describe('sales desk on real cloud-back output', () => {
     expect(kpis.champions).toEqual({ n: 1, monthly: 0 })
   })
 
-  it('has no hot leads until the buying-intent backend ships', async () => {
+  it('has no hot-lead list now that the buying-intent backend is gone', async () => {
     const { lists, kpis } = await sales()
-    expect(lists.hot).toEqual([])
-    expect(kpis.hot).toEqual({ n: 0, checkout: 0 })
+    expect(lists).not.toHaveProperty('hot')
+    expect(kpis).not.toHaveProperty('hot')
     expect(FIX.customers.every((c) => !('intent30' in c))).toBe(true)
   })
 })

@@ -23,6 +23,7 @@ export async function revenue({ range: R = 30 } = {}) {
   const mrrNow = agg.mrrAt(0), mrrPrev = agg.mrrAt(R)
   const payNow = agg.payingAt(0), payPrev = agg.payingAt(R)
   const arpa = payNow ? mrrNow / payNow : 0, arpaPrev = payPrev ? mrrPrev / payPrev : 0
+  const pay30 = agg.payingAt(30), churnRate = pay30 ? accounts.filter((a) => a.churnedAt !== undefined && a.churnedAt <= 30).length / pay30 : null
 
   const tot12 = months.reduce((t, m) => ({ n: t.n + m.new, e: t.e + m.expansion, c: t.c + m.contraction, ch: t.ch + m.churn }), { n: 0, e: 0, c: 0, ch: 0 })
 
@@ -58,6 +59,7 @@ export async function revenue({ range: R = 30 } = {}) {
       nrr: { now: nrr(0), prev: nrr(R) },
       arpa: { now: arpa, prev: arpaPrev },
       paying: { now: payNow, prev: payPrev, spark: months.map((m) => m.paying) },
+      ltv: { churnRate, churnDays: 30, arpa, predicted: churnRate ? arpa / churnRate : null, revenuePerPayer: null, payers: null },
     },
     months: months.map((m) => ({ y: m.y, m: m.m, end: m.end, mrr: m.mrr, new: m.new, expansion: m.expansion, contraction: m.contraction, churn: m.churn, churnCount: m.churnCount })),
     tot12,

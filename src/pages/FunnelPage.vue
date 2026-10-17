@@ -78,6 +78,23 @@
           <template #footer><span>هر نقطه = ثبت‌نام‌های یک هفتهٔ کامل و بالغ</span><router-link to="/onboarding">ثبت‌نام‌های تازه</router-link></template>
         </PanelCard>
       </div>
+
+      <PanelCard v-if="W" title="کدام رفتار هفتهٔ اول به پرداخت می‌رسد" :hint="'رفتار در ' + fa(W.firstWeekDays) + ' روز اول · پرداخت تا ' + fa(W.payWindowDays) + ' روز پس از ثبت‌نام · همهٔ منابع'" flush>
+        <div v-if="!W.cohort" class="empty">هنوز ثبت‌نامی نیست که {{ fa(W.payWindowDays) }} روز از آن گذشته باشد و رفتارش ثبت شده باشد.</div>
+        <div v-else class="tbl-wrap"><table class="tbl compact">
+          <thead><tr><th>رفتار در هفتهٔ اول</th><th class="num">انجام دادند</th><th class="num">از آن‌ها پرداخت کردند</th><th class="num">از بقیه پرداخت کردند</th><th class="num">چند برابر</th></tr></thead>
+          <tbody>
+            <tr v-for="b in W.behaviors" :key="b.type">
+              <td><b>{{ b.label }}</b></td>
+              <td class="num">{{ n(b.users) }}</td>
+              <td class="num"><b>{{ pct(b.usersRate, 1) }}</b></td>
+              <td class="num muted">{{ b.nonUsers ? pct(b.nonUsersRate, 1) : '—' }}</td>
+              <td class="num"><b v-if="b.lift != null" :style="{ color: b.lift >= 2 ? 'var(--good-ink)' : 'var(--ink)' }">×{{ fa(b.lift.toFixed(1)) }}</b><span v-else class="faint">—</span></td>
+            </tr>
+          </tbody>
+        </table></div>
+        <template #footer><span>{{ n(W.cohort) }} ثبت‌نام · {{ n(W.paid) }} پرداخت ({{ pct(W.cohort ? W.paid / W.cohort : 0, 1) }}) · همبستگی است، نه علت؛ گروه‌های کوچک را با احتیاط بخوانید</span></template>
+      </PanelCard>
     </template>
   </PageShell>
 </template>
@@ -112,6 +129,7 @@ const byKey = (list) => { const o = {}; list.forEach((s) => { o[s.key] = s }); r
 const K = computed(() => byKey(d.value.steps))
 const KP = computed(() => { const o = byKey(d.value.prev); ['visit', 'signup', 'activated', 'paid'].forEach((k) => { o[k] = o[k] || {} }); return o })
 const V = computed(() => K.value.visit), S = computed(() => K.value.signup), A = computed(() => K.value.activated), P = computed(() => K.value.paid)
+const W = computed(() => d.value.firstWeekPayment)
 const steps = computed(() => d.value.steps.slice(1)) // signup → paid; visits sit in the header line (different scale)
 const barW = (s) => +(S.value.n ? (s.n / S.value.n) * 100 : 0).toFixed(1)
 const worst = computed(() => steps.value.find((s) => s.key === d.value.worst) || null)

@@ -53,7 +53,6 @@ const views = [
   { key: 'paying', label: 'پرداخت‌کننده' },
   { key: 'risk', label: 'سلامت زیر ۵۰' },
   { key: 'upsell', label: 'آمادهٔ ارتقا' },
-  { key: 'hot', label: 'سرنخ داغ' },
   { key: 'pastdue', label: 'پرداخت ناموفق' },
   { key: 'new', label: 'تازه‌وارد (۱۴ روز)' },
   { key: 'active', label: 'فعال در ۳۰ روز' },

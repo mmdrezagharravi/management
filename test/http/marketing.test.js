@@ -32,15 +32,18 @@ describe('toAccount marketing fields', () => {
   })
 })
 
-describe('sales hot leads', () => {
-  it('lists accounts in the hot segment and counts checkout visits', async () => {
-    const hot = base({ id: 'h1', segments: ['hot'], intent30: intent({ pricing_view: 2, checkout_view: 1 }), buyingIntentDays: 0 })
-    const warm = base({ id: 'h2', segments: ['hot'], intent30: intent({ pricing_view: 1 }), buyingIntentDays: 5 })
-    all.mockResolvedValue([hot, warm, base({ id: 'cold' })])
+describe('sales growing team and annual offer', () => {
+  it('lists the growingTeam and annualOffer segments with their KPIs', async () => {
+    const growing = base({ id: 'g1', segments: ['growingTeam'], membersAdded30: 3 })
+    const annual = base({ id: 'y1', plan: 'team', paying: true, everPaid: true, mrr: 400000, segments: ['annualOffer'], payingDays: 120 })
+    all.mockResolvedValue([growing, annual, base({ id: 'cold' })])
     get.mockImplementation((p) => Promise.resolve(p === '/renewals' ? { upcoming: [], lapsed: [] } : p === '/definitions' ? { atRiskBelow: 50 } : {}))
     const d = await sales()
-    expect(d.lists.hot.map((a) => a.id)).toEqual(['h1', 'h2'])
-    expect(d.kpis.hot).toEqual({ n: 2, checkout: 1 })
-    expect(d.lists.hot[0].weakest).toBeTruthy()
+    expect(d.lists.growing.map((a) => a.id)).toEqual(['g1'])
+    expect(d.kpis.growing).toEqual({ n: 1, added: 3 })
+    expect(d.lists.annual.map((a) => a.id)).toEqual(['y1'])
+    expect(d.kpis.annual).toEqual({ n: 1, mrr: 400000 })
+    expect(d.lists.annual[0]).toMatchObject({ tenureDays: 120 })
+    expect(d.lists.annual[0].weakest).toBeTruthy()
   })
 })

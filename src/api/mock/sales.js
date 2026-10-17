@@ -19,7 +19,8 @@ export function sales() {
     winback: accounts.filter((a) => a.churnedAt !== undefined && a.churnedAt <= 120),
     pastdue: accounts.filter((a) => a.pastDue),
     champions: accounts.filter((a) => a.segments.includes('champions')),
-    hot: accounts.filter((a) => a.segments.includes('hot')),
+    growing: accounts.filter((a) => a.segments.includes('growingTeam')),
+    annual: accounts.filter((a) => a.segments.includes('annualOffer')),
   }
   const r30 = paying.filter((a) => a.renewIn <= 30)
   const renewRisk = raw.renew.filter((a) => a.health < RISK)
@@ -27,19 +28,21 @@ export function sales() {
   const winback = { n: raw.winback.length, lostMrr: sum(raw.winback, lostMrr) }
   const pastdue = { n: raw.pastdue.length, mrr: sum(raw.pastdue, (a) => a.mrr) }
   const champions = { n: raw.champions.length, monthly: raw.champions.filter((a) => a.cycle === 'monthly').length }
-  const hot = { n: raw.hot.length, checkout: raw.hot.map(enrich).filter((a) => a.intent30.checkout_view > 0).length }
+  const growing = { n: raw.growing.length, added: sum(raw.growing, (a) => a.membersAdded30 || 0) }
+  const annual = { n: raw.annual.length, mrr: sum(raw.annual, (a) => a.mrr) }
 
   return ok({
     risk: RISK, yearlyDiscount: C.cycles.yearly.discount,
-    kpis: { renew: { n: r30.length, mrr: sum(r30, (a) => a.mrr), risk: r30.filter((a) => a.health < RISK).length }, upsell, winback, pastdue, champions, hot },
+    kpis: { renew: { n: r30.length, mrr: sum(r30, (a) => a.mrr), risk: r30.filter((a) => a.health < RISK).length }, upsell, winback, pastdue, champions, growing, annual },
     lists: {
       renew: raw.renew.map(row),
       upsell: raw.upsell.map(row),
       winback: raw.winback.map(churnRow),
       pastdue: raw.pastdue.map(pastDueRow),
       champions: raw.champions.map(row),
-      hot: raw.hot.map(row),
+      growing: raw.growing.map(row),
+      annual: raw.annual.map(row),
     },
-    stats: { renew: { n: raw.renew.length, risk: renewRisk.length, riskMrr: sum(renewRisk, (a) => a.mrr) }, upsell, winback, pastdue, champions, hot },
+    stats: { renew: { n: raw.renew.length, risk: renewRisk.length, riskMrr: sum(renewRisk, (a) => a.mrr) }, upsell, winback, pastdue, champions, growing, annual },
   })
 }

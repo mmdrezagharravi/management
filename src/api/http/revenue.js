@@ -72,6 +72,7 @@ export async function revenue({ range: R = 30 } = {}) {
       nrr: rev.nrr || { now: null, prev: null }, // needs backend: /revenue nrr
       arpa: { now: payNow ? mrrNow / payNow : 0, prev: payPrev ? (mrrPrev || 0) / payPrev : null },
       paying: { now: payNow, prev: payPrev, spark: months.map((m) => m.paying) },
+      ltv: rev.ltv || null,
     },
     months, tot12,
     planMix, cycMix,

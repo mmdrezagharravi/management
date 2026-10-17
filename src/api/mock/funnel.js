@@ -43,5 +43,15 @@ export function funnel({ range: R = 30, source } = {}) {
   return ok({
     range: R, mature: MATURE, source: src, sourceName: src ? DB.source(src).name : null, activationRecords: C.activation.records,
     steps, prev, worst: worst ? worst.key : null, stuck, bySource, total, weekly,
+    firstWeekPayment: {
+      firstWeekDays: 7, payWindowDays: 60, cohort: 412, paid: 29,
+      behaviors: [
+        { type: 'Invite', label: 'دعوت هم‌تیمی', users: 64, usersRate: 0.19, nonUsers: 348, nonUsersRate: 0.048, lift: 3.9 },
+        { type: 'Automation', label: 'خودکارسازی', users: 51, usersRate: 0.16, nonUsers: 361, nonUsersRate: 0.058, lift: 2.7 },
+        { type: 'Form', label: 'فرم', users: 88, usersRate: 0.11, nonUsers: 324, nonUsersRate: 0.06, lift: 1.8 },
+        { type: 'View', label: 'نما', users: 203, usersRate: 0.09, nonUsers: 209, nonUsersRate: 0.053, lift: 1.7 },
+        { type: 'Record', label: 'رکورد', users: 371, usersRate: 0.075, nonUsers: 41, nonUsersRate: 0.024, lift: 3.1 },
+      ],
+    },
   })
 }

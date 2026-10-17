@@ -27,7 +27,7 @@ export const HEALTH_COMPONENTS = [
   { key: 'team', label: 'تیم', desc: 'اعضای فعال ۷ روز اخیر نسبت به کل اعضا — حساب تک‌نفره جریمه نمی‌شود' },
   { key: 'commercial', label: 'تجاری', desc: 'پرداخت ناموفق یا نیمه‌کاره در ۳۰ روز اخیر −۱۰ · سقف رکورد پر −۵' },
 ]
-export const SEGMENT_LABEL = { new: 'تازه‌وارد', stuck: 'فعال‌نشده', builders: 'سازندگان', automators: 'خودکارساز', teams: 'تیمی', upsell: 'آمادهٔ ارتقا', hot: 'سرنخ داغ', risk: 'در خطر ریزش', champions: 'وفادار', dormant: 'خاموش' }
+export const SEGMENT_LABEL = { new: 'تازه‌وارد', stuck: 'فعال‌نشده', builders: 'سازندگان', automators: 'خودکارساز', teams: 'تیمی', upsell: 'آمادهٔ ارتقا', growingTeam: 'تیم در حال رشد', annualOffer: 'پیشنهاد سالانه', risk: 'در خطر ریزش', champions: 'وفادار', dormant: 'خاموش' }
 export const TASK_TYPES = {
   pastdue: { label: 'پرداخت ناموفق', icon: 'card', prio: 1 },
   renew: { label: 'تمدید پیش رو', icon: 'repeat', prio: 2 },
