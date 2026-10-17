@@ -3,4 +3,4 @@
 import { get } from "./client";
 
 export const acquisition = ({ range = 30 } = {}) =>
-  get("/acquisition", { range });
+  get("/acquisition", { range }).then((a) => ({ range, ...a }));

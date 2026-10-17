@@ -24,15 +24,16 @@ export async function journey({ range: R = 30 } = {}) {
   const renewed = paying.filter((a) => { const cd = cycleDays(a); return cd && a.renewIn <= cd && a.renewIn > cd - R && a.tenureDays > cd }).length
   const due = renewed + (ren.lapsed || []).length
 
-  const weakest = TR.slice().sort((p, q) => (K[p].fromPrev ?? Infinity) - (K[q].fromPrev ?? Infinity))[0]
+  const measured = TR.filter((k) => K[k].fromPrev != null)
+  const weakest = measured.length ? measured.reduce((w, k) => (K[k].fromPrev < K[w].fromPrev ? k : w)) : null
   const steps = f.slice(1)
-  const drops = steps.slice(1).map((s, i) => ({ from: steps[i].label, to: s.label, key: s.key, lost: steps[i].n - s.n, rate: 1 - (s.fromPrev ?? 0) }))
-    .sort((p, q) => q.lost - p.lost).slice(0, 3)
+  const drops = steps.slice(1).map((s, i) => ({ from: steps[i].label, to: s.label, key: s.key, lost: steps[i].n - s.n, rate: s.fromPrev == null ? null : 1 - s.fromPrev }))
+    .filter((x) => x.lost > 0).sort((p, q) => q.lost - p.lost).slice(0, 3)
   return {
     range: R, mature: fn.mature, dataSince: fn.dataSince,
     stages: STAGES.map((s) => (s.key !== 'visit' ? s : fn.visits ? { ...s, src: gaSource(fn.visits) } : fn.gaGap ? { ...s, src: gaGapSource(fn.gaGap) } : s)), funnel: f,
-    visits: fn.visits,
-    renew: { due, renewed, rate: due ? renewed / due : 0 },
+    visits: fn.visits, gaGap: fn.gaGap,
+    renew: { due, renewed, rate: due ? renewed / due : null },
     weakest, drops,
   }
 }

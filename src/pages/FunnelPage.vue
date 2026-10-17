@@ -30,7 +30,7 @@
           </div>
           <div class="fn">
             <template v-for="(s, i) in steps" :key="s.key">
-              <div v-if="i" class="drop"><span></span><span><span v-if="s.key === d.worst" class="badge st-crit" style="height: 19px; margin-inline-end: 6px"><i class="dot" />بزرگ‌ترین ریزش</span>− {{ n(steps[i - 1].n - s.n) }} حساب ({{ pct(1 - s.fromPrev) }}) به این پله نرسیدند</span><span></span></div>
+              <div v-if="i && s.fromPrev != null" class="drop"><span></span><span><span v-if="s.key === d.worst" class="badge st-crit" style="height: 19px; margin-inline-end: 6px"><i class="dot" />بزرگ‌ترین ریزش</span>− {{ n(steps[i - 1].n - s.n) }} حساب ({{ pct(1 - s.fromPrev) }}) به این پله نرسیدند</span><span></span></div>
               <div class="st">
                 <div class="l">{{ s.label }}<small>{{ fa(s.def) }}</small></div>
                 <div class="b"><i :style="{ width: barW(s) + '%' }" /><span :class="{ out: barW(s) < 16 }" :style="barW(s) < 16 ? { right: 'calc(' + barW(s) + '% + 8px)' } : null">{{ n(s.n) }}</span></div>

@@ -33,10 +33,9 @@ export const post = (path, body) => http.post(path, body).then((r) => r.data)
 /** Load the user already signed in to Airsheet; no management-specific login. */
 export async function currentUser() {
   const token = useSessionStore().token
-  if (!token) return null
   const r = await axios.post(API_BASE + '/graphql', {
     query: 'query { me { _id name mobile role } }',
-  }, { headers: { Authorization: 'Bearer ' + token } })
+  }, { headers: token ? { Authorization: 'Bearer ' + token } : {} })
   const user = r.data?.data?.me
   return user ? { id: user._id, name: user.name, mobile: user.mobile, role: user.role } : null
 }

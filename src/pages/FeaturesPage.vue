@@ -45,7 +45,7 @@
           <template v-if="oppOpen.length">ساخت {{ names(oppOpen) }} را به قدم‌های آنبوردینگ اضافه کنید. </template>
           <template v-if="oppPaid.length">{{ oppPaid.length === opp.length ? 'همه' : names(oppPaid) }} فقط در پلن‌های پولی باز است: به پرداخت‌کننده‌هایی که هنوز سراغشان نرفته‌اند آموزش دهید و در دموی فروش نشانشان دهید.</template>
         </div></div>
-        <div v-if="!d.imp.length" class="note">این بخش هنوز از بک‌اند داده نمی‌گیرد.</div>
+        <div v-if="!d.imp.length" class="note">هنوز حساب کافی نیست که ۱۲ هفته از ثبت‌نامش (پس از شروع دادهٔ رفتاری) گذشته باشد و هم کاربر و هم غیرکاربر هر قابلیت را داشته باشیم.</div>
         <div v-else class="grid g2" style="gap: 24px">
           <div>
             <div class="section-title" style="margin-bottom: 8px">ضریب ماندن (کاربران ÷ غیرکاربران)</div>

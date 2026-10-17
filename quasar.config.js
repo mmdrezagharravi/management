@@ -16,7 +16,7 @@ export default defineConfig((ctx) => ({
     publicPath: '/management/',
     vueOptionsAPI: false,
     env: {
-      API_BASE: process.env.API_BASE ?? (ctx.dev ? 'http://localhost:3000' : ''), // '' = same origin in production
+      API_BASE: process.env.API_BASE ?? (ctx.dev ? '/api' : ''), // '' = same origin in production
       API_MODE: process.env.API_MODE || 'http',                                   // 'mock' = seeded fake world
     },
   },

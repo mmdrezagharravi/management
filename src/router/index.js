@@ -15,7 +15,7 @@ export default defineRouter(() => {
   router.beforeEach(() => {
     if (!api.NEEDS_AUTH) return true
     const session = useSessionStore()
-    if (session.token) return true
+    if (session.user) return true
     const next = window.location.pathname + window.location.search + window.location.hash
     window.location.replace('/auth?redirect=' + encodeURIComponent(next))
     return false

@@ -16,7 +16,6 @@ export default defineBoot(async ({ app }) => {
   if (!api.NEEDS_AUTH) return
 
   const session = useSessionStore()
-  if (!session.token) return
   try {
     const user = await currentUser()
     if (!user) {

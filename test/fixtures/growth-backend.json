@@ -1,0 +1,4789 @@
+{
+  "/funnel?range=30": {
+    "matureDays": 30,
+    "dataSince": "2026-05-20",
+    "cohort": {
+      "from": "2026-08-18",
+      "to": "2026-09-17",
+      "windowFrom": "2026-08-18",
+      "size": 7
+    },
+    "visits": {
+      "sessions": null,
+      "newUsers": null,
+      "channels": [],
+      "covered": false,
+      "lastDataDay": null,
+      "sync": null,
+      "signupRate": null
+    },
+    "steps": [
+      {
+        "key": "signup",
+        "n": 7,
+        "fromPrev": 1,
+        "fromStart": 1
+      },
+      {
+        "key": "firstBase",
+        "n": 6,
+        "fromPrev": 0.8571428571428571,
+        "fromStart": 0.8571428571428571
+      },
+      {
+        "key": "activated",
+        "n": 5,
+        "fromPrev": 0.8333333333333334,
+        "fromStart": 0.7142857142857143
+      },
+      {
+        "key": "habit",
+        "n": 4,
+        "fromPrev": 0.8,
+        "fromStart": 0.5714285714285714
+      },
+      {
+        "key": "paid",
+        "n": 2,
+        "fromPrev": 0.5,
+        "fromStart": 0.2857142857142857
+      }
+    ],
+    "bySource": {
+      "referral": [
+        {
+          "key": "signup",
+          "n": 1,
+          "fromPrev": 1,
+          "fromStart": 1
+        },
+        {
+          "key": "firstBase",
+          "n": 1,
+          "fromPrev": 1,
+          "fromStart": 1
+        },
+        {
+          "key": "activated",
+          "n": 1,
+          "fromPrev": 1,
+          "fromStart": 1
+        },
+        {
+          "key": "habit",
+          "n": 1,
+          "fromPrev": 1,
+          "fromStart": 1
+        },
+        {
+          "key": "paid",
+          "n": 1,
+          "fromPrev": 1,
+          "fromStart": 1
+        }
+      ],
+      "direct": [
+        {
+          "key": "signup",
+          "n": 6,
+          "fromPrev": 1,
+          "fromStart": 1
+        },
+        {
+          "key": "firstBase",
+          "n": 5,
+          "fromPrev": 0.8333333333333334,
+          "fromStart": 0.8333333333333334
+        },
+        {
+          "key": "activated",
+          "n": 4,
+          "fromPrev": 0.8,
+          "fromStart": 0.6666666666666666
+        },
+        {
+          "key": "habit",
+          "n": 3,
+          "fromPrev": 0.75,
+          "fromStart": 0.5
+        },
+        {
+          "key": "paid",
+          "n": 1,
+          "fromPrev": 0.3333333333333333,
+          "fromStart": 0.16666666666666666
+        }
+      ]
+    }
+  },
+  "/retention?months=12": {
+    "dataSince": "2026-05-20",
+    "weeks": 12,
+    "cohorts": [
+      {
+        "month": "1405-03",
+        "size": 2,
+        "cells": [
+          {
+            "eligible": 2,
+            "rate": 1
+          },
+          {
+            "eligible": 2,
+            "rate": 0.5
+          },
+          {
+            "eligible": 2,
+            "rate": 0
+          },
+          {
+            "eligible": 2,
+            "rate": 0
+          },
+          {
+            "eligible": 2,
+            "rate": 0
+          },
+          {
+            "eligible": 2,
+            "rate": 0
+          },
+          {
+            "eligible": 2,
+            "rate": 0
+          },
+          {
+            "eligible": 2,
+            "rate": 0
+          },
+          {
+            "eligible": 2,
+            "rate": 0
+          },
+          {
+            "eligible": 2,
+            "rate": 0
+          },
+          {
+            "eligible": 2,
+            "rate": 0
+          },
+          {
+            "eligible": 2,
+            "rate": 0
+          }
+        ]
+      },
+      {
+        "month": "1405-04",
+        "size": 2,
+        "cells": [
+          {
+            "eligible": 2,
+            "rate": 0
+          },
+          {
+            "eligible": 2,
+            "rate": 0
+          },
+          {
+            "eligible": 2,
+            "rate": 0
+          },
+          {
+            "eligible": 2,
+            "rate": 0
+          },
+          {
+            "eligible": 2,
+            "rate": 0
+          },
+          {
+            "eligible": 2,
+            "rate": 0
+          },
+          {
+            "eligible": 2,
+            "rate": 0
+          },
+          {
+            "eligible": 2,
+            "rate": 0
+          },
+          {
+            "eligible": 2,
+            "rate": 0
+          },
+          {
+            "eligible": 2,
+            "rate": 0
+          },
+          {
+            "eligible": 2,
+            "rate": 0
+          },
+          {
+            "eligible": 2,
+            "rate": 0
+          }
+        ]
+      },
+      {
+        "month": "1405-06",
+        "size": 7,
+        "cells": [
+          {
+            "eligible": 7,
+            "rate": 0.8571428571428571
+          },
+          {
+            "eligible": 7,
+            "rate": 0.5714285714285714
+          },
+          {
+            "eligible": 7,
+            "rate": 0.5714285714285714
+          },
+          {
+            "eligible": 7,
+            "rate": 0
+          },
+          {
+            "eligible": 7,
+            "rate": 0.14285714285714285
+          },
+          {
+            "eligible": 5,
+            "rate": 0.2
+          },
+          {
+            "eligible": 2,
+            "rate": 0
+          },
+          {
+            "eligible": 0,
+            "rate": null
+          },
+          {
+            "eligible": 0,
+            "rate": null
+          },
+          {
+            "eligible": 0,
+            "rate": null
+          },
+          {
+            "eligible": 0,
+            "rate": null
+          },
+          {
+            "eligible": 0,
+            "rate": null
+          }
+        ]
+      },
+      {
+        "month": "1405-07",
+        "size": 2,
+        "cells": [
+          {
+            "eligible": 1,
+            "rate": 0
+          },
+          {
+            "eligible": 0,
+            "rate": null
+          },
+          {
+            "eligible": 0,
+            "rate": null
+          },
+          {
+            "eligible": 0,
+            "rate": null
+          },
+          {
+            "eligible": 0,
+            "rate": null
+          },
+          {
+            "eligible": 0,
+            "rate": null
+          },
+          {
+            "eligible": 0,
+            "rate": null
+          },
+          {
+            "eligible": 0,
+            "rate": null
+          },
+          {
+            "eligible": 0,
+            "rate": null
+          },
+          {
+            "eligible": 0,
+            "rate": null
+          },
+          {
+            "eligible": 0,
+            "rate": null
+          },
+          {
+            "eligible": 0,
+            "rate": null
+          }
+        ]
+      }
+    ],
+    "curves": {
+      "all": [
+        {
+          "eligible": 12,
+          "rate": 0.6666666666666666
+        },
+        {
+          "eligible": 11,
+          "rate": 0.45454545454545453
+        },
+        {
+          "eligible": 11,
+          "rate": 0.36363636363636365
+        },
+        {
+          "eligible": 11,
+          "rate": 0
+        },
+        {
+          "eligible": 11,
+          "rate": 0.09090909090909091
+        },
+        {
+          "eligible": 9,
+          "rate": 0.1111111111111111
+        },
+        {
+          "eligible": 6,
+          "rate": 0
+        },
+        {
+          "eligible": 4,
+          "rate": 0
+        },
+        {
+          "eligible": 4,
+          "rate": 0
+        },
+        {
+          "eligible": 4,
+          "rate": 0
+        },
+        {
+          "eligible": 4,
+          "rate": 0
+        },
+        {
+          "eligible": 4,
+          "rate": 0
+        }
+      ],
+      "withAutomation": [
+        {
+          "eligible": 0,
+          "rate": null
+        },
+        {
+          "eligible": 0,
+          "rate": null
+        },
+        {
+          "eligible": 0,
+          "rate": null
+        },
+        {
+          "eligible": 0,
+          "rate": null
+        },
+        {
+          "eligible": 0,
+          "rate": null
+        },
+        {
+          "eligible": 0,
+          "rate": null
+        },
+        {
+          "eligible": 0,
+          "rate": null
+        },
+        {
+          "eligible": 0,
+          "rate": null
+        },
+        {
+          "eligible": 0,
+          "rate": null
+        },
+        {
+          "eligible": 0,
+          "rate": null
+        },
+        {
+          "eligible": 0,
+          "rate": null
+        },
+        {
+          "eligible": 0,
+          "rate": null
+        }
+      ],
+      "withoutAutomation": [
+        {
+          "eligible": 12,
+          "rate": 0.6666666666666666
+        },
+        {
+          "eligible": 11,
+          "rate": 0.45454545454545453
+        },
+        {
+          "eligible": 11,
+          "rate": 0.36363636363636365
+        },
+        {
+          "eligible": 11,
+          "rate": 0
+        },
+        {
+          "eligible": 11,
+          "rate": 0.09090909090909091
+        },
+        {
+          "eligible": 9,
+          "rate": 0.1111111111111111
+        },
+        {
+          "eligible": 6,
+          "rate": 0
+        },
+        {
+          "eligible": 4,
+          "rate": 0
+        },
+        {
+          "eligible": 4,
+          "rate": 0
+        },
+        {
+          "eligible": 4,
+          "rate": 0
+        },
+        {
+          "eligible": 4,
+          "rate": 0
+        },
+        {
+          "eligible": 4,
+          "rate": 0
+        }
+      ],
+      "team": [
+        {
+          "eligible": 1,
+          "rate": 1
+        },
+        {
+          "eligible": 1,
+          "rate": 1
+        },
+        {
+          "eligible": 1,
+          "rate": 1
+        },
+        {
+          "eligible": 1,
+          "rate": 0
+        },
+        {
+          "eligible": 1,
+          "rate": 0
+        },
+        {
+          "eligible": 1,
+          "rate": 1
+        },
+        {
+          "eligible": 0,
+          "rate": null
+        },
+        {
+          "eligible": 0,
+          "rate": null
+        },
+        {
+          "eligible": 0,
+          "rate": null
+        },
+        {
+          "eligible": 0,
+          "rate": null
+        },
+        {
+          "eligible": 0,
+          "rate": null
+        },
+        {
+          "eligible": 0,
+          "rate": null
+        }
+      ]
+    }
+  },
+  "/renewals?days=1&lapsedDays=180": {
+    "upcoming": [],
+    "lapsed": [
+      {
+        "id": "6ad35da2c90388ef008301ec",
+        "name": "رفته",
+        "mobile": "09120000212",
+        "plan": "team",
+        "seats": null,
+        "collaborators": 0,
+        "seatsUsed": 0,
+        "collaboratorLimit": null,
+        "cycle": "monthly",
+        "paying": false,
+        "everPaid": true,
+        "mrr": 0,
+        "lastMrr": 990000,
+        "upgradeValue": 1700000,
+        "until": "2026-10-07T08:30:00.000Z",
+        "renewIn": -11,
+        "pastDue": false,
+        "signedUpAt": "2026-07-09T08:30:00.000Z",
+        "signupDay": "2026-07-09",
+        "age": 100,
+        "referredBy": null,
+        "invitedBy": null,
+        "bases": 0,
+        "coOwnedBases": 0,
+        "sharedBases": 0,
+        "records": 0,
+        "recordMax": 0,
+        "recordLimit": 50000,
+        "nearLimit": false,
+        "automations": 0,
+        "runs": 0,
+        "runsLimit": 25000,
+        "atLimit": false,
+        "memberCount": 1,
+        "activeMembers7": 0,
+        "lastSeenDays": null,
+        "lastSeenAt": null,
+        "lastSeenMin": null,
+        "online": false,
+        "events30": 0,
+        "last30": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "activeDays28": 0,
+        "trendPct": null,
+        "activated": false,
+        "habit": false,
+        "firstBaseDays": null,
+        "firstPaidAt": "2026-09-07T08:30:00.000Z",
+        "payingDays": null,
+        "health": 20,
+        "health2wAgo": null,
+        "healthHistory": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          20
+        ],
+        "band": "crit",
+        "components": {
+          "activity": 0,
+          "trend": 0,
+          "depth": 0,
+          "team": 0,
+          "commercial": 20
+        },
+        "segments": [
+          "dormant"
+        ]
+      }
+    ]
+  },
+  "/renewals?days=30&lapsedDays=30": {
+    "upcoming": [
+      {
+        "id": "6ad35da2c90388ef008301a3",
+        "name": "پرداخت",
+        "mobile": "09120000204",
+        "plan": "team",
+        "seats": null,
+        "collaborators": 1,
+        "seatsUsed": 1,
+        "collaboratorLimit": null,
+        "cycle": "monthly",
+        "paying": true,
+        "everPaid": true,
+        "mrr": 990000,
+        "lastMrr": 990000,
+        "upgradeValue": 1700000,
+        "until": "2026-10-27T08:30:00.000Z",
+        "renewIn": 10,
+        "pastDue": false,
+        "signedUpAt": "2026-09-05T08:30:00.000Z",
+        "signupDay": "2026-09-05",
+        "age": 42,
+        "referredBy": null,
+        "invitedBy": null,
+        "bases": 1,
+        "coOwnedBases": 0,
+        "sharedBases": 0,
+        "records": 0,
+        "recordMax": 0,
+        "recordLimit": 50000,
+        "nearLimit": false,
+        "automations": 0,
+        "runs": 0,
+        "runsLimit": 25000,
+        "atLimit": false,
+        "memberCount": 2,
+        "activeMembers7": 1,
+        "lastSeenDays": 2,
+        "lastSeenAt": null,
+        "lastSeenMin": 2880,
+        "online": false,
+        "events30": 4,
+        "last30": [
+          0,
+          0,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          2,
+          0,
+          0
+        ],
+        "activeDays28": 2,
+        "trendPct": 0,
+        "activated": true,
+        "habit": true,
+        "firstBaseDays": 0,
+        "firstPaidAt": "2026-09-27T08:30:00.000Z",
+        "payingDays": 20,
+        "health": 48,
+        "health2wAgo": null,
+        "healthHistory": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          48
+        ],
+        "band": "ser",
+        "components": {
+          "activity": 3,
+          "trend": 10,
+          "depth": 5,
+          "team": 10,
+          "commercial": 20
+        },
+        "segments": [
+          "risk"
+        ]
+      },
+      {
+        "id": "6ad35da2c90388ef008301b5",
+        "name": "دعوتی",
+        "mobile": "09120000205",
+        "plan": "team",
+        "seats": null,
+        "collaborators": 0,
+        "seatsUsed": 0,
+        "collaboratorLimit": null,
+        "cycle": "monthly",
+        "paying": true,
+        "everPaid": true,
+        "mrr": 990000,
+        "lastMrr": 990000,
+        "upgradeValue": 1700000,
+        "until": "2026-10-29T08:30:00.000Z",
+        "renewIn": 12,
+        "pastDue": false,
+        "signedUpAt": "2026-09-07T08:30:00.000Z",
+        "signupDay": "2026-09-07",
+        "age": 40,
+        "referredBy": "6ad35da2c90388ef008301a3",
+        "invitedBy": null,
+        "bases": 1,
+        "coOwnedBases": 0,
+        "sharedBases": 0,
+        "records": 0,
+        "recordMax": 0,
+        "recordLimit": 50000,
+        "nearLimit": false,
+        "automations": 0,
+        "runs": 0,
+        "runsLimit": 25000,
+        "atLimit": false,
+        "memberCount": 1,
+        "activeMembers7": 0,
+        "lastSeenDays": 25,
+        "lastSeenAt": null,
+        "lastSeenMin": 36000,
+        "online": false,
+        "events30": 2,
+        "last30": [
+          0,
+          0,
+          0,
+          0,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "activeDays28": 1,
+        "trendPct": -100,
+        "activated": true,
+        "habit": true,
+        "firstBaseDays": 0,
+        "firstPaidAt": "2026-09-29T08:30:00.000Z",
+        "payingDays": 18,
+        "health": 21,
+        "health2wAgo": null,
+        "healthHistory": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          21
+        ],
+        "band": "crit",
+        "components": {
+          "activity": 1,
+          "trend": 0,
+          "depth": 0,
+          "team": 0,
+          "commercial": 20
+        },
+        "segments": [
+          "risk"
+        ]
+      },
+      {
+        "id": "6ad35da2c90388ef008301f7",
+        "name": "تمدیدی",
+        "mobile": "09120000213",
+        "plan": "team",
+        "seats": null,
+        "collaborators": 0,
+        "seatsUsed": 0,
+        "collaboratorLimit": null,
+        "cycle": "monthly",
+        "paying": true,
+        "everPaid": true,
+        "mrr": 990000,
+        "lastMrr": 990000,
+        "upgradeValue": 1700000,
+        "until": "2026-11-01T08:30:00.000Z",
+        "renewIn": 15,
+        "pastDue": false,
+        "signedUpAt": "2026-07-09T08:30:00.000Z",
+        "signupDay": "2026-07-09",
+        "age": 100,
+        "referredBy": null,
+        "invitedBy": null,
+        "bases": 0,
+        "coOwnedBases": 0,
+        "sharedBases": 0,
+        "records": 0,
+        "recordMax": 0,
+        "recordLimit": 50000,
+        "nearLimit": false,
+        "automations": 0,
+        "runs": 0,
+        "runsLimit": 25000,
+        "atLimit": false,
+        "memberCount": 1,
+        "activeMembers7": 1,
+        "lastSeenDays": 3,
+        "lastSeenAt": null,
+        "lastSeenMin": 4320,
+        "online": false,
+        "events30": 7,
+        "last30": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          7,
+          0,
+          0,
+          0
+        ],
+        "activeDays28": 1,
+        "trendPct": 100,
+        "activated": false,
+        "habit": false,
+        "firstBaseDays": null,
+        "firstPaidAt": "2026-09-02T08:30:00.000Z",
+        "payingDays": 45,
+        "health": 71,
+        "health2wAgo": null,
+        "healthHistory": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          71
+        ],
+        "band": "good",
+        "components": {
+          "activity": 1,
+          "trend": 20,
+          "depth": 10,
+          "team": 20,
+          "commercial": 20
+        },
+        "segments": []
+      }
+    ],
+    "lapsed": [
+      {
+        "id": "6ad35da2c90388ef008301ec",
+        "name": "رفته",
+        "mobile": "09120000212",
+        "plan": "team",
+        "seats": null,
+        "collaborators": 0,
+        "seatsUsed": 0,
+        "collaboratorLimit": null,
+        "cycle": "monthly",
+        "paying": false,
+        "everPaid": true,
+        "mrr": 0,
+        "lastMrr": 990000,
+        "upgradeValue": 1700000,
+        "until": "2026-10-07T08:30:00.000Z",
+        "renewIn": -11,
+        "pastDue": false,
+        "signedUpAt": "2026-07-09T08:30:00.000Z",
+        "signupDay": "2026-07-09",
+        "age": 100,
+        "referredBy": null,
+        "invitedBy": null,
+        "bases": 0,
+        "coOwnedBases": 0,
+        "sharedBases": 0,
+        "records": 0,
+        "recordMax": 0,
+        "recordLimit": 50000,
+        "nearLimit": false,
+        "automations": 0,
+        "runs": 0,
+        "runsLimit": 25000,
+        "atLimit": false,
+        "memberCount": 1,
+        "activeMembers7": 0,
+        "lastSeenDays": null,
+        "lastSeenAt": null,
+        "lastSeenMin": null,
+        "online": false,
+        "events30": 0,
+        "last30": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "activeDays28": 0,
+        "trendPct": null,
+        "activated": false,
+        "habit": false,
+        "firstBaseDays": null,
+        "firstPaidAt": "2026-09-07T08:30:00.000Z",
+        "payingDays": null,
+        "health": 20,
+        "health2wAgo": null,
+        "healthHistory": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          20
+        ],
+        "band": "crit",
+        "components": {
+          "activity": 0,
+          "trend": 0,
+          "depth": 0,
+          "team": 0,
+          "commercial": 20
+        },
+        "segments": [
+          "dormant"
+        ]
+      }
+    ]
+  },
+  "/revenue?months=6": {
+    "mrr": 2970000,
+    "paying": 3,
+    "mrrMonths": [
+      {
+        "month": "1405-02",
+        "y": 1405,
+        "m": 2,
+        "end": 149,
+        "mrr": 0,
+        "paying": 0,
+        "new": 0,
+        "expansion": 0,
+        "contraction": 0,
+        "churn": 0,
+        "newCount": 0,
+        "expCount": 0,
+        "conCount": 0,
+        "churnCount": 0
+      },
+      {
+        "month": "1405-03",
+        "y": 1405,
+        "m": 3,
+        "end": 118,
+        "mrr": 0,
+        "paying": 0,
+        "new": 0,
+        "expansion": 0,
+        "contraction": 0,
+        "churn": 0,
+        "newCount": 0,
+        "expCount": 0,
+        "conCount": 0,
+        "churnCount": 0
+      },
+      {
+        "month": "1405-04",
+        "y": 1405,
+        "m": 4,
+        "end": 87,
+        "mrr": 0,
+        "paying": 0,
+        "new": 0,
+        "expansion": 0,
+        "contraction": 0,
+        "churn": 0,
+        "newCount": 0,
+        "expCount": 0,
+        "conCount": 0,
+        "churnCount": 0
+      },
+      {
+        "month": "1405-05",
+        "y": 1405,
+        "m": 5,
+        "end": 56,
+        "mrr": 0,
+        "paying": 0,
+        "new": 0,
+        "expansion": 0,
+        "contraction": 0,
+        "churn": 0,
+        "newCount": 0,
+        "expCount": 0,
+        "conCount": 0,
+        "churnCount": 0
+      },
+      {
+        "month": "1405-06",
+        "y": 1405,
+        "m": 6,
+        "end": 25,
+        "mrr": 1980000,
+        "paying": 2,
+        "new": 1980000,
+        "expansion": 0,
+        "contraction": 0,
+        "churn": 0,
+        "newCount": 2,
+        "expCount": 0,
+        "conCount": 0,
+        "churnCount": 0
+      },
+      {
+        "month": "1405-07",
+        "y": 1405,
+        "m": 7,
+        "end": 0,
+        "mrr": 2970000,
+        "paying": 3,
+        "new": 1980000,
+        "expansion": 0,
+        "contraction": 0,
+        "churn": -990000,
+        "newCount": 2,
+        "expCount": 0,
+        "conCount": 0,
+        "churnCount": 1
+      }
+    ],
+    "nrr": {
+      "now": null,
+      "prev": null
+    },
+    "months": [
+      {
+        "month": "1405-06",
+        "total": 2178000,
+        "count": 2
+      },
+      {
+        "month": "1405-07",
+        "total": 3267000,
+        "count": 3
+      }
+    ],
+    "byPlan": {
+      "team": {
+        "n": 3,
+        "mrr": 2970000
+      }
+    },
+    "byCycle": {
+      "monthly": {
+        "n": 3,
+        "mrr": 2970000
+      }
+    }
+  },
+  "/acquisition?range=30": {
+    "configured": true,
+    "sync": null,
+    "lastDataDay": null,
+    "covered": false,
+    "kpis": {
+      "visits": null,
+      "visitsPrev": null,
+      "newUsers": null,
+      "newUsersPrev": null,
+      "signups": 2,
+      "signupsPrev": 7,
+      "inviteSignups": 1,
+      "joinedAsCollaborator": 0
+    },
+    "channels": [],
+    "daily": [
+      {
+        "day": "2026-09-17",
+        "sessions": {}
+      },
+      {
+        "day": "2026-09-18",
+        "sessions": {}
+      },
+      {
+        "day": "2026-09-19",
+        "sessions": {}
+      },
+      {
+        "day": "2026-09-20",
+        "sessions": {}
+      },
+      {
+        "day": "2026-09-21",
+        "sessions": {}
+      },
+      {
+        "day": "2026-09-22",
+        "sessions": {}
+      },
+      {
+        "day": "2026-09-23",
+        "sessions": {}
+      },
+      {
+        "day": "2026-09-24",
+        "sessions": {}
+      },
+      {
+        "day": "2026-09-25",
+        "sessions": {}
+      },
+      {
+        "day": "2026-09-26",
+        "sessions": {}
+      },
+      {
+        "day": "2026-09-27",
+        "sessions": {}
+      },
+      {
+        "day": "2026-09-28",
+        "sessions": {}
+      },
+      {
+        "day": "2026-09-29",
+        "sessions": {}
+      },
+      {
+        "day": "2026-09-30",
+        "sessions": {}
+      },
+      {
+        "day": "2026-10-01",
+        "sessions": {}
+      },
+      {
+        "day": "2026-10-02",
+        "sessions": {}
+      },
+      {
+        "day": "2026-10-03",
+        "sessions": {}
+      },
+      {
+        "day": "2026-10-04",
+        "sessions": {}
+      },
+      {
+        "day": "2026-10-05",
+        "sessions": {}
+      },
+      {
+        "day": "2026-10-06",
+        "sessions": {}
+      },
+      {
+        "day": "2026-10-07",
+        "sessions": {}
+      },
+      {
+        "day": "2026-10-08",
+        "sessions": {}
+      },
+      {
+        "day": "2026-10-09",
+        "sessions": {}
+      },
+      {
+        "day": "2026-10-10",
+        "sessions": {}
+      },
+      {
+        "day": "2026-10-11",
+        "sessions": {}
+      },
+      {
+        "day": "2026-10-12",
+        "sessions": {}
+      },
+      {
+        "day": "2026-10-13",
+        "sessions": {}
+      },
+      {
+        "day": "2026-10-14",
+        "sessions": {}
+      },
+      {
+        "day": "2026-10-15",
+        "sessions": {}
+      },
+      {
+        "day": "2026-10-16",
+        "sessions": {}
+      }
+    ],
+    "weekly": [
+      {
+        "from": "2026-07-25",
+        "to": "2026-07-31",
+        "sessions": {}
+      },
+      {
+        "from": "2026-08-01",
+        "to": "2026-08-07",
+        "sessions": {}
+      },
+      {
+        "from": "2026-08-08",
+        "to": "2026-08-14",
+        "sessions": {}
+      },
+      {
+        "from": "2026-08-15",
+        "to": "2026-08-21",
+        "sessions": {}
+      },
+      {
+        "from": "2026-08-22",
+        "to": "2026-08-28",
+        "sessions": {}
+      },
+      {
+        "from": "2026-08-29",
+        "to": "2026-09-04",
+        "sessions": {}
+      },
+      {
+        "from": "2026-09-05",
+        "to": "2026-09-11",
+        "sessions": {}
+      },
+      {
+        "from": "2026-09-12",
+        "to": "2026-09-18",
+        "sessions": {}
+      },
+      {
+        "from": "2026-09-19",
+        "to": "2026-09-25",
+        "sessions": {}
+      },
+      {
+        "from": "2026-09-26",
+        "to": "2026-10-02",
+        "sessions": {}
+      },
+      {
+        "from": "2026-10-03",
+        "to": "2026-10-09",
+        "sessions": {}
+      },
+      {
+        "from": "2026-10-10",
+        "to": "2026-10-16",
+        "sessions": {}
+      }
+    ],
+    "monthly": [
+      {
+        "month": "1404-08",
+        "y": 1404,
+        "m": 8,
+        "sessions": {}
+      },
+      {
+        "month": "1404-09",
+        "y": 1404,
+        "m": 9,
+        "sessions": {}
+      },
+      {
+        "month": "1404-10",
+        "y": 1404,
+        "m": 10,
+        "sessions": {}
+      },
+      {
+        "month": "1404-11",
+        "y": 1404,
+        "m": 11,
+        "sessions": {}
+      },
+      {
+        "month": "1404-12",
+        "y": 1404,
+        "m": 12,
+        "sessions": {}
+      },
+      {
+        "month": "1405-01",
+        "y": 1405,
+        "m": 1,
+        "sessions": {}
+      },
+      {
+        "month": "1405-02",
+        "y": 1405,
+        "m": 2,
+        "sessions": {}
+      },
+      {
+        "month": "1405-03",
+        "y": 1405,
+        "m": 3,
+        "sessions": {}
+      },
+      {
+        "month": "1405-04",
+        "y": 1405,
+        "m": 4,
+        "sessions": {}
+      },
+      {
+        "month": "1405-05",
+        "y": 1405,
+        "m": 5,
+        "sessions": {}
+      },
+      {
+        "month": "1405-06",
+        "y": 1405,
+        "m": 6,
+        "sessions": {}
+      },
+      {
+        "month": "1405-07",
+        "y": 1405,
+        "m": 7,
+        "sessions": {}
+      }
+    ]
+  },
+  "/features?range=30": {
+    "dataSince": "2026-05-20",
+    "activeCustomers": {
+      "value": 5,
+      "prev": 6
+    },
+    "activeByPlan": {
+      "basic": 2,
+      "team": 3,
+      "business": 0,
+      "enterprise": 0,
+      "partner": 0
+    },
+    "features": [
+      {
+        "type": "Record",
+        "key": false,
+        "users": 5,
+        "rate": 1,
+        "prevRate": 1,
+        "paidRate": 1,
+        "freeRate": 1,
+        "usersByPlan": {
+          "basic": 2,
+          "team": 3,
+          "business": 0,
+          "enterprise": 0,
+          "partner": 0
+        }
+      },
+      {
+        "type": "View",
+        "key": true,
+        "users": 2,
+        "rate": 0.4,
+        "prevRate": 0.6666666666666666,
+        "paidRate": 0.3333333333333333,
+        "freeRate": 0.5,
+        "usersByPlan": {
+          "basic": 1,
+          "team": 1,
+          "business": 0,
+          "enterprise": 0,
+          "partner": 0
+        }
+      },
+      {
+        "type": "AI",
+        "key": true,
+        "users": 1,
+        "rate": 0.2,
+        "prevRate": 0,
+        "paidRate": 0.3333333333333333,
+        "freeRate": 0,
+        "usersByPlan": {
+          "basic": 0,
+          "team": 1,
+          "business": 0,
+          "enterprise": 0,
+          "partner": 0
+        }
+      },
+      {
+        "type": "Automation",
+        "key": true,
+        "users": 1,
+        "rate": 0.2,
+        "prevRate": 0,
+        "paidRate": 0,
+        "freeRate": 0.5,
+        "usersByPlan": {
+          "basic": 1,
+          "team": 0,
+          "business": 0,
+          "enterprise": 0,
+          "partner": 0
+        }
+      },
+      {
+        "type": "Page",
+        "key": true,
+        "users": 1,
+        "rate": 0.2,
+        "prevRate": 0,
+        "paidRate": 0.3333333333333333,
+        "freeRate": 0,
+        "usersByPlan": {
+          "basic": 0,
+          "team": 1,
+          "business": 0,
+          "enterprise": 0,
+          "partner": 0
+        }
+      }
+    ]
+  },
+  "/customers?size=0": {
+    "items": [
+      {
+        "id": "6ad35da2c90388ef008301e2",
+        "name": "تازه",
+        "mobile": "09120000210",
+        "plan": "basic",
+        "seats": null,
+        "collaborators": 0,
+        "seatsUsed": 0,
+        "collaboratorLimit": 5,
+        "cycle": null,
+        "paying": false,
+        "everPaid": false,
+        "mrr": 0,
+        "lastMrr": 0,
+        "upgradeValue": 990000,
+        "until": null,
+        "renewIn": null,
+        "pastDue": false,
+        "signedUpAt": "2026-10-12T08:30:00.000Z",
+        "signupDay": "2026-10-12",
+        "age": 5,
+        "referredBy": null,
+        "invitedBy": null,
+        "bases": 0,
+        "coOwnedBases": 0,
+        "sharedBases": 0,
+        "records": 0,
+        "recordMax": 0,
+        "recordLimit": 1000,
+        "nearLimit": false,
+        "automations": 0,
+        "runs": 0,
+        "runsLimit": 100,
+        "atLimit": false,
+        "memberCount": 1,
+        "activeMembers7": 1,
+        "lastSeenDays": 4,
+        "lastSeenAt": null,
+        "lastSeenMin": 5760,
+        "online": false,
+        "events30": 2,
+        "last30": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          2,
+          0,
+          0,
+          0,
+          0
+        ],
+        "activeDays28": 1,
+        "trendPct": 100,
+        "activated": null,
+        "habit": null,
+        "firstBaseDays": null,
+        "firstPaidAt": null,
+        "payingDays": null,
+        "health": 58,
+        "health2wAgo": null,
+        "healthHistory": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          58
+        ],
+        "band": "warn",
+        "components": {
+          "activity": 1,
+          "trend": 12,
+          "depth": 5,
+          "team": 20,
+          "commercial": 20
+        },
+        "segments": [
+          "new"
+        ],
+        "purchaseViews": 0,
+        "purchaseLastAt": null
+      },
+      {
+        "id": "6ad35da2c90388ef008301e7",
+        "name": "تازه‌دعوتی",
+        "mobile": "09120000211",
+        "plan": "basic",
+        "seats": null,
+        "collaborators": 0,
+        "seatsUsed": 0,
+        "collaboratorLimit": 5,
+        "cycle": null,
+        "paying": false,
+        "everPaid": false,
+        "mrr": 0,
+        "lastMrr": 0,
+        "upgradeValue": 990000,
+        "until": null,
+        "renewIn": null,
+        "pastDue": false,
+        "signedUpAt": "2026-10-07T08:30:00.000Z",
+        "signupDay": "2026-10-07",
+        "age": 10,
+        "referredBy": "6ad35da2c90388ef008301a3",
+        "invitedBy": null,
+        "bases": 0,
+        "coOwnedBases": 0,
+        "sharedBases": 0,
+        "records": 0,
+        "recordMax": 0,
+        "recordLimit": 1000,
+        "nearLimit": false,
+        "automations": 0,
+        "runs": 0,
+        "runsLimit": 100,
+        "atLimit": false,
+        "memberCount": 1,
+        "activeMembers7": 0,
+        "lastSeenDays": null,
+        "lastSeenAt": null,
+        "lastSeenMin": null,
+        "online": false,
+        "events30": 0,
+        "last30": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "activeDays28": 0,
+        "trendPct": null,
+        "activated": false,
+        "habit": null,
+        "firstBaseDays": null,
+        "firstPaidAt": null,
+        "payingDays": null,
+        "health": 20,
+        "health2wAgo": null,
+        "healthHistory": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          20
+        ],
+        "band": "crit",
+        "components": {
+          "activity": 0,
+          "trend": 0,
+          "depth": 0,
+          "team": 0,
+          "commercial": 20
+        },
+        "segments": [
+          "new",
+          "stuck"
+        ],
+        "purchaseViews": 0,
+        "purchaseLastAt": null
+      },
+      {
+        "id": "6ad35da2c90388ef008301bf",
+        "name": "خودکار",
+        "mobile": "09120000206",
+        "plan": "basic",
+        "seats": null,
+        "collaborators": 0,
+        "seatsUsed": 0,
+        "collaboratorLimit": 5,
+        "cycle": null,
+        "paying": false,
+        "everPaid": false,
+        "mrr": 0,
+        "lastMrr": 0,
+        "upgradeValue": 990000,
+        "until": null,
+        "renewIn": null,
+        "pastDue": false,
+        "signedUpAt": "2026-09-09T08:30:00.000Z",
+        "signupDay": "2026-09-09",
+        "age": 38,
+        "referredBy": null,
+        "invitedBy": null,
+        "bases": 1,
+        "coOwnedBases": 0,
+        "sharedBases": 0,
+        "records": 0,
+        "recordMax": 0,
+        "recordLimit": 1000,
+        "nearLimit": false,
+        "automations": 0,
+        "runs": 0,
+        "runsLimit": 100,
+        "atLimit": false,
+        "memberCount": 1,
+        "activeMembers7": 1,
+        "lastSeenDays": 5,
+        "lastSeenAt": null,
+        "lastSeenMin": 7200,
+        "online": false,
+        "events30": 8,
+        "last30": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          6,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "activeDays28": 2,
+        "trendPct": 200,
+        "activated": true,
+        "habit": true,
+        "firstBaseDays": 0,
+        "firstPaidAt": null,
+        "payingDays": null,
+        "health": 68,
+        "health2wAgo": null,
+        "healthHistory": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          68
+        ],
+        "band": "warn",
+        "components": {
+          "activity": 3,
+          "trend": 20,
+          "depth": 5,
+          "team": 20,
+          "commercial": 20
+        },
+        "segments": [],
+        "purchaseViews": 0,
+        "purchaseLastAt": null
+      },
+      {
+        "id": "6ad35da2c90388ef008301b5",
+        "name": "دعوتی",
+        "mobile": "09120000205",
+        "plan": "team",
+        "seats": null,
+        "collaborators": 0,
+        "seatsUsed": 0,
+        "collaboratorLimit": null,
+        "cycle": "monthly",
+        "paying": true,
+        "everPaid": true,
+        "mrr": 990000,
+        "lastMrr": 990000,
+        "upgradeValue": 1700000,
+        "until": "2026-10-29T08:30:00.000Z",
+        "renewIn": 12,
+        "pastDue": false,
+        "signedUpAt": "2026-09-07T08:30:00.000Z",
+        "signupDay": "2026-09-07",
+        "age": 40,
+        "referredBy": "6ad35da2c90388ef008301a3",
+        "invitedBy": null,
+        "bases": 1,
+        "coOwnedBases": 0,
+        "sharedBases": 0,
+        "records": 0,
+        "recordMax": 0,
+        "recordLimit": 50000,
+        "nearLimit": false,
+        "automations": 0,
+        "runs": 0,
+        "runsLimit": 25000,
+        "atLimit": false,
+        "memberCount": 1,
+        "activeMembers7": 0,
+        "lastSeenDays": 25,
+        "lastSeenAt": null,
+        "lastSeenMin": 36000,
+        "online": false,
+        "events30": 2,
+        "last30": [
+          0,
+          0,
+          0,
+          0,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "activeDays28": 1,
+        "trendPct": -100,
+        "activated": true,
+        "habit": true,
+        "firstBaseDays": 0,
+        "firstPaidAt": "2026-09-29T08:30:00.000Z",
+        "payingDays": 18,
+        "health": 21,
+        "health2wAgo": null,
+        "healthHistory": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          21
+        ],
+        "band": "crit",
+        "components": {
+          "activity": 1,
+          "trend": 0,
+          "depth": 0,
+          "team": 0,
+          "commercial": 20
+        },
+        "segments": [
+          "risk"
+        ],
+        "purchaseViews": 0,
+        "purchaseLastAt": null
+      },
+      {
+        "id": "6ad35da2c90388ef008301a3",
+        "name": "پرداخت",
+        "mobile": "09120000204",
+        "plan": "team",
+        "seats": null,
+        "collaborators": 1,
+        "seatsUsed": 1,
+        "collaboratorLimit": null,
+        "cycle": "monthly",
+        "paying": true,
+        "everPaid": true,
+        "mrr": 990000,
+        "lastMrr": 990000,
+        "upgradeValue": 1700000,
+        "until": "2026-10-27T08:30:00.000Z",
+        "renewIn": 10,
+        "pastDue": false,
+        "signedUpAt": "2026-09-05T08:30:00.000Z",
+        "signupDay": "2026-09-05",
+        "age": 42,
+        "referredBy": null,
+        "invitedBy": null,
+        "bases": 1,
+        "coOwnedBases": 0,
+        "sharedBases": 0,
+        "records": 0,
+        "recordMax": 0,
+        "recordLimit": 50000,
+        "nearLimit": false,
+        "automations": 0,
+        "runs": 0,
+        "runsLimit": 25000,
+        "atLimit": false,
+        "memberCount": 2,
+        "activeMembers7": 1,
+        "lastSeenDays": 2,
+        "lastSeenAt": null,
+        "lastSeenMin": 2880,
+        "online": false,
+        "events30": 4,
+        "last30": [
+          0,
+          0,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          2,
+          0,
+          0
+        ],
+        "activeDays28": 2,
+        "trendPct": 0,
+        "activated": true,
+        "habit": true,
+        "firstBaseDays": 0,
+        "firstPaidAt": "2026-09-27T08:30:00.000Z",
+        "payingDays": 20,
+        "health": 48,
+        "health2wAgo": null,
+        "healthHistory": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          48
+        ],
+        "band": "ser",
+        "components": {
+          "activity": 3,
+          "trend": 10,
+          "depth": 5,
+          "team": 10,
+          "commercial": 20
+        },
+        "segments": [
+          "risk"
+        ],
+        "purchaseViews": 0,
+        "purchaseLastAt": null
+      },
+      {
+        "id": "6ad35da2c90388ef008301c6",
+        "name": "همکار",
+        "mobile": "09120000207",
+        "plan": "basic",
+        "seats": null,
+        "collaborators": 0,
+        "seatsUsed": 0,
+        "collaboratorLimit": 5,
+        "cycle": null,
+        "paying": false,
+        "everPaid": false,
+        "mrr": 0,
+        "lastMrr": 0,
+        "upgradeValue": 990000,
+        "until": null,
+        "renewIn": null,
+        "pastDue": false,
+        "signedUpAt": "2026-09-03T08:30:00.000Z",
+        "signupDay": "2026-09-03",
+        "age": 44,
+        "referredBy": null,
+        "invitedBy": "6ad35da2c90388ef008301a3",
+        "bases": 0,
+        "coOwnedBases": 0,
+        "sharedBases": 1,
+        "records": 0,
+        "recordMax": 0,
+        "recordLimit": 1000,
+        "nearLimit": false,
+        "automations": 0,
+        "runs": 0,
+        "runsLimit": 100,
+        "atLimit": false,
+        "memberCount": 1,
+        "activeMembers7": 0,
+        "lastSeenDays": null,
+        "lastSeenAt": null,
+        "lastSeenMin": null,
+        "online": false,
+        "events30": 0,
+        "last30": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "activeDays28": 0,
+        "trendPct": null,
+        "activated": false,
+        "habit": false,
+        "firstBaseDays": null,
+        "firstPaidAt": null,
+        "payingDays": null,
+        "health": 20,
+        "health2wAgo": null,
+        "healthHistory": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          20
+        ],
+        "band": "crit",
+        "components": {
+          "activity": 0,
+          "trend": 0,
+          "depth": 0,
+          "team": 0,
+          "commercial": 20
+        },
+        "segments": [
+          "dormant"
+        ],
+        "purchaseViews": 0,
+        "purchaseLastAt": null
+      },
+      {
+        "id": "6ad35da2c90388ef0083019a",
+        "name": "عادت",
+        "mobile": "09120000203",
+        "plan": "basic",
+        "seats": null,
+        "collaborators": 0,
+        "seatsUsed": 0,
+        "collaboratorLimit": 5,
+        "cycle": null,
+        "paying": false,
+        "everPaid": false,
+        "mrr": 0,
+        "lastMrr": 0,
+        "upgradeValue": 990000,
+        "until": null,
+        "renewIn": null,
+        "pastDue": false,
+        "signedUpAt": "2026-09-02T08:30:00.000Z",
+        "signupDay": "2026-09-02",
+        "age": 45,
+        "referredBy": null,
+        "invitedBy": null,
+        "bases": 1,
+        "coOwnedBases": 0,
+        "sharedBases": 0,
+        "records": 0,
+        "recordMax": 0,
+        "recordLimit": 1000,
+        "nearLimit": false,
+        "automations": 0,
+        "runs": 0,
+        "runsLimit": 100,
+        "atLimit": false,
+        "memberCount": 1,
+        "activeMembers7": 0,
+        "lastSeenDays": 30,
+        "lastSeenAt": null,
+        "lastSeenMin": 43200,
+        "online": false,
+        "events30": 0,
+        "last30": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "activeDays28": 0,
+        "trendPct": null,
+        "activated": true,
+        "habit": true,
+        "firstBaseDays": 0,
+        "firstPaidAt": null,
+        "payingDays": null,
+        "health": 20,
+        "health2wAgo": null,
+        "healthHistory": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          20
+        ],
+        "band": "crit",
+        "components": {
+          "activity": 0,
+          "trend": 0,
+          "depth": 0,
+          "team": 0,
+          "commercial": 20
+        },
+        "segments": [],
+        "purchaseViews": 0,
+        "purchaseLastAt": null
+      },
+      {
+        "id": "6ad35da2c90388ef00830191",
+        "name": "فعال",
+        "mobile": "09120000202",
+        "plan": "basic",
+        "seats": null,
+        "collaborators": 0,
+        "seatsUsed": 0,
+        "collaboratorLimit": 5,
+        "cycle": null,
+        "paying": false,
+        "everPaid": false,
+        "mrr": 0,
+        "lastMrr": 0,
+        "upgradeValue": 990000,
+        "until": null,
+        "renewIn": null,
+        "pastDue": false,
+        "signedUpAt": "2026-08-30T08:30:00.000Z",
+        "signupDay": "2026-08-30",
+        "age": 48,
+        "referredBy": null,
+        "invitedBy": null,
+        "bases": 1,
+        "coOwnedBases": 0,
+        "sharedBases": 0,
+        "records": 0,
+        "recordMax": 0,
+        "recordLimit": 1000,
+        "nearLimit": false,
+        "automations": 0,
+        "runs": 0,
+        "runsLimit": 100,
+        "atLimit": false,
+        "memberCount": 1,
+        "activeMembers7": 0,
+        "lastSeenDays": 47,
+        "lastSeenAt": null,
+        "lastSeenMin": 67680,
+        "online": false,
+        "events30": 0,
+        "last30": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "activeDays28": 0,
+        "trendPct": null,
+        "activated": true,
+        "habit": false,
+        "firstBaseDays": 0,
+        "firstPaidAt": null,
+        "payingDays": null,
+        "health": 20,
+        "health2wAgo": null,
+        "healthHistory": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          20
+        ],
+        "band": "crit",
+        "components": {
+          "activity": 0,
+          "trend": 0,
+          "depth": 0,
+          "team": 0,
+          "commercial": 20
+        },
+        "segments": [
+          "dormant"
+        ],
+        "purchaseViews": 0,
+        "purchaseLastAt": null
+      },
+      {
+        "id": "6ad35da2c90388ef00830182",
+        "name": "فقط‌بیس",
+        "mobile": "09120000201",
+        "plan": "basic",
+        "seats": null,
+        "collaborators": 0,
+        "seatsUsed": 0,
+        "collaboratorLimit": 5,
+        "cycle": null,
+        "paying": false,
+        "everPaid": false,
+        "mrr": 0,
+        "lastMrr": 0,
+        "upgradeValue": 990000,
+        "until": null,
+        "renewIn": null,
+        "pastDue": false,
+        "signedUpAt": "2026-08-28T08:30:00.000Z",
+        "signupDay": "2026-08-28",
+        "age": 50,
+        "referredBy": null,
+        "invitedBy": null,
+        "bases": 1,
+        "coOwnedBases": 0,
+        "sharedBases": 0,
+        "records": 0,
+        "recordMax": 0,
+        "recordLimit": 1000,
+        "nearLimit": false,
+        "automations": 0,
+        "runs": 0,
+        "runsLimit": 100,
+        "atLimit": false,
+        "memberCount": 1,
+        "activeMembers7": 0,
+        "lastSeenDays": 49,
+        "lastSeenAt": null,
+        "lastSeenMin": 70560,
+        "online": false,
+        "events30": 0,
+        "last30": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "activeDays28": 0,
+        "trendPct": null,
+        "activated": false,
+        "habit": false,
+        "firstBaseDays": 0,
+        "firstPaidAt": null,
+        "payingDays": null,
+        "health": 20,
+        "health2wAgo": null,
+        "healthHistory": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          20
+        ],
+        "band": "crit",
+        "components": {
+          "activity": 0,
+          "trend": 0,
+          "depth": 0,
+          "team": 0,
+          "commercial": 20
+        },
+        "segments": [
+          "dormant"
+        ],
+        "purchaseViews": 0,
+        "purchaseLastAt": null
+      },
+      {
+        "id": "6ad35da2c90388ef0083017b",
+        "name": "بی‌بیس",
+        "mobile": "09120000200",
+        "plan": "basic",
+        "seats": null,
+        "collaborators": 0,
+        "seatsUsed": 0,
+        "collaboratorLimit": 5,
+        "cycle": null,
+        "paying": false,
+        "everPaid": false,
+        "mrr": 0,
+        "lastMrr": 0,
+        "upgradeValue": 990000,
+        "until": null,
+        "renewIn": null,
+        "pastDue": false,
+        "signedUpAt": "2026-08-23T08:30:00.000Z",
+        "signupDay": "2026-08-23",
+        "age": 55,
+        "referredBy": null,
+        "invitedBy": null,
+        "bases": 0,
+        "coOwnedBases": 0,
+        "sharedBases": 0,
+        "records": 0,
+        "recordMax": 0,
+        "recordLimit": 1000,
+        "nearLimit": false,
+        "automations": 0,
+        "runs": 0,
+        "runsLimit": 100,
+        "atLimit": false,
+        "memberCount": 1,
+        "activeMembers7": 0,
+        "lastSeenDays": null,
+        "lastSeenAt": null,
+        "lastSeenMin": null,
+        "online": false,
+        "events30": 0,
+        "last30": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "activeDays28": 0,
+        "trendPct": null,
+        "activated": false,
+        "habit": false,
+        "firstBaseDays": null,
+        "firstPaidAt": null,
+        "payingDays": null,
+        "health": 20,
+        "health2wAgo": null,
+        "healthHistory": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          20
+        ],
+        "band": "crit",
+        "components": {
+          "activity": 0,
+          "trend": 0,
+          "depth": 0,
+          "team": 0,
+          "commercial": 20
+        },
+        "segments": [
+          "dormant"
+        ],
+        "purchaseViews": 0,
+        "purchaseLastAt": null
+      },
+      {
+        "id": "6ad35da2c90388ef008301ec",
+        "name": "رفته",
+        "mobile": "09120000212",
+        "plan": "team",
+        "seats": null,
+        "collaborators": 0,
+        "seatsUsed": 0,
+        "collaboratorLimit": null,
+        "cycle": "monthly",
+        "paying": false,
+        "everPaid": true,
+        "mrr": 0,
+        "lastMrr": 990000,
+        "upgradeValue": 1700000,
+        "until": "2026-10-07T08:30:00.000Z",
+        "renewIn": -11,
+        "pastDue": false,
+        "signedUpAt": "2026-07-09T08:30:00.000Z",
+        "signupDay": "2026-07-09",
+        "age": 100,
+        "referredBy": null,
+        "invitedBy": null,
+        "bases": 0,
+        "coOwnedBases": 0,
+        "sharedBases": 0,
+        "records": 0,
+        "recordMax": 0,
+        "recordLimit": 50000,
+        "nearLimit": false,
+        "automations": 0,
+        "runs": 0,
+        "runsLimit": 25000,
+        "atLimit": false,
+        "memberCount": 1,
+        "activeMembers7": 0,
+        "lastSeenDays": null,
+        "lastSeenAt": null,
+        "lastSeenMin": null,
+        "online": false,
+        "events30": 0,
+        "last30": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "activeDays28": 0,
+        "trendPct": null,
+        "activated": false,
+        "habit": false,
+        "firstBaseDays": null,
+        "firstPaidAt": "2026-09-07T08:30:00.000Z",
+        "payingDays": null,
+        "health": 20,
+        "health2wAgo": null,
+        "healthHistory": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          20
+        ],
+        "band": "crit",
+        "components": {
+          "activity": 0,
+          "trend": 0,
+          "depth": 0,
+          "team": 0,
+          "commercial": 20
+        },
+        "segments": [
+          "dormant"
+        ],
+        "purchaseViews": 0,
+        "purchaseLastAt": null
+      },
+      {
+        "id": "6ad35da2c90388ef008301f7",
+        "name": "تمدیدی",
+        "mobile": "09120000213",
+        "plan": "team",
+        "seats": null,
+        "collaborators": 0,
+        "seatsUsed": 0,
+        "collaboratorLimit": null,
+        "cycle": "monthly",
+        "paying": true,
+        "everPaid": true,
+        "mrr": 990000,
+        "lastMrr": 990000,
+        "upgradeValue": 1700000,
+        "until": "2026-11-01T08:30:00.000Z",
+        "renewIn": 15,
+        "pastDue": false,
+        "signedUpAt": "2026-07-09T08:30:00.000Z",
+        "signupDay": "2026-07-09",
+        "age": 100,
+        "referredBy": null,
+        "invitedBy": null,
+        "bases": 0,
+        "coOwnedBases": 0,
+        "sharedBases": 0,
+        "records": 0,
+        "recordMax": 0,
+        "recordLimit": 50000,
+        "nearLimit": false,
+        "automations": 0,
+        "runs": 0,
+        "runsLimit": 25000,
+        "atLimit": false,
+        "memberCount": 1,
+        "activeMembers7": 1,
+        "lastSeenDays": 3,
+        "lastSeenAt": null,
+        "lastSeenMin": 4320,
+        "online": false,
+        "events30": 7,
+        "last30": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          7,
+          0,
+          0,
+          0
+        ],
+        "activeDays28": 1,
+        "trendPct": 100,
+        "activated": false,
+        "habit": false,
+        "firstBaseDays": null,
+        "firstPaidAt": "2026-09-02T08:30:00.000Z",
+        "payingDays": 45,
+        "health": 71,
+        "health2wAgo": null,
+        "healthHistory": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          71
+        ],
+        "band": "good",
+        "components": {
+          "activity": 1,
+          "trend": 20,
+          "depth": 10,
+          "team": 20,
+          "commercial": 20
+        },
+        "segments": [],
+        "purchaseViews": 0,
+        "purchaseLastAt": null
+      },
+      {
+        "id": "6ad35da2c90388ef008301dd",
+        "name": "قدیمی‌ب",
+        "mobile": "09120000209",
+        "plan": "basic",
+        "seats": null,
+        "collaborators": 0,
+        "seatsUsed": 0,
+        "collaboratorLimit": 5,
+        "cycle": null,
+        "paying": false,
+        "everPaid": false,
+        "mrr": 0,
+        "lastMrr": 0,
+        "upgradeValue": 990000,
+        "until": null,
+        "renewIn": null,
+        "pastDue": false,
+        "signedUpAt": "2026-06-21T08:30:00.000Z",
+        "signupDay": "2026-06-21",
+        "age": 118,
+        "referredBy": null,
+        "invitedBy": null,
+        "bases": 0,
+        "coOwnedBases": 0,
+        "sharedBases": 0,
+        "records": 0,
+        "recordMax": 0,
+        "recordLimit": 1000,
+        "nearLimit": false,
+        "automations": 0,
+        "runs": 0,
+        "runsLimit": 100,
+        "atLimit": false,
+        "memberCount": 1,
+        "activeMembers7": 0,
+        "lastSeenDays": 117,
+        "lastSeenAt": null,
+        "lastSeenMin": 168480,
+        "online": false,
+        "events30": 0,
+        "last30": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "activeDays28": 0,
+        "trendPct": null,
+        "activated": false,
+        "habit": false,
+        "firstBaseDays": null,
+        "firstPaidAt": null,
+        "payingDays": null,
+        "health": 20,
+        "health2wAgo": null,
+        "healthHistory": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          20
+        ],
+        "band": "crit",
+        "components": {
+          "activity": 0,
+          "trend": 0,
+          "depth": 0,
+          "team": 0,
+          "commercial": 20
+        },
+        "segments": [
+          "dormant"
+        ],
+        "purchaseViews": 0,
+        "purchaseLastAt": null
+      },
+      {
+        "id": "6ad35da2c90388ef008301d5",
+        "name": "قدیمی‌الف",
+        "mobile": "09120000208",
+        "plan": "basic",
+        "seats": null,
+        "collaborators": 0,
+        "seatsUsed": 0,
+        "collaboratorLimit": 5,
+        "cycle": null,
+        "paying": false,
+        "everPaid": false,
+        "mrr": 0,
+        "lastMrr": 0,
+        "upgradeValue": 990000,
+        "until": null,
+        "renewIn": null,
+        "pastDue": false,
+        "signedUpAt": "2026-06-19T08:30:00.000Z",
+        "signupDay": "2026-06-19",
+        "age": 120,
+        "referredBy": null,
+        "invitedBy": null,
+        "bases": 0,
+        "coOwnedBases": 0,
+        "sharedBases": 0,
+        "records": 0,
+        "recordMax": 0,
+        "recordLimit": 1000,
+        "nearLimit": false,
+        "automations": 0,
+        "runs": 0,
+        "runsLimit": 100,
+        "atLimit": false,
+        "memberCount": 1,
+        "activeMembers7": 0,
+        "lastSeenDays": 112,
+        "lastSeenAt": null,
+        "lastSeenMin": 161280,
+        "online": false,
+        "events30": 0,
+        "last30": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "activeDays28": 0,
+        "trendPct": null,
+        "activated": false,
+        "habit": false,
+        "firstBaseDays": null,
+        "firstPaidAt": null,
+        "payingDays": null,
+        "health": 20,
+        "health2wAgo": null,
+        "healthHistory": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          20
+        ],
+        "band": "crit",
+        "components": {
+          "activity": 0,
+          "trend": 0,
+          "depth": 0,
+          "team": 0,
+          "commercial": 20
+        },
+        "segments": [
+          "dormant"
+        ],
+        "purchaseViews": 0,
+        "purchaseLastAt": null
+      },
+      {
+        "id": "6ad35da2c90388ef00830149",
+        "name": "Test User",
+        "mobile": null,
+        "plan": "basic",
+        "seats": null,
+        "collaborators": 0,
+        "seatsUsed": 0,
+        "collaboratorLimit": 5,
+        "cycle": null,
+        "paying": false,
+        "everPaid": false,
+        "mrr": 0,
+        "lastMrr": 0,
+        "upgradeValue": 990000,
+        "until": null,
+        "renewIn": null,
+        "pastDue": false,
+        "signedUpAt": "2025-09-12T08:30:00.000Z",
+        "signupDay": "2025-09-12",
+        "age": 400,
+        "referredBy": null,
+        "invitedBy": null,
+        "bases": 0,
+        "coOwnedBases": 0,
+        "sharedBases": 0,
+        "records": 0,
+        "recordMax": 0,
+        "recordLimit": 1000,
+        "nearLimit": false,
+        "automations": 0,
+        "runs": 0,
+        "runsLimit": 100,
+        "atLimit": false,
+        "memberCount": 1,
+        "activeMembers7": 0,
+        "lastSeenDays": 0,
+        "lastSeenAt": "2026-10-17T11:36:02.765Z",
+        "lastSeenMin": 0,
+        "online": true,
+        "events30": 0,
+        "last30": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "activeDays28": 0,
+        "trendPct": null,
+        "activated": null,
+        "habit": null,
+        "firstBaseDays": null,
+        "firstPaidAt": null,
+        "payingDays": null,
+        "health": 20,
+        "health2wAgo": null,
+        "healthHistory": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          20
+        ],
+        "band": "crit",
+        "components": {
+          "activity": 0,
+          "trend": 0,
+          "depth": 0,
+          "team": 0,
+          "commercial": 20
+        },
+        "segments": [],
+        "purchaseViews": 0,
+        "purchaseLastAt": null
+      }
+    ],
+    "total": 15,
+    "page": 0,
+    "size": 0,
+    "counts": {
+      "all": 15,
+      "paying": 3,
+      "risk": 2,
+      "upsell": 0,
+      "pastdue": 0,
+      "new": 2,
+      "active": 7,
+      "online": 1
+    },
+    "totals": {
+      "all": 15,
+      "paying": 3,
+      "risk": 2,
+      "upsell": 0,
+      "pastdue": 0,
+      "new": 2,
+      "active": 7,
+      "online": 1
+    }
+  },
+  "/definitions": {
+    "plans": [
+      "basic",
+      "team",
+      "business",
+      "enterprise",
+      "partner"
+    ],
+    "planPrices": {
+      "team": {
+        "monthly": 990000,
+        "yearly": 9840000
+      },
+      "business": {
+        "monthly": 2690000,
+        "yearly": 26784000
+      }
+    },
+    "atRiskBelow": 50,
+    "bands": [
+      {
+        "key": "good",
+        "min": 70
+      },
+      {
+        "key": "warn",
+        "min": 50
+      },
+      {
+        "key": "ser",
+        "min": 30
+      },
+      {
+        "key": "crit",
+        "min": 0
+      }
+    ],
+    "segments": [
+      "new",
+      "stuck",
+      "builders",
+      "automators",
+      "teams",
+      "upsell",
+      "risk",
+      "champions",
+      "dormant"
+    ],
+    "activation": {
+      "days": 7,
+      "recordEvents": 10
+    },
+    "habit": {
+      "weeks": 3,
+      "of": 4
+    },
+    "dormantDays": 30
+  },
+  "/funnel?range=7": {
+    "matureDays": 30,
+    "dataSince": "2026-05-20",
+    "cohort": {
+      "from": "2026-09-10",
+      "to": "2026-09-17",
+      "windowFrom": "2026-09-10",
+      "size": 0
+    },
+    "visits": {
+      "sessions": null,
+      "newUsers": null,
+      "channels": [],
+      "covered": false,
+      "lastDataDay": null,
+      "sync": null,
+      "signupRate": null
+    },
+    "steps": [
+      {
+        "key": "signup",
+        "n": 0,
+        "fromPrev": null,
+        "fromStart": null
+      },
+      {
+        "key": "firstBase",
+        "n": 0,
+        "fromPrev": null,
+        "fromStart": null
+      },
+      {
+        "key": "activated",
+        "n": 0,
+        "fromPrev": null,
+        "fromStart": null
+      },
+      {
+        "key": "habit",
+        "n": 0,
+        "fromPrev": null,
+        "fromStart": null
+      },
+      {
+        "key": "paid",
+        "n": 0,
+        "fromPrev": null,
+        "fromStart": null
+      }
+    ],
+    "bySource": {
+      "referral": [
+        {
+          "key": "signup",
+          "n": 0,
+          "fromPrev": null,
+          "fromStart": null
+        },
+        {
+          "key": "firstBase",
+          "n": 0,
+          "fromPrev": null,
+          "fromStart": null
+        },
+        {
+          "key": "activated",
+          "n": 0,
+          "fromPrev": null,
+          "fromStart": null
+        },
+        {
+          "key": "habit",
+          "n": 0,
+          "fromPrev": null,
+          "fromStart": null
+        },
+        {
+          "key": "paid",
+          "n": 0,
+          "fromPrev": null,
+          "fromStart": null
+        }
+      ],
+      "direct": [
+        {
+          "key": "signup",
+          "n": 0,
+          "fromPrev": null,
+          "fromStart": null
+        },
+        {
+          "key": "firstBase",
+          "n": 0,
+          "fromPrev": null,
+          "fromStart": null
+        },
+        {
+          "key": "activated",
+          "n": 0,
+          "fromPrev": null,
+          "fromStart": null
+        },
+        {
+          "key": "habit",
+          "n": 0,
+          "fromPrev": null,
+          "fromStart": null
+        },
+        {
+          "key": "paid",
+          "n": 0,
+          "fromPrev": null,
+          "fromStart": null
+        }
+      ]
+    }
+  },
+  "/renewals?days=7&lapsedDays=7": {
+    "upcoming": [],
+    "lapsed": []
+  },
+  "/acquisition?range=7": {
+    "configured": true,
+    "sync": null,
+    "lastDataDay": null,
+    "covered": false,
+    "kpis": {
+      "visits": null,
+      "visitsPrev": null,
+      "newUsers": null,
+      "newUsersPrev": null,
+      "signups": 1,
+      "signupsPrev": 1,
+      "inviteSignups": 0,
+      "joinedAsCollaborator": 0
+    },
+    "channels": [],
+    "daily": [
+      {
+        "day": "2026-10-10",
+        "sessions": {}
+      },
+      {
+        "day": "2026-10-11",
+        "sessions": {}
+      },
+      {
+        "day": "2026-10-12",
+        "sessions": {}
+      },
+      {
+        "day": "2026-10-13",
+        "sessions": {}
+      },
+      {
+        "day": "2026-10-14",
+        "sessions": {}
+      },
+      {
+        "day": "2026-10-15",
+        "sessions": {}
+      },
+      {
+        "day": "2026-10-16",
+        "sessions": {}
+      }
+    ],
+    "weekly": [
+      {
+        "from": "2026-07-25",
+        "to": "2026-07-31",
+        "sessions": {}
+      },
+      {
+        "from": "2026-08-01",
+        "to": "2026-08-07",
+        "sessions": {}
+      },
+      {
+        "from": "2026-08-08",
+        "to": "2026-08-14",
+        "sessions": {}
+      },
+      {
+        "from": "2026-08-15",
+        "to": "2026-08-21",
+        "sessions": {}
+      },
+      {
+        "from": "2026-08-22",
+        "to": "2026-08-28",
+        "sessions": {}
+      },
+      {
+        "from": "2026-08-29",
+        "to": "2026-09-04",
+        "sessions": {}
+      },
+      {
+        "from": "2026-09-05",
+        "to": "2026-09-11",
+        "sessions": {}
+      },
+      {
+        "from": "2026-09-12",
+        "to": "2026-09-18",
+        "sessions": {}
+      },
+      {
+        "from": "2026-09-19",
+        "to": "2026-09-25",
+        "sessions": {}
+      },
+      {
+        "from": "2026-09-26",
+        "to": "2026-10-02",
+        "sessions": {}
+      },
+      {
+        "from": "2026-10-03",
+        "to": "2026-10-09",
+        "sessions": {}
+      },
+      {
+        "from": "2026-10-10",
+        "to": "2026-10-16",
+        "sessions": {}
+      }
+    ],
+    "monthly": [
+      {
+        "month": "1404-08",
+        "y": 1404,
+        "m": 8,
+        "sessions": {}
+      },
+      {
+        "month": "1404-09",
+        "y": 1404,
+        "m": 9,
+        "sessions": {}
+      },
+      {
+        "month": "1404-10",
+        "y": 1404,
+        "m": 10,
+        "sessions": {}
+      },
+      {
+        "month": "1404-11",
+        "y": 1404,
+        "m": 11,
+        "sessions": {}
+      },
+      {
+        "month": "1404-12",
+        "y": 1404,
+        "m": 12,
+        "sessions": {}
+      },
+      {
+        "month": "1405-01",
+        "y": 1405,
+        "m": 1,
+        "sessions": {}
+      },
+      {
+        "month": "1405-02",
+        "y": 1405,
+        "m": 2,
+        "sessions": {}
+      },
+      {
+        "month": "1405-03",
+        "y": 1405,
+        "m": 3,
+        "sessions": {}
+      },
+      {
+        "month": "1405-04",
+        "y": 1405,
+        "m": 4,
+        "sessions": {}
+      },
+      {
+        "month": "1405-05",
+        "y": 1405,
+        "m": 5,
+        "sessions": {}
+      },
+      {
+        "month": "1405-06",
+        "y": 1405,
+        "m": 6,
+        "sessions": {}
+      },
+      {
+        "month": "1405-07",
+        "y": 1405,
+        "m": 7,
+        "sessions": {}
+      }
+    ]
+  },
+  "/features?range=7": {
+    "dataSince": "2026-05-20",
+    "activeCustomers": {
+      "value": 4,
+      "prev": 0
+    },
+    "activeByPlan": {
+      "basic": 2,
+      "team": 2,
+      "business": 0,
+      "enterprise": 0,
+      "partner": 0
+    },
+    "features": [
+      {
+        "type": "Record",
+        "key": false,
+        "users": 4,
+        "rate": 1,
+        "prevRate": null,
+        "paidRate": 1,
+        "freeRate": 1,
+        "usersByPlan": {
+          "basic": 2,
+          "team": 2,
+          "business": 0,
+          "enterprise": 0,
+          "partner": 0
+        }
+      },
+      {
+        "type": "View",
+        "key": true,
+        "users": 2,
+        "rate": 0.5,
+        "prevRate": null,
+        "paidRate": 0.5,
+        "freeRate": 0.5,
+        "usersByPlan": {
+          "basic": 1,
+          "team": 1,
+          "business": 0,
+          "enterprise": 0,
+          "partner": 0
+        }
+      },
+      {
+        "type": "AI",
+        "key": true,
+        "users": 1,
+        "rate": 0.25,
+        "prevRate": null,
+        "paidRate": 0.5,
+        "freeRate": 0,
+        "usersByPlan": {
+          "basic": 0,
+          "team": 1,
+          "business": 0,
+          "enterprise": 0,
+          "partner": 0
+        }
+      },
+      {
+        "type": "Automation",
+        "key": true,
+        "users": 1,
+        "rate": 0.25,
+        "prevRate": null,
+        "paidRate": 0,
+        "freeRate": 0.5,
+        "usersByPlan": {
+          "basic": 1,
+          "team": 0,
+          "business": 0,
+          "enterprise": 0,
+          "partner": 0
+        }
+      },
+      {
+        "type": "Page",
+        "key": true,
+        "users": 1,
+        "rate": 0.25,
+        "prevRate": null,
+        "paidRate": 0.5,
+        "freeRate": 0,
+        "usersByPlan": {
+          "basic": 0,
+          "team": 1,
+          "business": 0,
+          "enterprise": 0,
+          "partner": 0
+        }
+      }
+    ]
+  },
+  "/funnel?range=90": {
+    "matureDays": 30,
+    "dataSince": "2026-05-20",
+    "cohort": {
+      "from": "2026-06-19",
+      "to": "2026-09-17",
+      "windowFrom": "2026-06-19",
+      "size": 11
+    },
+    "visits": {
+      "sessions": null,
+      "newUsers": null,
+      "channels": [],
+      "covered": false,
+      "lastDataDay": null,
+      "sync": null,
+      "signupRate": null
+    },
+    "steps": [
+      {
+        "key": "signup",
+        "n": 11,
+        "fromPrev": 1,
+        "fromStart": 1
+      },
+      {
+        "key": "firstBase",
+        "n": 6,
+        "fromPrev": 0.5454545454545454,
+        "fromStart": 0.5454545454545454
+      },
+      {
+        "key": "activated",
+        "n": 5,
+        "fromPrev": 0.8333333333333334,
+        "fromStart": 0.45454545454545453
+      },
+      {
+        "key": "habit",
+        "n": 4,
+        "fromPrev": 0.8,
+        "fromStart": 0.36363636363636365
+      },
+      {
+        "key": "paid",
+        "n": 2,
+        "fromPrev": 0.5,
+        "fromStart": 0.18181818181818182
+      }
+    ],
+    "bySource": {
+      "referral": [
+        {
+          "key": "signup",
+          "n": 1,
+          "fromPrev": 1,
+          "fromStart": 1
+        },
+        {
+          "key": "firstBase",
+          "n": 1,
+          "fromPrev": 1,
+          "fromStart": 1
+        },
+        {
+          "key": "activated",
+          "n": 1,
+          "fromPrev": 1,
+          "fromStart": 1
+        },
+        {
+          "key": "habit",
+          "n": 1,
+          "fromPrev": 1,
+          "fromStart": 1
+        },
+        {
+          "key": "paid",
+          "n": 1,
+          "fromPrev": 1,
+          "fromStart": 1
+        }
+      ],
+      "direct": [
+        {
+          "key": "signup",
+          "n": 10,
+          "fromPrev": 1,
+          "fromStart": 1
+        },
+        {
+          "key": "firstBase",
+          "n": 5,
+          "fromPrev": 0.5,
+          "fromStart": 0.5
+        },
+        {
+          "key": "activated",
+          "n": 4,
+          "fromPrev": 0.8,
+          "fromStart": 0.4
+        },
+        {
+          "key": "habit",
+          "n": 3,
+          "fromPrev": 0.75,
+          "fromStart": 0.3
+        },
+        {
+          "key": "paid",
+          "n": 1,
+          "fromPrev": 0.3333333333333333,
+          "fromStart": 0.1
+        }
+      ]
+    }
+  },
+  "/renewals?days=90&lapsedDays=90": {
+    "upcoming": [
+      {
+        "id": "6ad35da2c90388ef008301a3",
+        "name": "پرداخت",
+        "mobile": "09120000204",
+        "plan": "team",
+        "seats": null,
+        "collaborators": 1,
+        "seatsUsed": 1,
+        "collaboratorLimit": null,
+        "cycle": "monthly",
+        "paying": true,
+        "everPaid": true,
+        "mrr": 990000,
+        "lastMrr": 990000,
+        "upgradeValue": 1700000,
+        "until": "2026-10-27T08:30:00.000Z",
+        "renewIn": 10,
+        "pastDue": false,
+        "signedUpAt": "2026-09-05T08:30:00.000Z",
+        "signupDay": "2026-09-05",
+        "age": 42,
+        "referredBy": null,
+        "invitedBy": null,
+        "bases": 1,
+        "coOwnedBases": 0,
+        "sharedBases": 0,
+        "records": 0,
+        "recordMax": 0,
+        "recordLimit": 50000,
+        "nearLimit": false,
+        "automations": 0,
+        "runs": 0,
+        "runsLimit": 25000,
+        "atLimit": false,
+        "memberCount": 2,
+        "activeMembers7": 1,
+        "lastSeenDays": 2,
+        "lastSeenAt": null,
+        "lastSeenMin": 2880,
+        "online": false,
+        "events30": 4,
+        "last30": [
+          0,
+          0,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          2,
+          0,
+          0
+        ],
+        "activeDays28": 2,
+        "trendPct": 0,
+        "activated": true,
+        "habit": true,
+        "firstBaseDays": 0,
+        "firstPaidAt": "2026-09-27T08:30:00.000Z",
+        "payingDays": 20,
+        "health": 48,
+        "health2wAgo": null,
+        "healthHistory": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          48
+        ],
+        "band": "ser",
+        "components": {
+          "activity": 3,
+          "trend": 10,
+          "depth": 5,
+          "team": 10,
+          "commercial": 20
+        },
+        "segments": [
+          "risk"
+        ]
+      },
+      {
+        "id": "6ad35da2c90388ef008301b5",
+        "name": "دعوتی",
+        "mobile": "09120000205",
+        "plan": "team",
+        "seats": null,
+        "collaborators": 0,
+        "seatsUsed": 0,
+        "collaboratorLimit": null,
+        "cycle": "monthly",
+        "paying": true,
+        "everPaid": true,
+        "mrr": 990000,
+        "lastMrr": 990000,
+        "upgradeValue": 1700000,
+        "until": "2026-10-29T08:30:00.000Z",
+        "renewIn": 12,
+        "pastDue": false,
+        "signedUpAt": "2026-09-07T08:30:00.000Z",
+        "signupDay": "2026-09-07",
+        "age": 40,
+        "referredBy": "6ad35da2c90388ef008301a3",
+        "invitedBy": null,
+        "bases": 1,
+        "coOwnedBases": 0,
+        "sharedBases": 0,
+        "records": 0,
+        "recordMax": 0,
+        "recordLimit": 50000,
+        "nearLimit": false,
+        "automations": 0,
+        "runs": 0,
+        "runsLimit": 25000,
+        "atLimit": false,
+        "memberCount": 1,
+        "activeMembers7": 0,
+        "lastSeenDays": 25,
+        "lastSeenAt": null,
+        "lastSeenMin": 36000,
+        "online": false,
+        "events30": 2,
+        "last30": [
+          0,
+          0,
+          0,
+          0,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "activeDays28": 1,
+        "trendPct": -100,
+        "activated": true,
+        "habit": true,
+        "firstBaseDays": 0,
+        "firstPaidAt": "2026-09-29T08:30:00.000Z",
+        "payingDays": 18,
+        "health": 21,
+        "health2wAgo": null,
+        "healthHistory": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          21
+        ],
+        "band": "crit",
+        "components": {
+          "activity": 1,
+          "trend": 0,
+          "depth": 0,
+          "team": 0,
+          "commercial": 20
+        },
+        "segments": [
+          "risk"
+        ]
+      },
+      {
+        "id": "6ad35da2c90388ef008301f7",
+        "name": "تمدیدی",
+        "mobile": "09120000213",
+        "plan": "team",
+        "seats": null,
+        "collaborators": 0,
+        "seatsUsed": 0,
+        "collaboratorLimit": null,
+        "cycle": "monthly",
+        "paying": true,
+        "everPaid": true,
+        "mrr": 990000,
+        "lastMrr": 990000,
+        "upgradeValue": 1700000,
+        "until": "2026-11-01T08:30:00.000Z",
+        "renewIn": 15,
+        "pastDue": false,
+        "signedUpAt": "2026-07-09T08:30:00.000Z",
+        "signupDay": "2026-07-09",
+        "age": 100,
+        "referredBy": null,
+        "invitedBy": null,
+        "bases": 0,
+        "coOwnedBases": 0,
+        "sharedBases": 0,
+        "records": 0,
+        "recordMax": 0,
+        "recordLimit": 50000,
+        "nearLimit": false,
+        "automations": 0,
+        "runs": 0,
+        "runsLimit": 25000,
+        "atLimit": false,
+        "memberCount": 1,
+        "activeMembers7": 1,
+        "lastSeenDays": 3,
+        "lastSeenAt": null,
+        "lastSeenMin": 4320,
+        "online": false,
+        "events30": 7,
+        "last30": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          7,
+          0,
+          0,
+          0
+        ],
+        "activeDays28": 1,
+        "trendPct": 100,
+        "activated": false,
+        "habit": false,
+        "firstBaseDays": null,
+        "firstPaidAt": "2026-09-02T08:30:00.000Z",
+        "payingDays": 45,
+        "health": 71,
+        "health2wAgo": null,
+        "healthHistory": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          71
+        ],
+        "band": "good",
+        "components": {
+          "activity": 1,
+          "trend": 20,
+          "depth": 10,
+          "team": 20,
+          "commercial": 20
+        },
+        "segments": []
+      }
+    ],
+    "lapsed": [
+      {
+        "id": "6ad35da2c90388ef008301ec",
+        "name": "رفته",
+        "mobile": "09120000212",
+        "plan": "team",
+        "seats": null,
+        "collaborators": 0,
+        "seatsUsed": 0,
+        "collaboratorLimit": null,
+        "cycle": "monthly",
+        "paying": false,
+        "everPaid": true,
+        "mrr": 0,
+        "lastMrr": 990000,
+        "upgradeValue": 1700000,
+        "until": "2026-10-07T08:30:00.000Z",
+        "renewIn": -11,
+        "pastDue": false,
+        "signedUpAt": "2026-07-09T08:30:00.000Z",
+        "signupDay": "2026-07-09",
+        "age": 100,
+        "referredBy": null,
+        "invitedBy": null,
+        "bases": 0,
+        "coOwnedBases": 0,
+        "sharedBases": 0,
+        "records": 0,
+        "recordMax": 0,
+        "recordLimit": 50000,
+        "nearLimit": false,
+        "automations": 0,
+        "runs": 0,
+        "runsLimit": 25000,
+        "atLimit": false,
+        "memberCount": 1,
+        "activeMembers7": 0,
+        "lastSeenDays": null,
+        "lastSeenAt": null,
+        "lastSeenMin": null,
+        "online": false,
+        "events30": 0,
+        "last30": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "activeDays28": 0,
+        "trendPct": null,
+        "activated": false,
+        "habit": false,
+        "firstBaseDays": null,
+        "firstPaidAt": "2026-09-07T08:30:00.000Z",
+        "payingDays": null,
+        "health": 20,
+        "health2wAgo": null,
+        "healthHistory": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          20
+        ],
+        "band": "crit",
+        "components": {
+          "activity": 0,
+          "trend": 0,
+          "depth": 0,
+          "team": 0,
+          "commercial": 20
+        },
+        "segments": [
+          "dormant"
+        ]
+      }
+    ]
+  },
+  "/acquisition?range=90": {
+    "configured": true,
+    "sync": null,
+    "lastDataDay": null,
+    "covered": false,
+    "kpis": {
+      "visits": null,
+      "visitsPrev": null,
+      "newUsers": null,
+      "newUsersPrev": null,
+      "signups": 9,
+      "signupsPrev": 4,
+      "inviteSignups": 2,
+      "joinedAsCollaborator": 1
+    },
+    "channels": [],
+    "daily": [
+      {
+        "day": "2026-07-19",
+        "sessions": {}
+      },
+      {
+        "day": "2026-07-20",
+        "sessions": {}
+      },
+      {
+        "day": "2026-07-21",
+        "sessions": {}
+      },
+      {
+        "day": "2026-07-22",
+        "sessions": {}
+      },
+      {
+        "day": "2026-07-23",
+        "sessions": {}
+      },
+      {
+        "day": "2026-07-24",
+        "sessions": {}
+      },
+      {
+        "day": "2026-07-25",
+        "sessions": {}
+      },
+      {
+        "day": "2026-07-26",
+        "sessions": {}
+      },
+      {
+        "day": "2026-07-27",
+        "sessions": {}
+      },
+      {
+        "day": "2026-07-28",
+        "sessions": {}
+      },
+      {
+        "day": "2026-07-29",
+        "sessions": {}
+      },
+      {
+        "day": "2026-07-30",
+        "sessions": {}
+      },
+      {
+        "day": "2026-07-31",
+        "sessions": {}
+      },
+      {
+        "day": "2026-08-01",
+        "sessions": {}
+      },
+      {
+        "day": "2026-08-02",
+        "sessions": {}
+      },
+      {
+        "day": "2026-08-03",
+        "sessions": {}
+      },
+      {
+        "day": "2026-08-04",
+        "sessions": {}
+      },
+      {
+        "day": "2026-08-05",
+        "sessions": {}
+      },
+      {
+        "day": "2026-08-06",
+        "sessions": {}
+      },
+      {
+        "day": "2026-08-07",
+        "sessions": {}
+      },
+      {
+        "day": "2026-08-08",
+        "sessions": {}
+      },
+      {
+        "day": "2026-08-09",
+        "sessions": {}
+      },
+      {
+        "day": "2026-08-10",
+        "sessions": {}
+      },
+      {
+        "day": "2026-08-11",
+        "sessions": {}
+      },
+      {
+        "day": "2026-08-12",
+        "sessions": {}
+      },
+      {
+        "day": "2026-08-13",
+        "sessions": {}
+      },
+      {
+        "day": "2026-08-14",
+        "sessions": {}
+      },
+      {
+        "day": "2026-08-15",
+        "sessions": {}
+      },
+      {
+        "day": "2026-08-16",
+        "sessions": {}
+      },
+      {
+        "day": "2026-08-17",
+        "sessions": {}
+      },
+      {
+        "day": "2026-08-18",
+        "sessions": {}
+      },
+      {
+        "day": "2026-08-19",
+        "sessions": {}
+      },
+      {
+        "day": "2026-08-20",
+        "sessions": {}
+      },
+      {
+        "day": "2026-08-21",
+        "sessions": {}
+      },
+      {
+        "day": "2026-08-22",
+        "sessions": {}
+      },
+      {
+        "day": "2026-08-23",
+        "sessions": {}
+      },
+      {
+        "day": "2026-08-24",
+        "sessions": {}
+      },
+      {
+        "day": "2026-08-25",
+        "sessions": {}
+      },
+      {
+        "day": "2026-08-26",
+        "sessions": {}
+      },
+      {
+        "day": "2026-08-27",
+        "sessions": {}
+      },
+      {
+        "day": "2026-08-28",
+        "sessions": {}
+      },
+      {
+        "day": "2026-08-29",
+        "sessions": {}
+      },
+      {
+        "day": "2026-08-30",
+        "sessions": {}
+      },
+      {
+        "day": "2026-08-31",
+        "sessions": {}
+      },
+      {
+        "day": "2026-09-01",
+        "sessions": {}
+      },
+      {
+        "day": "2026-09-02",
+        "sessions": {}
+      },
+      {
+        "day": "2026-09-03",
+        "sessions": {}
+      },
+      {
+        "day": "2026-09-04",
+        "sessions": {}
+      },
+      {
+        "day": "2026-09-05",
+        "sessions": {}
+      },
+      {
+        "day": "2026-09-06",
+        "sessions": {}
+      },
+      {
+        "day": "2026-09-07",
+        "sessions": {}
+      },
+      {
+        "day": "2026-09-08",
+        "sessions": {}
+      },
+      {
+        "day": "2026-09-09",
+        "sessions": {}
+      },
+      {
+        "day": "2026-09-10",
+        "sessions": {}
+      },
+      {
+        "day": "2026-09-11",
+        "sessions": {}
+      },
+      {
+        "day": "2026-09-12",
+        "sessions": {}
+      },
+      {
+        "day": "2026-09-13",
+        "sessions": {}
+      },
+      {
+        "day": "2026-09-14",
+        "sessions": {}
+      },
+      {
+        "day": "2026-09-15",
+        "sessions": {}
+      },
+      {
+        "day": "2026-09-16",
+        "sessions": {}
+      },
+      {
+        "day": "2026-09-17",
+        "sessions": {}
+      },
+      {
+        "day": "2026-09-18",
+        "sessions": {}
+      },
+      {
+        "day": "2026-09-19",
+        "sessions": {}
+      },
+      {
+        "day": "2026-09-20",
+        "sessions": {}
+      },
+      {
+        "day": "2026-09-21",
+        "sessions": {}
+      },
+      {
+        "day": "2026-09-22",
+        "sessions": {}
+      },
+      {
+        "day": "2026-09-23",
+        "sessions": {}
+      },
+      {
+        "day": "2026-09-24",
+        "sessions": {}
+      },
+      {
+        "day": "2026-09-25",
+        "sessions": {}
+      },
+      {
+        "day": "2026-09-26",
+        "sessions": {}
+      },
+      {
+        "day": "2026-09-27",
+        "sessions": {}
+      },
+      {
+        "day": "2026-09-28",
+        "sessions": {}
+      },
+      {
+        "day": "2026-09-29",
+        "sessions": {}
+      },
+      {
+        "day": "2026-09-30",
+        "sessions": {}
+      },
+      {
+        "day": "2026-10-01",
+        "sessions": {}
+      },
+      {
+        "day": "2026-10-02",
+        "sessions": {}
+      },
+      {
+        "day": "2026-10-03",
+        "sessions": {}
+      },
+      {
+        "day": "2026-10-04",
+        "sessions": {}
+      },
+      {
+        "day": "2026-10-05",
+        "sessions": {}
+      },
+      {
+        "day": "2026-10-06",
+        "sessions": {}
+      },
+      {
+        "day": "2026-10-07",
+        "sessions": {}
+      },
+      {
+        "day": "2026-10-08",
+        "sessions": {}
+      },
+      {
+        "day": "2026-10-09",
+        "sessions": {}
+      },
+      {
+        "day": "2026-10-10",
+        "sessions": {}
+      },
+      {
+        "day": "2026-10-11",
+        "sessions": {}
+      },
+      {
+        "day": "2026-10-12",
+        "sessions": {}
+      },
+      {
+        "day": "2026-10-13",
+        "sessions": {}
+      },
+      {
+        "day": "2026-10-14",
+        "sessions": {}
+      },
+      {
+        "day": "2026-10-15",
+        "sessions": {}
+      },
+      {
+        "day": "2026-10-16",
+        "sessions": {}
+      }
+    ],
+    "weekly": [
+      {
+        "from": "2026-07-25",
+        "to": "2026-07-31",
+        "sessions": {}
+      },
+      {
+        "from": "2026-08-01",
+        "to": "2026-08-07",
+        "sessions": {}
+      },
+      {
+        "from": "2026-08-08",
+        "to": "2026-08-14",
+        "sessions": {}
+      },
+      {
+        "from": "2026-08-15",
+        "to": "2026-08-21",
+        "sessions": {}
+      },
+      {
+        "from": "2026-08-22",
+        "to": "2026-08-28",
+        "sessions": {}
+      },
+      {
+        "from": "2026-08-29",
+        "to": "2026-09-04",
+        "sessions": {}
+      },
+      {
+        "from": "2026-09-05",
+        "to": "2026-09-11",
+        "sessions": {}
+      },
+      {
+        "from": "2026-09-12",
+        "to": "2026-09-18",
+        "sessions": {}
+      },
+      {
+        "from": "2026-09-19",
+        "to": "2026-09-25",
+        "sessions": {}
+      },
+      {
+        "from": "2026-09-26",
+        "to": "2026-10-02",
+        "sessions": {}
+      },
+      {
+        "from": "2026-10-03",
+        "to": "2026-10-09",
+        "sessions": {}
+      },
+      {
+        "from": "2026-10-10",
+        "to": "2026-10-16",
+        "sessions": {}
+      }
+    ],
+    "monthly": [
+      {
+        "month": "1404-08",
+        "y": 1404,
+        "m": 8,
+        "sessions": {}
+      },
+      {
+        "month": "1404-09",
+        "y": 1404,
+        "m": 9,
+        "sessions": {}
+      },
+      {
+        "month": "1404-10",
+        "y": 1404,
+        "m": 10,
+        "sessions": {}
+      },
+      {
+        "month": "1404-11",
+        "y": 1404,
+        "m": 11,
+        "sessions": {}
+      },
+      {
+        "month": "1404-12",
+        "y": 1404,
+        "m": 12,
+        "sessions": {}
+      },
+      {
+        "month": "1405-01",
+        "y": 1405,
+        "m": 1,
+        "sessions": {}
+      },
+      {
+        "month": "1405-02",
+        "y": 1405,
+        "m": 2,
+        "sessions": {}
+      },
+      {
+        "month": "1405-03",
+        "y": 1405,
+        "m": 3,
+        "sessions": {}
+      },
+      {
+        "month": "1405-04",
+        "y": 1405,
+        "m": 4,
+        "sessions": {}
+      },
+      {
+        "month": "1405-05",
+        "y": 1405,
+        "m": 5,
+        "sessions": {}
+      },
+      {
+        "month": "1405-06",
+        "y": 1405,
+        "m": 6,
+        "sessions": {}
+      },
+      {
+        "month": "1405-07",
+        "y": 1405,
+        "m": 7,
+        "sessions": {}
+      }
+    ]
+  },
+  "/features?range=90": {
+    "dataSince": "2026-05-20",
+    "activeCustomers": {
+      "value": 8,
+      "prev": null
+    },
+    "activeByPlan": {
+      "basic": 5,
+      "team": 3,
+      "business": 0,
+      "enterprise": 0,
+      "partner": 0
+    },
+    "features": [
+      {
+        "type": "Record",
+        "key": false,
+        "users": 8,
+        "rate": 1,
+        "prevRate": null,
+        "paidRate": 1,
+        "freeRate": 1,
+        "usersByPlan": {
+          "basic": 5,
+          "team": 3,
+          "business": 0,
+          "enterprise": 0,
+          "partner": 0
+        }
+      },
+      {
+        "type": "View",
+        "key": true,
+        "users": 6,
+        "rate": 0.75,
+        "prevRate": null,
+        "paidRate": 1,
+        "freeRate": 0.6,
+        "usersByPlan": {
+          "basic": 3,
+          "team": 3,
+          "business": 0,
+          "enterprise": 0,
+          "partner": 0
+        }
+      },
+      {
+        "type": "AI",
+        "key": true,
+        "users": 1,
+        "rate": 0.125,
+        "prevRate": null,
+        "paidRate": 0.3333333333333333,
+        "freeRate": 0,
+        "usersByPlan": {
+          "basic": 0,
+          "team": 1,
+          "business": 0,
+          "enterprise": 0,
+          "partner": 0
+        }
+      },
+      {
+        "type": "Automation",
+        "key": true,
+        "users": 1,
+        "rate": 0.125,
+        "prevRate": null,
+        "paidRate": 0,
+        "freeRate": 0.2,
+        "usersByPlan": {
+          "basic": 1,
+          "team": 0,
+          "business": 0,
+          "enterprise": 0,
+          "partner": 0
+        }
+      },
+      {
+        "type": "Page",
+        "key": true,
+        "users": 1,
+        "rate": 0.125,
+        "prevRate": null,
+        "paidRate": 0.3333333333333333,
+        "freeRate": 0,
+        "usersByPlan": {
+          "basic": 0,
+          "team": 1,
+          "business": 0,
+          "enterprise": 0,
+          "partner": 0
+        }
+      }
+    ]
+  }
+}

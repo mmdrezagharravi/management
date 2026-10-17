@@ -46,6 +46,7 @@
       </PanelCard>
 
       <PanelCard title="سه اصطکاک بزرگ" hint="به ترتیب حساب‌های ازدست‌رفته در همین کوهورت" flush>
+        <div v-if="!d.drops.length" class="note" style="padding: 16px">{{ K.signup.n ? 'در این کوهورت هیچ حسابی بین پله‌ها از دست نرفته است.' : 'در این بازه ثبت‌نام بالغی نیست؛ بازهٔ بلندتری انتخاب کنید.' }}</div>
         <div class="list" style="padding: 0 16px">
           <div v-for="(x, i) in d.drops" :key="x.key" class="li" style="align-items: flex-start">
             <span class="hero" style="font-size: 22px; min-width: 26px; color: var(--faint)">{{ fa(i + 1) }}</span>
@@ -85,7 +86,7 @@ const stage = (key) => d.value.stages.find((s) => s.key === key)
 const live = computed(() => {
   const k = K.value, rn = d.value.renew
   return {
-    visit: { n: k.visit.n == null ? '—' : n(k.visit.n), cap: k.visit.n == null ? 'هنوز متصل نیست' : 'بازدید در بازهٔ کوهورت', rate: '—' },
+    visit: { n: k.visit.n == null ? '—' : n(k.visit.n), cap: k.visit.n != null ? 'بازدید در بازهٔ کوهورت' : d.value.gaGap ? 'از GA داده‌ای نرسیده' : 'هنوز متصل نیست', rate: '—' },
     signup: { n: n(k.signup.n), cap: 'ثبت‌نام', rate: pct(k.signup.fromPrev, 1), rateOf: 'از بازدید' },
     firstBase: { n: n(k.firstBase.n), cap: 'بیس ساخته‌اند', rate: pct(k.firstBase.fromPrev) },
     activated: { n: n(k.activated.n), cap: 'فعال شده‌اند', rate: pct(k.activated.fromPrev) },

@@ -6,7 +6,8 @@
       </PanelCard>
 
       <template v-else>
-        <div v-if="d.covered === false" class="banner warn"><AppIcon name="alert" /><div>از Google Analytics برای این بازه بازدیدی نرسیده<template v-if="d.lastDataDay"> — آخرین روز با داده: <b>{{ date(daysAgo(d.lastDataDay), { year: true }) }}</b></template>. همگام‌سازی کار می‌کند ولی GA خالی برمی‌گرداند؛ احتمالاً تگ GA روی سایت غیرفعال شده. تا وقتی برنگردد، بازدید و نرخ ثبت‌نام «—» می‌مانند.</div></div>
+        <div v-if="d.covered === false && !(d.sync && d.sync.lastSuccessAt)" class="banner warn"><AppIcon name="alert" /><div>همگام‌سازی Google Analytics هنوز یک بار هم موفق نشده<template v-if="d.sync && d.sync.ok === false"> — آخرین تلاش ناموفق: {{ d.sync.error }}</template>. تا اولین همگام‌سازی، بازدید و نرخ ثبت‌نام «—» می‌مانند؛ وضعیتش در «صف‌ها و زمان‌بندی» دیده می‌شود.</div></div>
+        <div v-else-if="d.covered === false" class="banner warn"><AppIcon name="alert" /><div>از Google Analytics برای این بازه بازدیدی نرسیده<template v-if="d.lastDataDay"> — آخرین روز با داده: <b>{{ date(daysAgo(d.lastDataDay), { year: true }) }}</b></template>. همگام‌سازی کار می‌کند ولی GA خالی برمی‌گرداند؛ احتمالاً تگ GA روی سایت غیرفعال شده. تا وقتی برنگردد، بازدید و نرخ ثبت‌نام «—» می‌مانند.</div></div>
         <div class="kpis">
           <KpiTile label="بازدید سایت" :value="n(k.visits)" :delta="{ cur: k.visits, prev: k.visitsPrev }" :cmp="'قبل: ' + n(k.visitsPrev)" :info="'جلسه‌های سایت در ' + fa(range) + ' روز تا دیروز'" />
           <KpiTile label="بازدیدکنندهٔ تازه" :value="n(k.newUsers)" :delta="{ cur: k.newUsers, prev: k.newUsersPrev }" :cmp="'قبل: ' + n(k.newUsersPrev)" info="کسانی که اولین بار به سایت آمده‌اند" />
@@ -39,7 +40,7 @@
             <template #col-prev="{ row }">{{ n(row.prev) }}</template>
             <template #col-change="{ row }"><span v-if="row.change == null" class="faint">تازه</span><template v-else>{{ signedPct(row.change) }}</template></template>
           </DataTable>
-          <template #footer><span>بازدید از Google Analytics؛ ثبت‌نام و درآمد هر کانال در کارت پایین</span><router-link to="/funnel">قیف تبدیل</router-link></template>
+          <template #footer><span>بازدید از Google Analytics<template v-if="att">؛ ثبت‌نام و درآمد هر کانال در کارت پایین</template></span><router-link to="/funnel">قیف تبدیل</router-link></template>
         </PanelCard>
       </template>
 

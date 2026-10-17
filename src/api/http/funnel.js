@@ -1,5 +1,5 @@
 /* GET /management/funnel?range — mature-cohort conversion funnel. Same shape as mock/funnel.js.
-   Visits come from Google Analytics 4 (server `visits`, null until GA4 is configured). Gaps: no previous cohort (prev = []), sources are only invite/direct. */
+   Visits come from Google Analytics 4 (server `visits`, null until GA4 is configured). prev = the cohort of the range before (empty until it is fully after dataSince); sources are only invite/direct. */
 import { get } from './client'
 import { customersAll } from './account'
 import { daysAgo, signupDaysAgo } from 'src/lib/format'
@@ -16,7 +16,7 @@ const STEP = {
 }
 export const FUNNEL_SOURCES = [{ key: 'invite', name: 'لینک دعوت', server: 'referral' }, { key: 'direct', name: 'مستقیم', server: 'direct' }]
 
-const step = (s, median = {}) => ({ key: s.key, label: STEP[s.key] ? STEP[s.key][0] : s.key, n: s.n, def: STEP[s.key] ? STEP[s.key][1] : '', fromPrev: s.fromPrev ?? 0, fromStart: s.fromStart ?? 0, medianDays: median[s.key] ?? null })
+const step = (s, median = {}) => ({ key: s.key, label: STEP[s.key] ? STEP[s.key][0] : s.key, n: s.n, def: STEP[s.key] ? STEP[s.key][1] : '', fromPrev: s.fromPrev ?? null, fromStart: s.fromStart ?? null, medianDays: median[s.key] ?? null })
 /** Panel steps: a leading `visit` row (n = null until GA4 is connected); with visits, signup's fromPrev = signups ÷ visits. */
 const steps = (serverSteps, visits = null, median = {}) => {
   const out = [{ key: 'visit', label: STEP.visit[0], n: visits ? visits.sessions : null, def: visits ? STEP.visitGa[1] : STEP.visit[1], fromPrev: 1, fromStart: 1, medianDays: null }, ...serverSteps.map((s) => step(s, median))]
@@ -48,6 +48,8 @@ export async function funnel({ range: R = 30, source } = {}) {
   const bySource = FUNNEL_SOURCES.map((s) => ({ key: s.key, name: s.name, ...summary(steps(f.bySource[s.server])) }))
   const total = summary(all)
   const own = src ? steps(f.bySource[src.server], null, medianDays) : all
+  const prevVisits = f.prev && f.prev.visits && f.prev.visits.sessions != null ? f.prev.visits : null
+  const prev = f.prev ? (src ? steps(f.prev.bySource[src.server]) : steps(f.prev.steps, prevVisits)) : []
 
   const pool = accounts.filter((a) => a.age >= 3 && a.age <= 14 && mine(a) && selfSignup(a))
   const stuck = { pool: pool.length, noBase: pool.filter((a) => a.firstBaseDays == null).length, notAct: pool.filter((a) => a.firstBaseDays != null && a.activated === false).length }
@@ -67,7 +69,7 @@ export async function funnel({ range: R = 30, source } = {}) {
 
   return {
     range: R, mature: f.matureDays, source: src ? src.key : null, sourceName: src ? src.name : null, activationRecords: ACTIVATION_RECORDS, dataSince: f.dataSince || null,
-    steps: own, prev: [], worst: worst ? worst.key : null, stuck, bySource, total, weekly, visits, gaGap, paidAny, medianDays,
+    steps: own, prev, worst: worst ? worst.key : null, stuck, bySource, total, weekly, visits, gaGap, paidAny, medianDays,
     cohort: c.from ? { from: c.from, to: c.to, clipped: c.windowFrom != null && c.from > c.windowFrom, size: c.size } : null,
   }
 }
