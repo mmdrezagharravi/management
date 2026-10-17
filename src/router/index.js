@@ -8,7 +8,7 @@ export default defineRouter(() => {
   const router = createRouter({
     routes,
     history: createWebHistory(process.env.VUE_ROUTER_BASE),
-    scrollBehavior: (to, from, saved) => saved || (to.hash ? { el: to.hash } : { top: 0 }),
+    scrollBehavior: (to, from, saved) => saved || (to.path === from.path && to.hash === from.hash ? false : to.hash ? { el: to.hash } : { top: 0 }),
   })
   // The management app shares the Airsheet origin and therefore its existing
   // session. There is deliberately no second login page.
